@@ -1,23 +1,140 @@
+import React from 'react';
+import Link from 'next/link';
+import ThemeSwitchToggle from '../../components/ui/ThemeSwitchToggle'; 
+import {
+  LayoutDashboard,
+  Users,
+  CheckCircle,
+  Newspaper,
+  CreditCard,
+  MessageSquare,
+  BookOpen,
+  Mail,
+  Bell,
+  Eye,
+  Menu,
+  Search,
+} from 'lucide-react';
+
+const SidebarItem = ({
+  href,
+  icon: IconComponent,
+  label,
+  count,
+}: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  count?: number;
+}) => (
+  <Link
+    href={href}
+    className="flex items-center justify-between p-3 rounded-lg 
+       hover:bg-gray-200 dark:hover:bg-gray-700 
+       transition duration-150 text-gray-700 dark:text-gray-200"
+  >
+    <div className="flex items-center space-x-3">
+      <IconComponent className="w-5 h-5" /> 
+      <span className="font-normal"> 
+        {label}
+      </span>
+    </div>
+    {count !== undefined && (
+      <span
+        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+          count > 0 ? 'bg-red-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+        }`}
+      >
+        {count > 99 ? '99+' : count}
+      </span>
+    )}
+  </Link>
+);
+
+const AdminHeader = ({ notificationCount }: { notificationCount: number }) => (
+  <header className="fixed top-0 right-0 z-20 h-16 
+     bg-white dark:bg-gray-800 
+     border-b border-gray-300 dark:border-gray-700 
+     shadow-sm flex items-center justify-between px-6 
+     ml-64 w-[calc(100%-16rem)]"
+  >
+    
+    <div className="flex items-center space-x-6">
+      <Menu className="w-6 h-6 text-gray-500 dark:text-gray-300 cursor-pointer" />
+
+      <div className="relative flex items-center bg-gray-100 dark:bg-gray-700 rounded-3xl h-10 px-3">
+        <Search className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" />
+        <input
+          type="text"
+          placeholder="Tìm kiếm..."
+          className="bg-transparent focus:outline-none text-gray-700 dark:text-gray-200 w-64 placeholder:text-gray-400 font-light text-sm"
+        />
+      </div>
+
+      <div className="relative p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+        <Bell className="w-6 h-6 text-gray-500 dark:text-gray-300" />
+        {notificationCount > 0 && (
+          <span className="absolute top-0 right-0 transform -translate-x-0.5 translate-y-0.5 w-4 h-4 text-xs font-bold text-white bg-red-600 rounded-full flex items-center justify-center">
+            {notificationCount}
+          </span>
+        )}
+      </div>
+    </div>
+
+    <div className="flex items-center space-x-4">
+      <ThemeSwitchToggle /> 
+    </div>
+  </header>
+);
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const accountsCount = 12;
+  const certificatesCount = 2;
+  const chatHistoryCount = 5;
+  const notificationsCount = 9;
+
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 text-white p-4">
-        <h2 className="text-xl font-bold mb-6">Admin Panel</h2>
-        <nav className="space-y-2">
-          <a href="#" className="block p-2 rounded hover:bg-gray-700">Dashboard</a>
-          <a href="#" className="block p-2 rounded hover:bg-gray-700">Users</a>
-          <a href="#" className="block p-2 rounded hover:bg-gray-700">Movies</a>
-          <a href="#" className="block p-2 rounded hover:bg-gray-700">Settings</a>
+    <div className="flex min-h-screen bg-white dark:bg-gray-900"> 
+      <aside className="w-64 
+         bg-white dark:bg-gray-900 
+         text-gray-900 dark:text-white 
+         flex flex-col fixed h-full shadow-lg z-30 border-r border-gray-300 dark:border-gray-700">
+        <div className="h-16 border-b border-gray-300 dark:border-gray-700"> 
+          <div className="flex items-center space-x-4 px-6 h-full"> 
+            <div className="p-1 bg-blue-600 rounded-lg">
+              <Eye className="w-7 h-7 text-white" />
+            </div>
+            <div className="flex flex-col leading-none">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">I See You</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Admin Panel</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto"> 
+          <SidebarItem href="/admin/dashboard" icon={LayoutDashboard} label="Bảng điều khiển" />
+          <SidebarItem href="/admin/accounts" icon={Users} label="Quản lý tài khoản" count={accountsCount} />
+          <SidebarItem href="/admin/certificates" icon={CheckCircle} label="Duyệt chứng chỉ" count={certificatesCount} />
+          <SidebarItem href="/admin/posts" icon={Newspaper} label="Quản lý bài viết" />
+          <SidebarItem href="/admin/transactions" icon={CreditCard} label="Lịch sử giao dịch" />
+          <SidebarItem href="/admin/chat" icon={MessageSquare} label="Lịch sử chat" count={chatHistoryCount} />
+          <SidebarItem href="/admin/knowledge" icon={BookOpen} label="Kho tri thức" />
+          <SidebarItem href="/admin/send-message" icon={Mail} label="Gửi tin nhắn" />
+          <SidebarItem href="/admin/notifications" icon={Bell} label="Thông báo" count={notificationsCount} />
         </nav>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 p-6">{children}</main>
+      <div className="flex-1 ml-64">
+        <AdminHeader notificationCount={notificationsCount} />
+        <main className="p-6 pt-20">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
