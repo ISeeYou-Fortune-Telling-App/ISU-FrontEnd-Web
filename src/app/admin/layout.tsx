@@ -120,6 +120,7 @@ export default function AdminLayout({
           <SidebarItem href="/admin/dashboard" icon={LayoutDashboard} label="Bảng điều khiển" />
           <SidebarItem href="/admin/accounts" icon={Users} label="Quản lý tài khoản" count={accountsCount} />
           <SidebarItem href="/admin/certificates" icon={CheckCircle} label="Duyệt chứng chỉ" count={certificatesCount} />
+          <SidebarItem href="/admin/bookings" icon={Newspaper} label="Quản lý lịch hẹn" />
           <SidebarItem href="/admin/posts" icon={Newspaper} label="Quản lý bài viết" />
           <SidebarItem href="/admin/transactions" icon={CreditCard} label="Lịch sử giao dịch" />
           <SidebarItem href="/admin/chat" icon={MessageSquare} label="Lịch sử chat" count={chatHistoryCount} />
