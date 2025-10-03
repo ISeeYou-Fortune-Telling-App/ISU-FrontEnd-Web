@@ -1,16 +1,11 @@
-// src/app/admin/dashboard/page.tsx
-
 import React from 'react';
-import { Mail, Users, MessageSquare, CreditCard, Award, TrendingUp, Maximize } from 'lucide-react'; 
-// Thêm Maximize (icon giống hình ảnh bạn cung cấp)
-import StatCard from '../../../components/feature/StatCardDashboard'
-import TopSeerRankCard from '../../../components/feature/TopSeerRankCard'; 
-import ServiceDistributionCard from '../../../components/feature/ServiceDistributionCard';
-import RecentActivityCard from "../../../components/feature/RecentActivityCard";
+import { Users, MessageSquare, CreditCard, Award, Maximize } from 'lucide-react'; 
 
-/**
- * Trang Bảng điều khiển (Dashboard) - Trang cho route /admin/dashboard
- */
+import StatCardDashboard from '../../../components/dashboard/StatCardDashboard'
+import TopSeerRankCard from '../../../components/dashboard/TopSeerRankCard'; 
+import ServiceDistributionCard from '../../../components/dashboard/ServiceDistributionCard';
+import RecentActivityCard from "../../../components/dashboard/RecentActivityCard";
+
 export default function AdminDashboardPage() {
     return (
         <div className="space-y-6">
@@ -25,25 +20,25 @@ export default function AdminDashboardPage() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
+                <StatCardDashboard 
                     title="Tổng doanh thu" 
                     value="72.5M" 
                     trend="+12.5% so với tháng trước" 
                     icon={CreditCard}
                 />
-                <StatCard 
+                <StatCardDashboard
                     title="Người dùng hoạt động" 
                     value="2,817" 
                     trend="+8.2% trong 30 ngày qua" 
                     icon={Users}
                 />
-                <StatCard 
+                <StatCardDashboard
                     title="Phiên tư vấn" 
                     value="1,354" 
                     trend="+0.5% tháng này" 
                     icon={MessageSquare}
                 />
-                <StatCard 
+                <StatCardDashboard
                     title="Tỷ lệ hài lòng" 
                     value="76.8%" 
                     trend="-2.1% đánh giá trung bình" 
@@ -55,7 +50,6 @@ export default function AdminDashboardPage() {
                 <div className="flex items-start justify-between mb-4">                   
                     <div>
                         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center space-x-2">
-                            {/* Dùng Maximize (icon giống hình) */}
                             <Maximize className="w-5 h-5 text-indigo-500" />
                             <span>Doanh thu theo thời gian</span>
                         </h2>

@@ -1,9 +1,6 @@
-// src/components/charts/ServiceDistributionCard.tsx
-
 import React from 'react';
 import { PieChart } from 'lucide-react'; 
 
-// Component con cho chú thích màu (GIỮ NGUYÊN)
 const ServiceLegendItem: React.FC<{ colorClass: string; label: string }> = ({ colorClass, label }) => (
     <div className="flex items-center space-x-2 py-1">
         <div className={`w-3 h-3 rounded-full ${colorClass}`}></div>
@@ -25,14 +22,12 @@ const ServiceDistributionCard: React.FC = () => (
                 </p>
             </div>
             <div className="flex items-center space-x-3">
-                {/* Select Tháng */}
                 <select 
                     defaultValue="Tháng 8"
                     className="p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
                 >
                     <option>Tháng 8</option>
                 </select>
-                {/* Select Năm */}
                 <select 
                     defaultValue="Năm 2025"
                     className="p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
@@ -48,7 +43,6 @@ const ServiceDistributionCard: React.FC = () => (
             </div>
         </div>
 
-    
         <div className="w-full md:w-1/2 flex flex-col items-start mt-8"> {/* Thêm flex-col và items-start */}
             <ServiceLegendItem colorClass="bg-pink-600" label="Cung Hoàng Đạo" />
             <ServiceLegendItem colorClass="bg-blue-600" label="Nhân Tướng Học" />

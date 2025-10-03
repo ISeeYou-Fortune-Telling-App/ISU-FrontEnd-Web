@@ -1,15 +1,11 @@
-// src/components/admin/UserTable.tsx
 'use client'
 import React, { useState } from 'react';
-import { Search, Eye, Check, X, ChevronLeft, ChevronRight, ChevronDown, Lock, Unlock } from 'lucide-react'; 
+import { Search, Eye, Check, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'; 
 
-// Cập nhật đường dẫn import modal (Giả định cấu trúc thư mục của bạn)
-import { UserDetailModal } from '../detail/AccountDetailModal';
-import { RoleBadge } from '../../components/common/RoleBadge'; 
-import { StatusBadge } from '../../components/common/StatusBadge'; 
+import { UserDetailModal } from '../accounts/UserDetailModal'
+import { RoleBadge } from '../common/RoleBadge'; 
+import { StatusBadge } from '../common/StatusBadge'; 
 
-
-// --- MOCK DATA (Bổ sung thêm trường details để truyền vào Modal) ---
 const mockUsers = [
     { name: 'Minh Tuệ', contact: 'minhtue@isee.vn', phone: '0901234567', role: 'Nhà tiên tri', status: 'Đã duyệt', joinDate: '10/03/2020', isLocked: false, 
         details: { hoTen: 'Nguyễn Minh Tuệ', gioiTinh: 'Nữ', ngaySinh: '01/01/1990', tieuSu: 'Là một Nhà tiên tri giàu kinh nghiệm, chuyên về Tarot và Chiêm tinh.', cungHoangDao: 'Ma Kết', conGiap: 'Ngựa', nguHanh: 'Mộc', tongChiTieu: '5.200.000 VNĐ', soPhienThamGia: 35 }
@@ -23,28 +19,47 @@ const mockUsers = [
     { name: 'User Bị Khóa', contact: 'locked@mail.com', phone: '0900000000', role: 'Khách hàng', status: 'Đã khóa', joinDate: '05/11/2019', isLocked: true, 
         details: { hoTen: 'Phạm Văn Khóa', gioiTinh: 'Nam', ngaySinh: '05/02/1978', tieuSu: 'Tài khoản đã bị khóa do vi phạm chính sách.', cungHoangDao: 'Bảo Bình', conGiap: 'Ngọ', nguHanh: 'Hỏa', tongChiTieu: '1.000.000 VNĐ', soPhienThamGia: 10 } 
     },
-    // Thêm các user khác để có thể test phân trang (tối thiểu 11 user cho 2 trang)
+
     ...Array.from({ length: 7 }).map((_, i) => ({
         name: `User Test ${i + 5}`, contact: `test${i+5}@mail.com`, phone: `0901234${10+i}`, role: 'Khách hàng', status: i % 2 === 0 ? 'Đã duyệt' : 'Chờ duyệt', joinDate: `01/0${i+1}/2023`, isLocked: false,
         details: { hoTen: `Họ Tên Test ${i + 5}`, gioiTinh: i % 2 === 0 ? 'Nam' : 'Nữ', ngaySinh: `10/10/199${i}`, tieuSu: 'Tài khoản test', cungHoangDao: 'Thiên Bình', conGiap: 'Mèo', nguHanh: 'Thủy', tongChiTieu: '500.000 VNĐ', soPhienThamGia: 5 }
     })),
 ];
 
-// Định nghĩa kiểu dữ liệu cho User
 type UserType = typeof mockUsers[0];
 const ITEMS_PER_PAGE = 10;
 
 export const UserTable: React.FC = () => {
-    // 1. Quản lý State cho Modal và Phân trang
+
     const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
 
-    // 2. Logic Phân trang
-    const totalItems = mockUsers.length;
+    // State cho search và filter
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedRole, setSelectedRole] = useState<'Tất cả' | 'Khách hàng' | 'Nhà tiên tri'>('Tất cả');
+    const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | 'Hoạt động' | 'Chờ duyệt' | 'Đã khóa'>('Tất cả');
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+
+    // Logic Lọc & Phân trang
+    const filteredUsers = mockUsers.filter(user => {
+        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              user.contact.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesRole = selectedRole === 'Tất cả' || user.role === selectedRole;
+        
+        const matchesStatus = selectedStatus === 'Tất cả' || 
+                              (selectedStatus === 'Hoạt động' && user.status === 'Đã duyệt' && !user.isLocked) ||
+                              (selectedStatus === 'Chờ duyệt' && user.status === 'Chờ duyệt') ||
+                              (selectedStatus === 'Đã khóa' && user.isLocked);
+        
+        return matchesSearch && matchesRole && matchesStatus;
+    });
+
+    const totalItems = filteredUsers.length;
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    const currentUsers = mockUsers.slice(startIndex, endIndex);
+    const currentUsers = filteredUsers.slice(startIndex, endIndex); // Slice từ danh sách đã lọc
 
     const goToNextPage = () => { setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev)); };
     const goToPrevPage = () => { setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev)); };
@@ -54,48 +69,75 @@ export const UserTable: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-            
-            {/* Search and Filter Row */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">  
             <div className="flex justify-between items-center mb-4">
-                <div className="flex space-x-4">
-                    {/* Search Input */}
-                    <div className="relative w-80">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm theo tên hoặc email..."
-                            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
-                        />
-                    </div>
-                    {/* Role Tabs */}
-                    <div className='flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700'>
-                        <button className='px-4 py-1 text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400'>Tất cả</button>
-                        <button className='px-4 py-1 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'>Khách hàng</button>
-                        <button className='px-4 py-1 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'>Nhà tiên tri</button>
-                    </div>
+                <div className="relative flex-grow mr-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Tìm kiếm theo tên hoặc email..."
+                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
+                        }}
+                    />
                 </div>
 
-                {/* Status Filter Dropdown */}
-                <div className="flex items-center space-x-2">
-                    <div className="relative group">
-                        <button 
-                            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
-                        >
-                            <span>Tất cả</span>
-                            <ChevronDown className="w-4 h-4 ml-1" />
-                        </button>
-                        {/* Dropdown Menu */}
+                <div className="relative"> 
+                    <button 
+                        onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                        className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
+                    >
+                        <span>{selectedStatus}</span> {/* Hiển thị trạng thái đã chọn */}
+                        <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isStatusDropdownOpen && ( 
                         <div 
-                            className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-150 ease-in-out">
+                            className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10">
                             <div className="py-1">
-                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 font-semibold">Tất cả</a>
-                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Hoạt động</a>
-                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Chờ duyệt</a>
-                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Đã khóa</a>
+                                {['Tất cả', 'Hoạt động', 'Chờ duyệt', 'Đã khóa'].map(status => (
+                                    <button 
+                                        key={status}
+                                        onClick={() => {
+                                            setSelectedStatus(status as typeof selectedStatus);
+                                            setIsStatusDropdownOpen(false); 
+                                            setCurrentPage(1); 
+                                        }}
+                                        className={`block w-full text-left px-4 py-2 text-sm 
+                                            ${selectedStatus === status 
+                                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold' 
+                                                : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        {status}
+                                    </button>
+                                ))}
                             </div>
                         </div>
-                    </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex space-x-2 mb-4"> 
+                <div className='flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700'>
+                    {['Tất cả', 'Khách hàng', 'Nhà tiên tri'].map(role => (
+                        <button 
+                            key={role}
+                            onClick={() => {
+                                setSelectedRole(role as typeof selectedRole);
+                                setCurrentPage(1); // Reset về trang 1 khi lọc
+                            }}
+                            className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors 
+                                ${selectedRole === role 
+                                    ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold' 
+                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                        >
+                            {role}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -113,12 +155,11 @@ export const UserTable: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {/* Thay mockUsers bằng currentUsers để áp dụng phân trang */}
                         {currentUsers.map((user, index) => (
                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
                                 <td className="px-6 py-3 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <img className="h-8 w-8 rounded-full mr-3" src="https://via.placeholder.com/32" alt="Avatar" />
+                                        <img className="h-8 w-8 rounded-full mr-3" src="https://images.wallpapersden.com/image/download/satoru-gojo-acid-blue-eyes-jujutsu-kaisen_bmZpbWqUmZqaraWkpJRnZm1prWZmbW0.jpg" alt="Avatar" />
                                         <span className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</span>
                                     </div>
                                 </td>
@@ -130,12 +171,15 @@ export const UserTable: React.FC = () => {
                                     <RoleBadge role={user.role} />
                                 </td>
                                 <td className="px-6 py-3 whitespace-nowrap">
-                                    <StatusBadge status={user.status} />
+                                    <StatusBadge 
+                                        status={user.isLocked ? 'Đã khóa' : user.status} 
+                                    />
                                 </td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{user.joinDate}</td>
+                                
                                 <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
                                     <div className="flex justify-end space-x-3">
-                                        {/* View Icon - THÊM onClick để mở Modal */}
+                                        
                                         <button 
                                             title="Xem chi tiết" 
                                             onClick={() => openUserDetail(user)}
@@ -144,14 +188,22 @@ export const UserTable: React.FC = () => {
                                             <Eye className="w-5 h-5" />
                                         </button>
                                         
-                                        {/* Action Icon */}
                                         {user.status === 'Chờ duyệt' ? (
-                                            <button title="Duyệt" className="text-green-500 hover:text-green-700 p-1 transition-colors">
+                                            <>
+                                                <button title="Duyệt tài khoản" className="text-green-500 hover:text-green-700 p-1 transition-colors">
+                                                    <Check className="w-5 h-5" />
+                                                </button>
+                                                <button title="Từ chối/Khóa tài khoản" className="text-red-500 hover:text-red-700 p-1 transition-colors">
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            </>
+                                        ) : user.isLocked ? (                                 
+                                            <button title="Mở khóa tài khoản" className="text-green-500 hover:text-green-700 p-1 transition-colors">
                                                 <Check className="w-5 h-5" />
                                             </button>
                                         ) : (
-                                            <button title={user.isLocked ? "Mở khóa" : "Khóa tài khoản"} className={`p-1 transition-colors ${user.isLocked ? 'text-green-500 hover:text-green-700' : 'text-red-500 hover:text-red-700'}`}>
-                                                {user.isLocked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                                            <button title="Khóa tài khoản" className="text-red-500 hover:text-red-700 p-1 transition-colors">
+                                                <X className="w-5 h-5" />
                                             </button>
                                         )}
                                     </div>
@@ -196,7 +248,7 @@ export const UserTable: React.FC = () => {
                 </div>
             </div>
 
-            {/* 3. Tích hợp Modal */}
+            {/* Tích hợp Modal */}
             <UserDetailModal 
                 user={selectedUser} 
                 onClose={() => setSelectedUser(null)} 

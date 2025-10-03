@@ -1,64 +1,31 @@
+// AdminLayout.tsx
+// KHÔNG CÓ 'use client'; ở đầu file
+
 import React from 'react';
-import Link from 'next/link';
 import ThemeSwitchToggle from '../../components/ui/ThemeSwitchToggle'; 
 import {
-  LayoutDashboard,
-  Users,
-  CheckCircle,
-  Newspaper,
-  CreditCard,
-  MessageSquare,
-  BookOpen,
-  Mail,
-  Bell,
   Eye,
   Menu,
   Search,
+  Bell,
 } from 'lucide-react';
 
-const SidebarItem = ({
-  href,
-  icon: IconComponent,
-  label,
-  count,
-}: {
-  href: string;
-  icon: React.ElementType;
-  label: string;
-  count?: number;
-}) => (
-  <Link
-    href={href}
-    className="flex items-center justify-between p-3 rounded-lg 
-       hover:bg-gray-200 dark:hover:bg-gray-700 
-       transition duration-150 text-gray-700 dark:text-gray-200"
-  >
-    <div className="flex items-center space-x-3">
-      <IconComponent className="w-5 h-5" /> 
-      <span className="font-normal"> 
-        {label}
-      </span>
-    </div>
-    {count !== undefined && (
-      <span
-        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-          count > 0 ? 'bg-red-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-        }`}
-      >
-        {count > 99 ? '99+' : count}
-      </span>
-    )}
-  </Link>
-);
+// Import Client Component đã tách
+import AdminSidebarNav from './AdminSidebarNav'; 
 
+// SidebarItem VÀO ĐÂY, HOẶC IMPORT TỪ FILE RIÊNG
+// VÌ TÍNH CHẤT CỦA SERVER COMPONENT KHÔNG CHO PHÉP NHẬP usePathname
+// NÊN TA CHỈ CẦN KHAI BÁO NÓ Ở MỘT NƠI CHUNG HOẶC TRỰC TIẾP Ở FILE CLIENT
+
+// AdminHeader không cần thay đổi
 const AdminHeader = ({ notificationCount }: { notificationCount: number }) => (
   <header className="fixed top-0 right-0 z-20 h-16 
-     bg-white dark:bg-gray-800 
-     border-b border-gray-300 dark:border-gray-700 
-     shadow-sm flex items-center justify-between px-6 
-     ml-64 w-[calc(100%-16rem)]"
+      bg-white dark:bg-gray-800 
+      border-b border-gray-300 dark:border-gray-700 
+      shadow-sm flex items-center justify-between px-6 
+      ml-64 w-[calc(100%-16rem)]"
   >
-    
+    {/* ... (Nội dung AdminHeader không đổi) ... */}
     <div className="flex items-center space-x-6">
       <Menu className="w-6 h-6 text-gray-500 dark:text-gray-300 cursor-pointer" />
 
@@ -100,9 +67,9 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-white dark:bg-gray-900"> 
       <aside className="w-64 
-         bg-white dark:bg-gray-900 
-         text-gray-900 dark:text-white 
-         flex flex-col fixed h-full shadow-lg z-30 border-r border-gray-300 dark:border-gray-700">
+          bg-white dark:bg-gray-900 
+          text-gray-900 dark:text-white 
+          flex flex-col fixed h-full shadow-lg z-30 border-r border-gray-300 dark:border-gray-700">
         <div className="h-16 border-b border-gray-300 dark:border-gray-700"> 
           <div className="flex items-center space-x-4 px-6 h-full"> 
             <div className="p-1 bg-blue-600 rounded-lg">
@@ -115,19 +82,13 @@ export default function AdminLayout({
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto"> 
-          <SidebarItem href="/admin/dashboard" icon={LayoutDashboard} label="Bảng điều khiển" />
-          <SidebarItem href="/admin/accounts" icon={Users} label="Quản lý tài khoản" count={accountsCount} />
-          <SidebarItem href="/admin/certificates" icon={CheckCircle} label="Duyệt chứng chỉ" count={certificatesCount} />
-          <SidebarItem href="/admin/bookings" icon={Newspaper} label="Quản lý lịch hẹn" />
-          <SidebarItem href="/admin/posts" icon={Newspaper} label="Quản lý bài viết" />
-          <SidebarItem href="/admin/transactions" icon={CreditCard} label="Lịch sử giao dịch" />
-          <SidebarItem href="/admin/chat" icon={MessageSquare} label="Lịch sử chat" count={chatHistoryCount} />
-          <SidebarItem href="/admin/knowledge" icon={BookOpen} label="Kho tri thức" />
-          <SidebarItem href="/admin/send-message" icon={Mail} label="Gửi tin nhắn" />
-          <SidebarItem href="/admin/notifications" icon={Bell} label="Thông báo" count={notificationsCount} />
-        </nav>
+        {/* Navigation - Thay thế bằng Client Component */}
+        <AdminSidebarNav 
+            accountsCount={accountsCount}
+            certificatesCount={certificatesCount}
+            chatHistoryCount={chatHistoryCount}
+            notificationsCount={notificationsCount}
+        />
       </aside>
 
       <div className="flex-1 ml-64">
