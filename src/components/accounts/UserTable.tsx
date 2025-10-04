@@ -3,8 +3,7 @@ import React, { useState } from 'react';
 import { Search, Eye, Check, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'; 
 
 import { UserDetailModal } from '../accounts/UserDetailModal'
-import { RoleBadge } from '../common/RoleBadge'; 
-import { StatusBadge } from '../common/StatusBadge'; 
+import { Badge } from '../common/Badge'; 
 
 const mockUsers = [
     { name: 'Minh Tuệ', contact: 'minhtue@isee.vn', phone: '0901234567', role: 'Nhà tiên tri', status: 'Đã duyệt', joinDate: '10/03/2020', isLocked: false, 
@@ -59,7 +58,7 @@ export const UserTable: React.FC = () => {
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    const currentUsers = filteredUsers.slice(startIndex, endIndex); // Slice từ danh sách đã lọc
+    const currentUsers = filteredUsers.slice(startIndex, endIndex);
 
     const goToNextPage = () => { setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev)); };
     const goToPrevPage = () => { setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev)); };
@@ -70,6 +69,7 @@ export const UserTable: React.FC = () => {
 
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">  
+            {/* Search + Filter */}
             <div className="flex justify-between items-center mb-4">
                 <div className="relative flex-grow mr-4">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -80,17 +80,18 @@ export const UserTable: React.FC = () => {
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
-                            setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
+                            setCurrentPage(1);
                         }}
                     />
                 </div>
 
+                {/* Dropdown trạng thái */}
                 <div className="relative"> 
                     <button 
                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                         className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
                     >
-                        <span>{selectedStatus}</span> {/* Hiển thị trạng thái đã chọn */}
+                        <span>{selectedStatus}</span>
                         <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {isStatusDropdownOpen && ( 
@@ -120,6 +121,7 @@ export const UserTable: React.FC = () => {
                 </div>
             </div>
 
+            {/* Filter theo role */}
             <div className="flex space-x-2 mb-4"> 
                 <div className='flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700'>
                     {['Tất cả', 'Khách hàng', 'Nhà tiên tri'].map(role => (
@@ -127,7 +129,7 @@ export const UserTable: React.FC = () => {
                             key={role}
                             onClick={() => {
                                 setSelectedRole(role as typeof selectedRole);
-                                setCurrentPage(1); // Reset về trang 1 khi lọc
+                                setCurrentPage(1);
                             }}
                             className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors 
                                 ${selectedRole === role 
@@ -142,16 +144,16 @@ export const UserTable: React.FC = () => {
             </div>
 
             {/* User Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Người dùng</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Liên hệ</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Vai trò</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trạng thái</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ngày tham gia</th>
-                            <th scope="col" className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Thao tác</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Người dùng</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Liên hệ</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Vai trò</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Trạng thái</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Ngày tham gia</th>
+                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -168,18 +170,14 @@ export const UserTable: React.FC = () => {
                                     <div className="text-gray-500 dark:text-gray-400">{user.phone}</div>
                                 </td>
                                 <td className="px-6 py-3 whitespace-nowrap">
-                                    <RoleBadge role={user.role} />
+                                    <Badge type="role" value={user.role} />
                                 </td>
                                 <td className="px-6 py-3 whitespace-nowrap">
-                                    <StatusBadge 
-                                        status={user.isLocked ? 'Đã khóa' : user.status} 
-                                    />
+                                    <Badge type="status" value={user.isLocked ? 'Đã khóa' : user.status} />
                                 </td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{user.joinDate}</td>
-                                
                                 <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
                                     <div className="flex justify-end space-x-3">
-                                        
                                         <button 
                                             title="Xem chi tiết" 
                                             onClick={() => openUserDetail(user)}
@@ -187,7 +185,6 @@ export const UserTable: React.FC = () => {
                                         >
                                             <Eye className="w-5 h-5" />
                                         </button>
-                                        
                                         {user.status === 'Chờ duyệt' ? (
                                             <>
                                                 <button title="Duyệt tài khoản" className="text-green-500 hover:text-green-700 p-1 transition-colors">
@@ -221,7 +218,6 @@ export const UserTable: React.FC = () => {
                 </span>
                 <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-700 dark:text-gray-300">{currentPage}/{totalPages}</span>
-                    {/* Nút Previous - THÊM onClick và disabled */}
                     <button 
                         onClick={goToPrevPage}
                         disabled={currentPage === 1}
@@ -233,7 +229,6 @@ export const UserTable: React.FC = () => {
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </button>
-                    {/* Nút Next - THÊM onClick và disabled */}
                     <button 
                         onClick={goToNextPage}
                         disabled={currentPage === totalPages}
@@ -248,7 +243,7 @@ export const UserTable: React.FC = () => {
                 </div>
             </div>
 
-            {/* Tích hợp Modal */}
+            {/* Modal chi tiết */}
             <UserDetailModal 
                 user={selectedUser} 
                 onClose={() => setSelectedUser(null)} 

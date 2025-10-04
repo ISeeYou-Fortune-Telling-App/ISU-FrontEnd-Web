@@ -11,7 +11,7 @@ const userStats = [
     { label: 'Đã từ chối', value: 5, colorClass: 'text-red-500'},
 ];
 
-export default function AccountsPage() {
+export default function CertificatesPage() {
     return (
         <div className="space-y-6">
             

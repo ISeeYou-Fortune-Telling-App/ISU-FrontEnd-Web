@@ -119,10 +119,10 @@ export default function AdminSidebarNav({
                 isActive={currentPath === "/admin/posts"}
             />
             <SidebarItem 
-                href="/admin/transactions" 
+                href="/admin/payments" 
                 icon={CreditCard} 
                 label="Lịch sử giao dịch" 
-                isActive={currentPath === "/admin/transactions"}
+                isActive={currentPath === "/admin/payments"}
             />
             <SidebarItem 
                 href="/admin/chat" 
