@@ -1,8 +1,8 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react'; // 👈 Cập nhật import: Thêm useMemo
 import { Search, Eye, Download, Check, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
-import { Badge } from '../common/Badge';   // ✅ Dùng Badge chung
+import { Badge } from '../common/Badge'; 
 import { CertificateDetailModal } from './CertificateDetailModal'; 
 
 // --- Dữ liệu giả định và Types ---
@@ -35,19 +35,26 @@ export const CertificateTable: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCertificate, setSelectedCertificate] = useState<CertificateType | null>(null);
 
-    // Lọc & phân trang
-    const filteredCertificates = mockCertificates.filter(cert => {
-        const matchesSearch = cert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              cert.seerName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = selectedFilter === 'Tất cả' || cert.status === selectedFilter;
-        return matchesSearch && matchesStatus;
-    });
+    // 1. SỬ DỤNG useMemo CHO LOGIC LỌC
+    const filteredCertificates = useMemo(() => {
+        return mockCertificates.filter(cert => {
+            const matchesSearch = cert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                  cert.seerName.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesStatus = selectedFilter === 'Tất cả' || cert.status === selectedFilter;
+            return matchesSearch && matchesStatus;
+        });
+    }, [searchTerm, selectedFilter]); // Chỉ chạy lại khi search/filter thay đổi
 
+    // 2. SỬ DỤNG useMemo CHO LOGIC PHÂN TRANG
     const totalItems = filteredCertificates.length;
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const currentCertificates = filteredCertificates.slice(startIndex, endIndex);
+
+    const { startIndex, endIndex, currentCertificates } = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const currentCertificates = filteredCertificates.slice(startIndex, endIndex);
+        return { startIndex, endIndex, currentCertificates };
+    }, [filteredCertificates, currentPage]); // Chỉ chạy lại khi danh sách lọc hoặc trang hiện tại thay đổi
 
     const goToNextPage = () => setCurrentPage(prev => (prev < totalPages ? prev + 1 : prev));
     const goToPrevPage = () => setCurrentPage(prev => (prev > 1 ? prev - 1 : prev));
@@ -73,7 +80,10 @@ export const CertificateTable: React.FC = () => {
                                    focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
                                    text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
                         value={searchTerm}
-                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                        onChange={(e) => { 
+                            setSearchTerm(e.target.value); 
+                            setCurrentPage(1); // Reset trang khi tìm kiếm
+                        }}
                     />
                 </div>
 
@@ -81,22 +91,22 @@ export const CertificateTable: React.FC = () => {
                     <button 
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
-                                   dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
-                                   hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
+                                  dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
+                                  hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
                     >
                         <span>Trạng thái Mẫu</span> 
                         <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {isDropdownOpen && ( 
                         <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-700 
-                                        ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10">
+                                         ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10">
                             <div className="py-1">
                                 {['Tùy chọn Mẫu 1', 'Tùy chọn Mẫu 2'].map(option => (
                                     <button 
                                         key={option}
                                         onClick={() => setIsDropdownOpen(false)}
                                         className="block w-full text-left px-4 py-2 text-sm 
-                                                   text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                                     >
                                         {option}
                                     </button>
@@ -108,14 +118,14 @@ export const CertificateTable: React.FC = () => {
             </div>
 
             {/* Hàng 2: Filter Tabs */}
-            <div className="flex space-x-2 mb-4">
+            <div className="flex space-x-2 mb-4 overflow-x-auto pb-1">
                 <div className='inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 
-                                bg-gray-100 dark:bg-gray-700'>
+                                 bg-gray-100 dark:bg-gray-700'>
                     {['Tất cả', 'Chờ duyệt', 'Đã duyệt', 'Đã từ chối'].map(status => (
                         <button 
                             key={status}
                             onClick={() => { setSelectedFilter(status as StatusFilterType); setCurrentPage(1); }}
-                            className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors 
+                            className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
                                 ${selectedFilter === status 
                                     ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold' 
                                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -145,7 +155,8 @@ export const CertificateTable: React.FC = () => {
                             <tr key={cert.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
                                 <td className="px-6 py-3 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <Download className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" />
+                                        {/* Icon Download chỉ mang tính minh họa */}
+                                        <Download className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" /> 
                                         <div>
                                             <div className="text-sm font-medium text-gray-900 dark:text-white">{cert.name}</div>
                                             <div className="text-xs text-gray-500 dark:text-gray-400">{cert.fileName}</div>

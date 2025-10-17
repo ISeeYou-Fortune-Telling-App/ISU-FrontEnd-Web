@@ -1,6 +1,3 @@
-// src/lib/api.ts
-// Thư viện gọi API chung cho dự án Next.js
-
 export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 export interface ApiOptions {

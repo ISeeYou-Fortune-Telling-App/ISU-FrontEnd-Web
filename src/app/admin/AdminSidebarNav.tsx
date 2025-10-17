@@ -1,4 +1,3 @@
-// AdminSidebarNav.tsx
 'use client'; 
 
 import React from 'react';
@@ -14,11 +13,9 @@ import {
   BookOpen,
   Mail,
   Bell,
-  // Bỏ các icon không dùng trong nav (Menu, Search, Eye)
 } from 'lucide-react';
 
 
-// SidebarItem Component (KHÔNG CẦN THAY ĐỔI)
 const SidebarItem = ({
   href,
   icon: IconComponent,

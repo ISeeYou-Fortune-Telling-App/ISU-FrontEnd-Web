@@ -1,9 +1,11 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react'; // Bổ sung useMemo vào import
 import { Search, Eye, Check, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'; 
 
 import { UserDetailModal } from '../accounts/UserDetailModal'
 import { Badge } from '../common/Badge'; 
+
+// Giữ nguyên mockUsers, UserType và ITEMS_PER_PAGE
 
 const mockUsers = [
     { name: 'Minh Tuệ', contact: 'minhtue@isee.vn', phone: '0901234567', role: 'Nhà tiên tri', status: 'Đã duyệt', joinDate: '10/03/2020', isLocked: false, 
@@ -39,27 +41,42 @@ export const UserTable: React.FC = () => {
     const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | 'Hoạt động' | 'Chờ duyệt' | 'Đã khóa'>('Tất cả');
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
-    // Logic Lọc & Phân trang
-    const filteredUsers = mockUsers.filter(user => {
-        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              user.contact.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesRole = selectedRole === 'Tất cả' || user.role === selectedRole;
-        
-        const matchesStatus = selectedStatus === 'Tất cả' || 
-                              (selectedStatus === 'Hoạt động' && user.status === 'Đã duyệt' && !user.isLocked) ||
-                              (selectedStatus === 'Chờ duyệt' && user.status === 'Chờ duyệt') ||
-                              (selectedStatus === 'Đã khóa' && user.isLocked);
-        
-        return matchesSearch && matchesRole && matchesStatus;
-    });
+    // =========================================================================
+    // SỬ DỤNG useMemo CHO LOGIC LỌC
+    // =========================================================================
+    const filteredUsers = useMemo(() => {
+        // Hàm lọc chỉ chạy lại khi searchTerm, selectedRole hoặc selectedStatus thay đổi
+        return mockUsers.filter(user => {
+            const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                  user.contact.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesRole = selectedRole === 'Tất cả' || user.role === selectedRole;
+            
+            const matchesStatus = selectedStatus === 'Tất cả' || 
+                                  (selectedStatus === 'Hoạt động' && user.status === 'Đã duyệt' && !user.isLocked) ||
+                                  (selectedStatus === 'Chờ duyệt' && user.status === 'Chờ duyệt') ||
+                                  (selectedStatus === 'Đã khóa' && user.isLocked);
+            
+            return matchesSearch && matchesRole && matchesStatus;
+        });
+    }, [searchTerm, selectedRole, selectedStatus]); // Dependency array: Chỉ tính lại khi các state này thay đổi
 
+    // =========================================================================
+    // SỬ DỤNG useMemo CHO LOGIC PHÂN TRANG
+    // =========================================================================
     const totalItems = filteredUsers.length;
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const currentUsers = filteredUsers.slice(startIndex, endIndex);
 
+    const { startIndex, endIndex, currentUsers } = useMemo(() => {
+        // Logic phân trang chỉ chạy lại khi filteredUsers hoặc currentPage thay đổi
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const currentUsers = filteredUsers.slice(startIndex, endIndex);
+
+        return { startIndex, endIndex, currentUsers };
+    }, [filteredUsers, currentPage]); // Dependency array
+
+    // Hàm thay đổi trang được giữ nguyên
     const goToNextPage = () => { setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev)); };
     const goToPrevPage = () => { setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev)); };
     
@@ -68,7 +85,7 @@ export const UserTable: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">  
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700"> 
             {/* Search + Filter */}
             <div className="flex justify-between items-center mb-4">
                 <div className="relative flex-grow mr-4">
@@ -194,7 +211,7 @@ export const UserTable: React.FC = () => {
                                                     <X className="w-5 h-5" />
                                                 </button>
                                             </>
-                                        ) : user.isLocked ? (                                 
+                                        ) : user.isLocked ? ( 
                                             <button title="Mở khóa tài khoản" className="text-green-500 hover:text-green-700 p-1 transition-colors">
                                                 <Check className="w-5 h-5" />
                                             </button>

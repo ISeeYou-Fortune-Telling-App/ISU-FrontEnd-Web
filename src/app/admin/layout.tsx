@@ -1,6 +1,3 @@
-// AdminLayout.tsx
-// KHÔNG CÓ 'use client'; ở đầu file
-
 import React from 'react';
 import ThemeSwitchToggle from '../../components/ui/ThemeSwitchToggle'; 
 import {
@@ -10,14 +7,8 @@ import {
   Bell,
 } from 'lucide-react';
 
-// Import Client Component đã tách
-import AdminSidebarNav from './AdminSidebarNav'; 
+import ClientSidebarWrapper from './ClientSidebarWrapper'; 
 
-// SidebarItem VÀO ĐÂY, HOẶC IMPORT TỪ FILE RIÊNG
-// VÌ TÍNH CHẤT CỦA SERVER COMPONENT KHÔNG CHO PHÉP NHẬP usePathname
-// NÊN TA CHỈ CẦN KHAI BÁO NÓ Ở MỘT NƠI CHUNG HOẶC TRỰC TIẾP Ở FILE CLIENT
-
-// AdminHeader không cần thay đổi
 const AdminHeader = ({ notificationCount }: { notificationCount: number }) => (
   <header className="fixed top-0 right-0 z-20 h-16 
       bg-white dark:bg-gray-800 
@@ -82,13 +73,12 @@ export default function AdminLayout({
           </div>
         </div>
 
-        {/* Navigation - Thay thế bằng Client Component */}
-        <AdminSidebarNav 
-            accountsCount={accountsCount}
-            certificatesCount={certificatesCount}
-            chatHistoryCount={chatHistoryCount}
-            notificationsCount={notificationsCount}
-        />
+        <ClientSidebarWrapper 
+                    accountsCount={accountsCount}
+                    certificatesCount={certificatesCount}
+                    chatHistoryCount={chatHistoryCount}
+                    notificationsCount={notificationsCount}
+                />
       </aside>
 
       <div className="flex-1 ml-64">

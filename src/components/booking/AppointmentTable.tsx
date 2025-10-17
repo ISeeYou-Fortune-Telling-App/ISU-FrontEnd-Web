@@ -1,9 +1,11 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react'; // Bổ sung useMemo vào import
 import { Search, Eye, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 import { Badge } from '../common/Badge'; 
 import { AppointmentDetailModal } from './AppointmentDetailModal';
+
+// Giữ nguyên mockAppointments, AppointmentType, ITEMS_PER_PAGE và StatusFilterType
 
 const mockAppointments = [
   { id: 1, clientName: 'Nguyễn Thị Mai', seerName: 'Minh Tuệ', service: 'Tư vấn Tình duyên', dateTime: '15/8/2024 - 14:30', duration: '45 phút', status: 'Hoàn thành', paymentStatus: 'Đã thanh toán', note: 'Tôi muốn hỏi về chuyện tình cảm.' },
@@ -33,21 +35,35 @@ export const AppointmentTable: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<StatusFilterType>('Tất cả');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentType | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dành cho dropdown mẫu
 
-  const filteredAppointments = mockAppointments.filter(app => {
-    const matchesSearch = app.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          app.seerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedFilter === 'Tất cả' || app.status === selectedFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // =========================================================================
+  // SỬ DỤNG useMemo CHO LOGIC LỌC
+  // Logic này chỉ chạy lại khi searchTerm hoặc selectedFilter thay đổi
+  // =========================================================================
+  const filteredAppointments = useMemo(() => {
+    return mockAppointments.filter(app => {
+      const matchesSearch = app.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            app.seerName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = selectedFilter === 'Tất cả' || app.status === selectedFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [searchTerm, selectedFilter]);
 
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
+  // =========================================================================
+  // SỬ DỤNG useMemo CHO LOGIC PHÂN TRANG
+  // Logic này chỉ chạy lại khi filteredAppointments hoặc currentPage thay đổi
+  // =========================================================================
   const totalItems = filteredAppointments.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentAppointments = filteredAppointments.slice(startIndex, endIndex);
+
+  const { startIndex, endIndex, currentAppointments } = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const currentAppointments = filteredAppointments.slice(startIndex, endIndex);
+
+    return { startIndex, endIndex, currentAppointments };
+  }, [filteredAppointments, currentPage]);
 
   const goToNextPage = () => setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
   const goToPrevPage = () => setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
@@ -59,67 +75,76 @@ export const AppointmentTable: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-4">
-                <div className="relative flex-grow mr-4">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Tìm kiếm theo tên Khách hàng hoặc Nhà tiên tri..."
-                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
-                                   focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
-                                   text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
-                        value={searchTerm}
-                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                    />
-                </div>
+        
+        {/* Search + Dropdown Mẫu (Dropdown Mẫu không cần useMemo) */}
+        <div className="flex justify-between items-center mb-4">
+            <div className="relative flex-grow mr-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên Khách hàng hoặc Nhà tiên tri..."
+                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
+                              focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
+                              text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+                    value={searchTerm}
+                    onChange={(e) => { 
+                        setSearchTerm(e.target.value); 
+                        setCurrentPage(1); // Reset trang khi tìm kiếm
+                    }}
+                />
+            </div>
 
-                <div className="relative flex-shrink-0"> 
-                    <button 
-                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
-                                   dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
-                                   hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
-                    >
-                        <span>Trạng thái Mẫu</span> 
-                        <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isDropdownOpen && ( 
-                        <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-700 
-                                        ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10">
-                            <div className="py-1">
-                                {['Tùy chọn Mẫu 1', 'Tùy chọn Mẫu 2'].map(option => (
-                                    <button 
-                                        key={option}
-                                        onClick={() => setIsDropdownOpen(false)}
-                                        className="block w-full text-left px-4 py-2 text-sm 
-                                                   text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                                    >
-                                        {option}
-                                    </button>
-                                ))}
-                            </div>
+            <div className="relative flex-shrink-0"> 
+                <button 
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
+                              dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
+                              hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
+                >
+                    <span>Trạng thái Mẫu</span> 
+                    <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isDropdownOpen && ( 
+                    <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-700 
+                                     ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10">
+                        <div className="py-1">
+                            {['Tùy chọn Mẫu 1', 'Tùy chọn Mẫu 2'].map(option => (
+                                <button 
+                                    key={option}
+                                    onClick={() => setIsDropdownOpen(false)}
+                                    className="block w-full text-left px-4 py-2 text-sm 
+                                             text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                >
+                                    {option}
+                                </button>
+                            ))}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
+        </div>
 
-            <div className="flex space-x-2 mb-4">
-                <div className='inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700'>
-                    {['Tất cả', 'Chờ xác nhận', 'Đã xác nhận', 'Đang diễn ra', 'Hoàn thành', 'Bị hủy'].map(status => (
-                        <button 
-                            key={status}
-                            onClick={() => { setSelectedFilter(status as StatusFilterType); setCurrentPage(1); }}
-                            className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors 
-                                ${selectedFilter === status 
-                                    ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold' 
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                }`}
-                        >
-                            {status}
-                        </button>
-                    ))}
-                </div>
+        {/* Filter theo status */}
+        <div className="flex space-x-2 mb-4 overflow-x-auto pb-1">
+            <div className='inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700'>
+                {['Tất cả', 'Chờ xác nhận', 'Đã xác nhận', 'Đang diễn ra', 'Hoàn thành', 'Bị hủy'].map(status => (
+                    <button 
+                        key={status}
+                        onClick={() => { 
+                            setSelectedFilter(status as StatusFilterType); 
+                            setCurrentPage(1); // Reset trang khi lọc
+                        }}
+                        className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
+                            ${selectedFilter === status 
+                                ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold' 
+                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                    >
+                        {status}
+                    </button>
+                ))}
             </div>
+        </div>
 
       {/* Appointment Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
@@ -159,6 +184,7 @@ export const AppointmentTable: React.FC = () => {
                     >
                       <Eye className="w-5 h-5" />
                     </button>
+                    {/* Hành động Hủy luôn có */}
                     <button 
                       title="Hủy lịch hẹn" 
                       onClick={() => handleAction('Hủy', app)}
@@ -222,8 +248,8 @@ export const AppointmentTable: React.FC = () => {
           ],
         } : null}
         onClose={() => setSelectedAppointment(null)}
-        onConfirm={(id) => { handleAction('Xác nhận', selectedAppointment as AppointmentType); }}
-        onCancel={(id, reason) => { handleAction('Từ chối', selectedAppointment as AppointmentType, reason); }}
+        onConfirm={() => { handleAction('Xác nhận', selectedAppointment as AppointmentType); }}
+        onCancel={(reason) => { handleAction('Từ chối', selectedAppointment as AppointmentType); }}
       />
     </div>
   );
