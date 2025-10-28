@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api'; 
+import { apiFetch } from '../api'; 
 
 interface ForgotPasswordRequestPayload {
   email: string;
@@ -12,20 +12,26 @@ interface ResetPasswordVerifyPayload {
 }
 
 interface Response {
-  statusCode: 200;
-  message: string; 
+  statusCode: number;
+  message: string;
 }
 
-export const requestPasswordReset = (data: ForgotPasswordRequestPayload): Promise<Response> => {
-  return apiFetch<Response>('/auth/forgot-password', {
+export const requestPasswordReset = async (
+  data: ForgotPasswordRequestPayload
+): Promise<Response> => {
+  const response = await apiFetch<Response>('/auth/forgot-password', {
     method: 'POST',
-    body: data,
+    data,
   });
+  return response;
 };
 
-export const verifyAndResetPassword = (data: ResetPasswordVerifyPayload): Promise<Response> => {
-  return apiFetch<Response>('/auth/forgot-password/verify', {
+export const verifyAndResetPassword = async (
+  data: ResetPasswordVerifyPayload
+): Promise<Response> => {
+  const response = await apiFetch<Response>('/auth/forgot-password/verify', {
     method: 'POST',
-    body: data,
+    data,
   });
+  return response;
 };

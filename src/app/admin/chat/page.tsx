@@ -1,17 +1,38 @@
 // src/app/admin/chat/page.tsx
 import React from 'react';
 
+import { StatCardAccount } from '../../../components/common/StatCardAccount';
+import { ConversationTable } from '../../../components/chatHistory/ConversationTable';
+
+const paymentStats = [
+    { label: 'Nhà tiên tri - Khách hàng', value: 20, colorClass: 'text-yellow-500'},
+    { label: 'AI hỗ trợ - Khách hàng', value: 10, colorClass: 'text-blue-500' },
+    { label: 'Đang hoạt động', value: 3, colorClass: 'text-green-500' },
+    { label: 'Tổng số tin nhắn', value: 1234556, colorClass: 'text-gray-500'},
+];
+
 export default function ChatHistoryPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Lịch sử Chat (New: 5)</h1>
-      <p className="text-gray-600 dark:text-gray-400">
-        Xem lại lịch sử tư vấn chat giữa người dùng và Seer.
-      </p>
-
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 h-96 flex items-center justify-center">
-        [Placeholder: Danh sách Phiên Chat và Lọc]
+      <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              Lịch sử chat
+          </h1>
+          <p className="text-base font-light text-gray-500 dark:text-gray-400">
+              Xem lịch sử các cuộc trò chuyện giữa Nhà tiên tri & Khách hàng, AI hỗ trợ & Khách hàng
+          </p>
       </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {paymentStats.map((stat, index) => (
+          <StatCardAccount 
+            key={index} 
+            value={stat.value} 
+            label={stat.label} 
+            colorClass={stat.colorClass} 
+          />
+        ))}
+      </div>
+      <ConversationTable />
     </div>
   );
 }

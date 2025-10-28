@@ -1,15 +1,8 @@
 import React from 'react';
 
 import { StatCardAccount } from '../../../components/common/StatCardAccount'; // Đã chỉnh path và tên file
+import { AccountStats } from '../../../components/accounts/AccountStats';
 import { UserTable } from '../../../components/accounts/UserTable'; 
-
-
-const userStats = [
-    { label: 'Tài khoản Khách hàng', value: 1983, colorClass: 'text-blue-500'},
-    { label: 'Tài khoản Nhà tiên tri', value: 24, colorClass: 'text-green-500'},
-    { label: 'Tài khoản chờ duyệt', value: 12, colorClass: 'text-yellow-500'},
-    { label: 'Tài khoản bị khóa', value: 5, colorClass: 'text-red-500'},
-];
 
 export default function AccountsPage() {
     return (
@@ -22,14 +15,7 @@ export default function AccountsPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {userStats.map((stat, index) => (
-                    <StatCardAccount 
-                        key={index} 
-                        value={stat.value} 
-                        label={stat.label} 
-                        colorClass={stat.colorClass} 
-                    />
-                ))}
+                <AccountStats />
             </div>
         
             <UserTable />

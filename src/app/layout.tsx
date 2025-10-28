@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes"; 
 import "../styles/globals.css";
+import { AIChatWidget } from "@/components/ai/AIChatWidget"; // 👈 Thêm dòng này
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,6 +28,8 @@ export default function RootLayout({
           enableSystem
         >
           {children}
+
+          <AIChatWidget />
         </ThemeProvider>
       </body>
     </html>

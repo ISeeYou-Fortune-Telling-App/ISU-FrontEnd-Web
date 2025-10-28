@@ -3,7 +3,7 @@ import React from 'react';
 import { StatCardAccount } from '../../../components/common/StatCardAccount';
 import {PaymentTable} from '../../../components/payments/PaymentTable';
 
-const userStats = [
+const paymentStats = [
     { label: 'Doanh thu (phí nền tảng)', value: 69800, colorClass: 'text-green-500', moneyType: 'vnđ' as const },
     { label: 'Giao dịch thành công', value: 24, colorClass: 'text-green-500' },
     { label: 'Giao dịch bị hủy', value: 12, colorClass: 'text-yellow-500' },
@@ -21,7 +21,7 @@ export default function PaymentsPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {userStats.map((stat, index) => (
+                {paymentStats.map((stat, index) => (
                   <StatCardAccount 
                     key={index} 
                     value={stat.value} 

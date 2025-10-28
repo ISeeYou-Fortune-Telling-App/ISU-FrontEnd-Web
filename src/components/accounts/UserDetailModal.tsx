@@ -1,215 +1,158 @@
+'use client';
+
 import React from 'react';
-import { X, Calendar, Mail, Phone, User, BookOpen, Sun, Check } from 'lucide-react'; 
+import { X, Calendar, Mail, Phone, User, Star } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { Badge } from '../common/Badge';
+import { UserAccount } from '@/services/account/account.type';
+import { ROLE_LABELS, STATUS_LABELS } from '@/services/account/account.constant';
 
-import { Badge } from '../common/Badge';     
+interface UserDetailModalProps {
+  user: UserAccount | null;
+  onClose: () => void;
+}
 
-interface UserDetail { 
-    name: string; 
-    contact: string; 
-    phone: string; 
-    role: string; 
-    status: string; 
-    isLocked: boolean; 
-    details: { 
-        hoTen: string; 
-        gioiTinh: string; 
-        ngaySinh: string; 
-        tieuSu: string; 
-        cungHoangDao: string; 
-        conGiap: string; 
-        nguHanh: string; 
-        tongChiTieu: string; 
-        soPhienThamGia: number; 
-    }; 
-} 
+const DetailItem: React.FC<{
+  label: string;
+  value?: string | number | null;
+}> = ({ label, value }) => (
+  <div className="flex flex-col">
+    <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+      {label}
+    </span>
+    <span className="font-medium text-gray-900 dark:text-white">
+      {value || '(Trống)'}
+    </span>
+  </div>
+);
 
-interface UserDetailModalProps { 
-    user: UserDetail | null; 
-    onClose: () => void; 
-} 
+export const UserDetailModal: React.FC<UserDetailModalProps> = ({
+  user,
+  onClose,
+}) => {
+  useScrollLock(!!user);
+  if (!user) return null;
 
-interface DetailItemProps { 
-    Icon?: React.FC<any>;  
-    label: string;  
-    value: string | number;  
-    iconColor?: string;  
-    emoji?: string; 
-} 
+  const handleBackdropClick = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>
+  ) => {
+    if (event.target === event.currentTarget) onClose();
+  };
 
-const getNguHanhSymbol = (nguHanh: string): string => {
-    switch (nguHanh) {
-        case 'Kim': return '⚙️'; 
-        case 'Mộc': return '🌳'; 
-        case 'Thủy': return '💧'; 
-        case 'Hỏa': return '🔥'; 
-        case 'Thổ': return '⛰️'; 
-        default: return '✨';
-    }
-};
+  const { profile } = user;
 
-const getConGiapSymbol = (conGiap: string): string => {
-    switch (conGiap) {
-        case 'Tý': return '🐀';
-        case 'Sửu': return '🐂';
-        case 'Dần': return '🐅';
-        case 'Mão': return '🐇';
-        case 'Thìn': return '🐉';
-        case 'Tỵ': return '🐍';
-        case 'Ngọ': return '🐎';
-        case 'Mùi': return '🐏';
-        case 'Thân': return '🐒';
-        case 'Dậu': return '🐓';
-        case 'Tuất': return '🐕';
-        case 'Hợi': return '🐖';
-        default: return '💫';
-    }
-};
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-end"
+      onClick={handleBackdropClick}
+    >
+      <div
+        className="w-full max-w-sm h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex-grow overflow-y-auto p-6 pb-20">
+          {/* Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-3">
+              <img
+                className="h-10 w-10 rounded-full object-cover"
+                src={user.avatarUrl || '/default_avatar.jpg'}
+                alt="Avatar"
+              />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {user.fullName || '(Không có tên)'}
+                </h3>
+                <div className="flex space-x-2 mt-1">
+                  <Badge
+                    type="status"
+                    value={STATUS_LABELS[user.status] || user.status}
+                  />
+                  <Badge
+                    type="role"
+                    value={ROLE_LABELS[user.role] || user.role}
+                  />
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
 
-const getZodiacSymbol = (cungHoangDao: string): string => { 
-    switch (cungHoangDao) { 
-        case 'Bạch Dương': return '♈'; 
-        case 'Kim Ngưu': return '♉'; 
-        case 'Song Tử': return '♊'; 
-        case 'Cự Giải': return '♋'; 
-        case 'Sư Tử': return '♌'; 
-        case 'Xử Nữ': return '♍'; 
-        case 'Thiên Bình': return '♎'; 
-        case 'Thiên Yết': return '♏'; 
-        case 'Nhân Mã': return '♐'; 
-        case 'Ma Kết': return '♑'; 
-        case 'Bảo Bình': return '♒'; 
-        case 'Song Ngư': return '♓'; 
-        default: return '✨'; 
-    } 
-}; 
+          {/* Thông tin cá nhân */}
+          <h4 className="text-base font-semibold text-gray-900 dark:text-white mt-4 mb-3 border-b pb-2 dark:border-gray-700">
+            Thông tin cá nhân
+          </h4>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-gray-700 dark:text-gray-300">
+            <DetailItem label="Họ tên" value={user.fullName} />
+            <DetailItem label="Giới tính" value={user.gender} />
+            <DetailItem label="Email" value={user.email} />
+            <DetailItem label="Số điện thoại" value={user.phone} />
+            <div className="col-span-2">
+              <DetailItem
+                label="Ngày sinh"
+                value={
+                  user.birthDate
+                    ? new Date(user.birthDate).toLocaleDateString('vi-VN')
+                    : '(Không có dữ liệu)'
+                }
+              />
+            </div>
+            <div className="col-span-2 mt-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                Tiểu sử:
+              </p>
+              <p className="text-sm italic text-gray-800 dark:text-gray-200">
+                {user.profileDescription || '(Chưa có tiểu sử)'}
+              </p>
+            </div>
+          </div>
 
-const DetailItem: React.FC<DetailItemProps> = ({ Icon, label, value, iconColor = 'text-gray-500', emoji }) => { 
-    let IconElement; 
-    if (emoji) { 
-        IconElement = <span className={`text-xl font-bold mr-2 ${iconColor}`}>{emoji}</span>; 
-    } else if (Icon) { 
-        IconElement = <Icon className={`w-5 h-5 inline mr-2 ${iconColor}`} />; 
-    } else { 
-        IconElement = null; 
-    } 
+          {/* Hồ sơ chiêm tinh / tử vi */}
+          {profile && (
+            <>
+              <h4 className="text-base font-semibold text-gray-900 dark:text-white mt-6 mb-3 border-b pb-2 dark:border-gray-700">
+                Hồ sơ chiêm tinh
+              </h4>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-gray-700 dark:text-gray-300">
+                <DetailItem
+                  label="Cung hoàng đạo"
+                  value={profile.zodiacSign}
+                />
+                <DetailItem
+                  label="Con giáp"
+                  value={profile.chineseZodiac}
+                />
+                <DetailItem
+                  label="Ngũ hành"
+                  value={profile.fiveElements}
+                />
+              </div>
+            </>
+          )}
+        </div>
 
-    return ( 
-        <div className="flex flex-col"> 
-            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</span> 
-            <div className="flex items-center"> 
-                {IconElement} 
-                <span className="font-medium text-gray-900 dark:text-white">{value}</span> 
-            </div> 
-        </div> 
-    ); 
-}; 
-
-export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, onClose }) => { 
-    useScrollLock(!!user); 
-    if (!user) return null; 
-
-    const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => { 
-        if (event.target === event.currentTarget) { 
-            onClose(); 
-        } 
-    }; 
-
-    const isPending = user.status === 'Chờ duyệt';
-    const isCustomer = user.role === 'Khách hàng';
-
-    const ActionIcon = user.isLocked ? Check : X; 
-    
-    // Unicode icons
-    const zodiacSymbol = getZodiacSymbol(user.details.cungHoangDao); 
-    const conGiapSymbol = getConGiapSymbol(user.details.conGiap);
-    const nguHanhSymbol = getNguHanhSymbol(user.details.nguHanh);
-
-    return ( 
-        <div  
-            className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-end" 
-            onClick={handleBackdropClick} 
-        > 
-            <div  
-                className="w-full max-w-sm h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col" 
-                onClick={(e) => e.stopPropagation()}  
-            > 
-                <div className="flex-grow overflow-y-auto p-6 pb-20">  
-                    {/* Header */}
-                    <div className="flex justify-between items-start pb-4 border-b border-gray-200 dark:border-gray-700"> 
-                        <div className="flex items-center space-x-3"> 
-                            <img className="h-10 w-10 rounded-full" src="https://images.wallpapersden.com/image/download/satoru-gojo-acid-blue-eyes-jujutsu-kaisen_bmZpbWqUmZqaraWkpJRnZm1prWZmbW0.jpg" alt="Avatar" /> 
-                            <div> 
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{user.name}</h3> 
-                                <div className="flex space-x-2 mt-1"> 
-                                    <Badge type="status" value={user.isLocked ? 'Đã khóa' : user.status} />  
-                                    <Badge type="role" value={user.role} /> 
-                                </div> 
-                            </div> 
-                        </div> 
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1"> 
-                            <X className="w-6 h-6" /> 
-                        </button> 
-                    </div> 
-
-                    {/* Personal Info */}
-                    <h4 className="text-base font-semibold text-gray-900 dark:text-white mt-4 mb-3 border-b pb-2 dark:border-gray-700">Thông tin Cá nhân</h4> 
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-gray-700 dark:text-gray-300"> 
-                        <DetailItem Icon={User} label="Họ tên" value={user.details.hoTen} /> 
-                        <DetailItem emoji="♀" label="Giới tính" value={user.details.gioiTinh} /> 
-                        <DetailItem Icon={Mail} label="Email" value={user.contact} /> 
-                        <DetailItem Icon={Phone} label="Số điện thoại" value={user.phone} /> 
-                        <div className="flex flex-col col-span-2"> 
-                            <DetailItem Icon={Calendar} label="Ngày sinh" value={user.details.ngaySinh} /> 
-                        </div> 
-
-                        <div className="col-span-2 mt-3"> 
-                            <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center mb-1"><BookOpen className="w-4 h-4 mr-1" /> Tiểu sử:</p> 
-                            <p className="text-sm italic text-gray-800 dark:text-gray-200">{user.details.tieuSu}</p> 
-                        </div> 
-                    </div> 
-
-                    {/* Role Info */}
-                    <h4 className="text-base font-semibold text-gray-900 dark:text-white mt-6 mb-3 border-b pb-2 dark:border-gray-700">Thông tin {isCustomer ? 'Khách hàng' : 'Nhà tiên tri'}</h4> 
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-gray-700 dark:text-gray-300"> 
-                        <DetailItem emoji={zodiacSymbol} label="Cung Hoàng Đạo" value={user.details.cungHoangDao} iconColor="text-yellow-500" /> 
-                        <DetailItem emoji={conGiapSymbol} label="Con Giáp" value={user.details.conGiap} iconColor="text-yellow-500" /> 
-                        <DetailItem emoji={nguHanhSymbol} label="Ngũ hành bản mệnh" value={user.details.nguHanh} iconColor="text-yellow-500" /> 
-
-                        {isCustomer ? ( 
-                            <> 
-                                <DetailItem emoji="₫" label="Tổng chi tiêu" value={user.details.tongChiTieu} iconColor="text-green-500" /> 
-                                <DetailItem emoji="💬" label="Số phiên tham gia" value={user.details.soPhienThamGia} iconColor="text-green-500" /> 
-                            </> 
-                        ) : (
-                            <DetailItem Icon={Sun} label="Thời gian hoạt động" value="100 giờ" iconColor="text-yellow-500" />
-                        )} 
-                    </div> 
-                </div> 
-
-                {/* Footer */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"> 
-                    {isPending && !isCustomer ? (
-                        <div className="flex space-x-3">
-                            <button className="flex-1 py-3 text-white font-semibold rounded-lg transition flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700">
-                                <Check className="w-5 h-5" />
-                                <span>Duyệt tài khoản</span>
-                            </button>
-                            <button className="flex-1 py-3 text-white font-semibold rounded-lg transition flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700">
-                                <X className="w-5 h-5" />
-                                <span>Từ chối</span>
-                            </button>
-                        </div>
-                    ) : (
-                        <button 
-                            className={`w-full py-3 text-white font-semibold rounded-lg transition flex items-center justify-center space-x-2 ${user.isLocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
-                        >
-                            <ActionIcon className="w-5 h-5" />
-                            <span>{user.isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}</span>
-                        </button>
-                    )}
-                </div> 
-            </div> 
-        </div> 
-    ); 
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <button
+            className={`w-full py-3 text-white font-semibold rounded-lg transition flex items-center justify-center space-x-2 ${
+              user.status === 'BLOCKED'
+                ? 'bg-green-600 hover:bg-green-700'
+                : 'bg-red-600 hover:bg-red-700'
+            }`}
+          >
+            <span>
+              {user.status === 'BLOCKED'
+                ? 'Mở khóa tài khoản'
+                : 'Khóa tài khoản'}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };

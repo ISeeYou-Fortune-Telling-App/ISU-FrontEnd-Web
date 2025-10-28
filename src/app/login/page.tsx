@@ -19,16 +19,15 @@ export default function LoginPage() {
     
     setIsLoading(true);
     setError(null);
-    router.push("/admin/dashboard"); 
-    // try {
-    //   await login({ email, password }); 
-    //   router.push("/admin/dashboard"); 
-    // } catch (err: any) {
-    //   console.error("Login failed:", err);
-    //   setError("Đăng nhập thất bại. Vui lòng kiểm tra lại Email và Mật khẩu."); 
-    // } finally {
-    //   setIsLoading(false);
-    // }
+    try {
+      await login({ email, password }); 
+      router.push("/admin/dashboard"); 
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError("Đăng nhập thất bại. Vui lòng kiểm tra lại Email và Mật khẩu."); 
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = () => {
@@ -36,7 +35,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-950 relative overflow-hidden">
+    <div className="flex min-h-screen items-center justify-center bg-black relative overflow-hidden">
       
       {/* ẢNH NỀN*/}
       <div 

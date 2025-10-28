@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { StatCardAccount } from '../../../components/common/StatCardAccount';
-import { PostTable } from '../../../components/posts/PostTable';
+import { PackageTable } from '../../../components/packages/PackageTable';
 
 const userStats = [
     { label: 'Tổng số bài viết', value: 1983, colorClass: 'text-blue-500'},
@@ -10,7 +10,7 @@ const userStats = [
     { label: 'Lượt tương tác', value: 341423, colorClass: 'text-green-500'},
 ];
 
-export default function PostsPage() {
+export default function PackagesPage() {
     return (
         <div className="space-y-6">
             <div className="space-y-1">
@@ -33,7 +33,7 @@ export default function PostsPage() {
             
             {/* 3. User Management Table Section */}
             {/* UserTable đã được cập nhật Dark Mode trong các div và text class. */}
-            <PostTable />
+            <PackageTable />
             
         </div>
     );
