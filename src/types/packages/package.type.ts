@@ -1,9 +1,4 @@
-export interface GetPackagesParams {
-  page?: number;
-  limit?: number;
-  sortType?: 'asc' | 'desc';
-  sortBy?: string;
-}
+import { Paging, PagingParams } from '../paging.type';
 
 export interface SeerInfo {
   id: string;
@@ -29,16 +24,14 @@ export interface ServicePackage {
   updatedAt: string;
 }
 
-export interface Paging {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export interface GetPackagesResponse {
   statusCode: number;
   message: string;
   data: ServicePackage[];
   paging: Paging;
+}
+
+export interface GetPackagesParams extends PagingParams {
+  minPrice: number;
+  maxPrice: number;
 }

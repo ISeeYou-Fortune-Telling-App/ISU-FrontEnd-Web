@@ -1,31 +1,52 @@
 import { apiFetch } from '@/services/api';
 import {
-  PagedResponse,
-  KnowledgeCategory,
-  SortType,
-} from './knowledge.type';
-
-interface GetCategoriesParams {
-  page?: number;
-  limit?: number;
-  sortType?: SortType;
-  sortBy?: string;
-}
+  KnowledgeCategoriesResponse,
+  KnowledgeItemListResponse,
+  KnowledgeItemSearchParams,
+} from '../../types/knowledge/knowledge.type';
+import { PagingParams } from '@/types/paging.type';
 
 export const KnowledgeService = {
-  // 🧠 Lấy danh mục tri thức
-  getCategories: async (
-    params: GetCategoriesParams = { page: 1, limit: 15, sortType: 'asc', sortBy: 'name' }
-  ): Promise<PagedResponse<KnowledgeCategory>> => {
-    const query = new URLSearchParams({
-      page: String(params.page ?? 1),
-      limit: String(params.limit ?? 15),
-      sortType: params.sortType ?? 'asc',
-      sortBy: params.sortBy ?? 'name',
+  getCategories: async (params: PagingParams): Promise<KnowledgeCategoriesResponse> => {
+    return await apiFetch<KnowledgeCategoriesResponse>('/knowledge-categories', {
+      method: 'GET',
+      params: {
+        ...params,
+        page: params.page ?? 1,
+        limit: params.limit ?? 15,
+        sortType: params.sortType ?? 'asc',
+        sortBy: params.sortBy ?? 'createdAt',
+      },
     });
+  },
 
-    return await apiFetch<PagedResponse<KnowledgeCategory>>(
-      `/knowledge-categories?${query.toString()}`
-    );
+  getKnowledges: async (params: PagingParams): Promise<KnowledgeItemListResponse> => {
+    return await apiFetch<KnowledgeItemListResponse>('/knowledge-items', {
+      method: 'GET',
+      params: {
+        ...params,
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+        sortType: params.sortType ?? 'desc',
+        sortBy: params.sortBy ?? 'createdAt',
+      },
+    });
+  },
+
+  searchKnowledgeItem: async (
+    params: KnowledgeItemSearchParams,
+  ): Promise<KnowledgeItemListResponse> => {
+    return await apiFetch<KnowledgeItemListResponse>('/knowledge-items/search', {
+      method: 'GET',
+      params: {
+        title: params.title ?? '',
+        categoryIds: params.categoryIds ?? '',
+        status: params.status ?? '',
+        page: params.page ?? 1,
+        limit: params.limit ?? 15,
+        sortType: params.sortType ?? 'asc',
+        sortBy: params.sortBy ?? 'createdAt',
+      },
+    });
   },
 };

@@ -1,85 +1,88 @@
 import { apiFetch } from '@/services/api';
 import {
-  ChatRequest,
-  ChatResponse,
+  ChatQueryStreamRequest,
   ImageAnalysisResponse,
-  SingleResponse,
   AnalysisType,
-} from './ai.type';
+} from '../../types/ai/ai.type';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+import { SingleResponse } from '@/types/response.type';
 
 export const AIService = {
-  // 🌊 Chat — streaming version (luôn dùng stream)
-  chat: async (
-    payload: ChatRequest,
-    onChunk: (chunk: string) => void,
-    onDone?: () => void,
-    onError?: (err: unknown) => void
-  ): Promise<void> => {
-    const body = {
-      question: payload.question,
-      topK: payload.topK ?? 5,
-      forceReindex: payload.forceReindex ?? false,
-    };
-
-    console.log('🚀 Streaming to:', `${API_BASE}/ai-chat/query-stream`);
-    console.log('📦 Payload:', body);
-
+  chatQueryStream: async (
+    payload: ChatQueryStreamRequest,
+    onChunk: (text: string) => void,
+    onComplete?: (finalAnswer: string) => void,
+    onError?: (error: Error) => void,
+  ) => {
     try {
-      const res = await fetch(`${API_BASE}/ai-chat/query-stream`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai-chat/query-stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`❌ Streaming error: ${res.status} - ${text}`);
-      }
+      if (!response.body) throw new Error('No response body');
 
-      if (!res.body) throw new Error('Không có dữ liệu stream trả về.');
-
-      const reader = res.body.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = '';
+      let typingTimer: NodeJS.Timeout | null = null;
+      let fullAnswer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
 
-        // Gửi từng chunk ra ngoài (component nhận để cập nhật UI)
-        onChunk(chunk);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const text = line.replace('data:', '').trim();
+
+          if (text === '[DONE]') {
+            onComplete?.(fullAnswer.trim());
+            return;
+          }
+
+          fullAnswer += text + ' ';
+          onChunk(text);
+        }
       }
 
-      onDone?.();
+      onComplete?.(fullAnswer.trim());
     } catch (err) {
-      console.error('❌ Streaming failed:', err);
-      onError?.(err);
+      console.error('[AIService.chatQueryStream] Error:', err);
+      onError?.(err as Error);
     }
   },
 
-  // 📷 Upload ảnh (palm / face)
-  analyzeImage: async (
-    file: File,
-    type: AnalysisType
-  ): Promise<ImageAnalysisResponse> => {
-    const form = new FormData();
-    form.append('file', file);
+  analyzePalm: async (file: File): Promise<ImageAnalysisResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
 
-    const url =
-      type === 'palm' ? '/ai-chat/analyze-palm' : '/ai-chat/analyze-face';
-
-    const res = await fetch(`${API_BASE}${url}`, {
+    const response = await apiFetch<ImageAnalysisResponse>('/ai-chat/analyze-palm', {
       method: 'POST',
-      body: form,
+      data: formData,
+      headers: {},
     });
 
-    if (!res.ok) throw new Error(await res.text());
-    const json = (await res.json()) as SingleResponse<ImageAnalysisResponse>;
-    return json.data;
+    return response;
   },
 
-  analyzePalm: (file: File) => AIService.analyzeImage(file, 'palm'),
-  analyzeFace: (file: File) => AIService.analyzeImage(file, 'face'),
+  analyzeFace: async (file: File): Promise<ImageAnalysisResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiFetch<ImageAnalysisResponse>('/ai-chat/analyze-face', {
+      method: 'POST',
+      data: formData,
+    });
+
+    return response;
+  },
 };

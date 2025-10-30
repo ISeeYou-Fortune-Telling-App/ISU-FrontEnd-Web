@@ -1,26 +1,17 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Search,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Trash2,
-  ChevronDown,
-} from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, Trash2, ChevronDown, Loader2 } from 'lucide-react';
 import { KnowledgeService } from '@/services/knowledge/knowledge.service';
-import {
-  Knowledge,
-  KnowledgeStatus,
+import type {
+  KnowledgeItem,
   KnowledgeCategory,
-} from '@/services/knowledge/knowledge.type';
-import { KnowledgeDetailModal } from './KnowledgeDetailModal';
+  KnowledgeStatus,
+} from '@/types/knowledge/knowledge.type';
+import { useDebounce } from '@/hooks/useDebounce';
 
 // ---------- Badge hiển thị danh mục ----------
 const CategoryBadge = ({ value }: { value: string }) => {
-  let colorClass =
-    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+  let colorClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
   if (value === 'Ngũ Hành')
     colorClass = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
   if (value === 'Tarot')
@@ -37,44 +28,21 @@ const CategoryBadge = ({ value }: { value: string }) => {
 type StatusFilterType = 'Tất cả' | KnowledgeStatus;
 const ITEMS_PER_PAGE = 10;
 
-// ---------- Main Component ----------
 export const KnowledgeTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] =
-    useState<StatusFilterType>('Tất cả');
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilterType>('Tất cả');
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả');
   const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [knowledges, setKnowledges] = useState<KnowledgeItem[]>([]);
+  const [loading, setLoading] = useState(true); // lần đầu load
+  const [refreshing, setRefreshing] = useState(false); // search/filter
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedKnowledge, setSelectedKnowledge] = useState<Knowledge | null>(
-    null
-  );
-
-  // 🔹 Mock dữ liệu Knowledge (demo)
-  const mockKnowledges: Knowledge[] = Array.from({ length: 42 }).map(
-    (_, i) => ({
-      id: i + 1,
-      title: `Bài viết số ${i + 1}: Kiến thức huyền học`,
-      excerpt: 'Khám phá những khía cạnh bí ẩn của số mệnh và tâm linh...',
-      categories:
-        i % 3 === 0
-          ? ['Cung Hoàng Đạo']
-          : i % 3 === 1
-          ? ['Ngũ Hành']
-          : ['Tarot'],
-      views: 1200 + i * 5,
-      status:
-        i % 3 === 0
-          ? 'Đã xuất bản'
-          : i % 3 === 1
-          ? 'Bản nháp'
-          : 'Đã lưu trữ',
-      publishedDate: `12:30 12/0${(i % 9) + 1}/2025`,
-      updatedDate: `13:00 15/0${(i % 9) + 1}/2025`,
-    })
-  );
+  const [totalPages, setTotalPages] = useState(1);
 
   // 🔹 Fetch categories
   useEffect(() => {
@@ -93,13 +61,49 @@ export const KnowledgeTable: React.FC = () => {
     })();
   }, []);
 
+  // 🔹 Fetch knowledge items
+  const fetchData = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
+    else setRefreshing(true);
+
+    try {
+      const res = await KnowledgeService.searchKnowledgeItem({
+        title: debouncedSearch || undefined,
+        categoryIds:
+          selectedCategory !== 'Tất cả'
+            ? [categories.find((c) => c.name === selectedCategory)?.id ?? '']
+            : undefined,
+        status: selectedStatus !== 'Tất cả' ? selectedStatus : undefined,
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        sortType: 'desc',
+        sortBy: 'createdAt',
+      });
+
+      setKnowledges(res.data);
+      setTotalPages(res.paging?.totalPages ?? 1);
+    } catch (err) {
+      console.error('❌ Lỗi khi tải danh sách tri thức:', err);
+    } finally {
+      if (isInitial) setLoading(false);
+      else setRefreshing(false);
+    }
+  };
+
+  // lần đầu load
+  useEffect(() => {
+    fetchData(true);
+  }, []);
+
+  // khi search/filter thay đổi
+  useEffect(() => {
+    if (!loading) fetchData(false);
+  }, [debouncedSearch, selectedStatus, selectedCategory, currentPage, categories]);
+
   // 🔹 Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
@@ -107,42 +111,21 @@ export const KnowledgeTable: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 🔹 Lọc danh sách Knowledge
-  const filteredKnowledges = mockKnowledges.filter((k) => {
-    const matchSearch =
-      k.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      k.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus =
-      selectedStatus === 'Tất cả' || k.status === selectedStatus;
-    const matchCategory =
-      selectedCategory === 'Tất cả' || k.categories.includes(selectedCategory);
-    return matchSearch && matchStatus && matchCategory;
-  });
-
-  const totalItems = filteredKnowledges.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentKnowledges = filteredKnowledges.slice(startIndex, endIndex);
-
   const getStatusClass = (status: KnowledgeStatus) => {
-    if (status === 'Đã xuất bản')
+    if (status === 'PUBLISH')
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-    if (status === 'Bản nháp')
+    if (status === 'DRAFT')
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-    if (status === 'Đã ẩn')
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-    if (status === 'Đã lưu trữ')
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    if (status === 'HIDDEN') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
     return '';
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
       {/* ----------------- SEARCH + CATEGORY ----------------- */}
-      <div className="flex items-center space-x-3 mb-4 relative">
+      <div className="flex flex-wrap items-center gap-3 mb-4 relative">
         {/* Search */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
@@ -168,9 +151,7 @@ export const KnowledgeTable: React.FC = () => {
           >
             <span>{selectedCategory}</span>
             <ChevronDown
-              className={`w-4 h-4 ml-1 transition-transform ${
-                isDropdownOpen ? 'rotate-180' : ''
-              }`}
+              className={`w-4 h-4 ml-1 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
@@ -214,10 +195,112 @@ export const KnowledgeTable: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Dropdown trạng thái */}
+        <select
+          value={selectedStatus}
+          onChange={(e) => {
+            setSelectedStatus(e.target.value as StatusFilterType);
+            setCurrentPage(1);
+          }}
+          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
+                     bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+        >
+          <option value="Tất cả">Tất cả trạng thái</option>
+          <option value="PUBLISH">Đã xuất bản</option>
+          <option value="DRAFT">Bản nháp</option>
+          <option value="HIDDEN">Đã ẩn</option>
+        </select>
       </div>
 
-      {/* ----------------- FILTER STATUS, TABLE, PAGINATION, MODAL ----------------- */}
-      {/* Giữ nguyên phần phía dưới như bản của bạn — không cần sửa */}
+      {/* ----------------- TABLE ----------------- */}
+      <div className="overflow-x-auto relative">
+        {(loading || refreshing) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm z-10">
+            <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
+          </div>
+        )}
+
+        <table className="min-w-full text-sm text-gray-700 dark:text-gray-300">
+          <thead className="bg-gray-100 dark:bg-gray-700 text-xs uppercase font-semibold">
+            <tr>
+              <th className="w-[350px] px-4 py-3 text-center">Tiêu đề</th>
+              <th className="w-[310px] px-4 py-3 text-center">Danh mục</th>
+              <th className="w-[100px] px-4 py-3 text-center">Lượt xem</th>
+              <th className="px-4 py-3 text-center">Trạng thái</th>
+              <th className="px-4 py-3 text-right">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {knowledges.length === 0 && !loading && !refreshing ? (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  Không có bài viết nào phù hợp.
+                </td>
+              </tr>
+            ) : (
+              knowledges.map((k) => (
+                <tr
+                  key={k.id}
+                  className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <td className="px-4 py-3 font-medium">{k.title}</td>
+                  <td className="px-4 py-3">
+                    {k.categories.map((cat, idx) => (
+                      <CategoryBadge key={idx} value={cat} />
+                    ))}
+                  </td>
+                  <td className="px-4 py-3">{k.viewCount}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusClass(
+                        k.status,
+                      )}`}
+                    >
+                      {k.status === 'PUBLISH'
+                        ? 'Đã xuất bản'
+                        : k.status === 'DRAFT'
+                        ? 'Bản nháp'
+                        : 'Đã ẩn'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right space-x-2">
+                    <button className="text-blue-500 hover:text-blue-400">
+                      <Eye className="w-5 h-5" />
+                    </button>
+                    <button className="text-red-500 hover:text-red-400">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ----------------- PAGINATION ----------------- */}
+      <div className="flex justify-between items-center mt-6">
+        <button
+          className="flex items-center px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-sm disabled:opacity-50"
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" /> Trang trước
+        </button>
+
+        <span className="text-gray-600 dark:text-gray-400 text-sm">
+          Trang {currentPage} / {totalPages}
+        </span>
+
+        <button
+          className="flex items-center px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-sm disabled:opacity-50"
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Trang sau <ChevronRight className="w-4 h-4 ml-1" />
+        </button>
+      </div>
     </div>
   );
 };

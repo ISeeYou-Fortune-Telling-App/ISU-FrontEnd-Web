@@ -1,5 +1,5 @@
 import { apiFetch } from '@/services/api';
-import { GetPackagesParams, GetPackagesResponse } from './package.type';
+import { GetPackagesParams, GetPackagesResponse } from '../../types/packages/package.type';
 
 export const PackageService = {
   getAll: async (params?: GetPackagesParams): Promise<GetPackagesResponse> => {

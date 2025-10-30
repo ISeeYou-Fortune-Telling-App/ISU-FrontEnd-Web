@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, Image as ImageIcon } from 'lucide-react';
 import { AIService } from '@/services/ai/ai.service';
 
 export const AIChatWidget: React.FC = () => {
@@ -11,7 +11,25 @@ export const AIChatWidget: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 🧠 Gửi tin nhắn bằng streaming
+  // 🧩 Format text chunk cho dễ đọc
+  const formatChunk = (text: string) => {
+    let t = text;
+
+    // Tách các từ dính liền không có khoảng trắng
+    t = t.replace(/([a-z])([A-Z])/g, '$1 $2'); // thêm khoảng trắng giữa chữ thường + hoa
+    t = t.replace(/([.,!?])([A-Za-z])/g, '$1 $2'); // thêm khoảng trắng sau dấu câu
+    t = t.replace(/([a-z])([A-Z])/g, '$1 $2');
+
+    // Viết hoa chữ đầu câu
+    t = t.replace(/(^\s*[a-z])|(\.\s*[a-z])/g, (m) => m.toUpperCase());
+
+    // Thêm khoảng trắng cuối nếu thiếu
+    if (!t.endsWith(' ') && !t.endsWith('\n')) t += ' ';
+
+    return t;
+  };
+
+  // 🧠 Gửi tin nhắn text với typing effect
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const question = input.trim();
@@ -21,17 +39,36 @@ export const AIChatWidget: React.FC = () => {
     setIsLoading(true);
     setMessages((prev) => [...prev, { role: 'ai', text: '' }]);
 
+    let buffer = '';
+    let typingTimer: NodeJS.Timeout | null = null;
+    const typingDelay = 60; // gõ chậm hơn
+
     try {
-      await AIService.chat(
+      await AIService.chatQueryStream(
         { question },
         (chunk) => {
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            if (last?.role === 'ai') {
-              return [...prev.slice(0, -1), { role: 'ai', text: last.text + chunk }];
-            }
-            return prev;
-          });
+          buffer += formatChunk(chunk);
+
+          if (!typingTimer) {
+            typingTimer = setInterval(() => {
+              if (buffer.length === 0) return;
+              const piece = buffer.slice(0, 2); // gõ 2 ký tự mỗi lần
+              buffer = buffer.slice(2);
+
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.role === 'ai') {
+                  return [...prev.slice(0, -1), { role: 'ai', text: last.text + piece }];
+                }
+                return prev;
+              });
+
+              if (buffer.length === 0 && typingTimer) {
+                clearInterval(typingTimer);
+                typingTimer = null;
+              }
+            }, typingDelay);
+          }
         },
         () => {
           setIsLoading(false);
@@ -44,50 +81,90 @@ export const AIChatWidget: React.FC = () => {
             { role: 'ai', text: '⚠️ Đã xảy ra lỗi khi kết nối với AI.' },
           ]);
           setIsLoading(false);
-        }
+        },
       );
     } catch (error) {
       console.error('❌ Chat error:', error);
-      setMessages((prev) => [
-        ...prev,
-        { role: 'ai', text: '❌ Không thể nhận phản hồi từ AI.' },
-      ]);
+      setMessages((prev) => [...prev, { role: 'ai', text: '❌ Không thể nhận phản hồi từ AI.' }]);
       setIsLoading(false);
     }
   };
 
-  // 🚀 Auto-scroll khi có tin nhắn mới
+  // 📸 Phân tích ảnh (khuôn mặt hoặc lòng bàn tay)
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isPalm =
+      file.name.toLowerCase().includes('palm') || confirm('Ảnh này là lòng bàn tay chứ?');
+
+    setMessages((prev) => [...prev, { role: 'user', text: `📸 Đã tải lên: ${file.name}` }]);
+    setIsLoading(true);
+
+    try {
+      const res = isPalm ? await AIService.analyzePalm(file) : await AIService.analyzeFace(file);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'ai',
+          text: `🔍 **Phân tích ${isPalm ? 'lòng bàn tay' : 'khuôn mặt'}:**\n${
+            res.analysisResult
+          }\n\n🕒 Thời gian xử lý: ${res.processingTime}s`,
+        },
+      ]);
+    } catch (error) {
+      console.error('❌ Image analysis error:', error);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: '⚠️ Không thể phân tích ảnh, vui lòng thử lại.' },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 🚀 Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ✨ Hiệu ứng bong bóng mở/đóng
-  const bubbleClass = open
-    ? 'bottom-5 right-5 scale-90 opacity-0 pointer-events-none'
-    : 'bottom-24 right-3 scale-100 opacity-100';
-
   return (
     <>
-      {/* Nút bong bóng chat */}
-      <button onClick={() => setOpen(!open)} className="fixed bottom-5 right-4 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition" > {open ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />} </button>
+      {/* Nút bật/tắt chatbot */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="fixed bottom-5 right-4 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition"
+      >
+        {open ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+      </button>
 
-      {/* Khung chat */}
+      {/* Cửa sổ chat */}
       {open && (
         <div
-          className={`fixed bottom-20 right-3 w-80 h-[420px] bg-white dark:bg-gray-800 
-            border border-gray-300 dark:border-gray-700 rounded-xl shadow-2xl 
-            flex flex-col overflow-hidden animate-fade-in-up z-40`}
+          className={`fixed bottom-20 right-3 w-[500px] h-[440px] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-fade-in-up z-40`}
         >
           {/* Header */}
-          <div className="bg-blue-600 text-white text-center py-2 font-semibold">
-            ISU chatbot
+          <div className="bg-blue-600 text-white text-center py-2 font-semibold flex justify-between items-center px-4">
+            <span>ISU Chatbot</span>
+            <label htmlFor="upload-image" className="cursor-pointer flex items-center gap-1">
+              <ImageIcon className="w-4 h-4" />
+              <span className="text-xs">Gửi ảnh</span>
+              <input
+                id="upload-image"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+            </label>
           </div>
 
-          {/* Tin nhắn */}
+          {/* Khu vực tin nhắn */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3 text-sm">
             {messages.length === 0 ? (
               <div className="flex h-full items-center justify-center text-gray-500 dark:text-gray-400 text-center px-4">
-                Hãy gửi tin nhắn đầu tiên để bắt đầu trò chuyện nhé!
+                Hãy gửi tin nhắn đầu tiên hoặc tải ảnh để bắt đầu trò chuyện nhé!
               </div>
             ) : (
               messages.map((msg, i) => (
@@ -110,7 +187,7 @@ export const AIChatWidget: React.FC = () => {
             <div ref={messagesEndRef}></div>
           </div>
 
-          {/* Ô nhập */}
+          {/* Ô nhập tin nhắn */}
           <div className="border-t border-gray-200 dark:border-gray-700 p-2 flex">
             <input
               type="text"
@@ -119,14 +196,12 @@ export const AIChatWidget: React.FC = () => {
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Nhập câu hỏi..."
               disabled={isLoading}
-              className={`flex-1 px-3 py-2 text-sm border rounded-full focus:outline-none 
-                focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-70`}
+              className={`flex-1 px-3 py-2 text-sm border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-70`}
             />
             <button
               onClick={handleSend}
               disabled={isLoading}
-              className={`ml-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full 
-                disabled:opacity-50 disabled:cursor-not-allowed transition`}
+              className={`ml-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition`}
             >
               <Send className="w-4 h-4" />
             </button>
@@ -134,7 +209,7 @@ export const AIChatWidget: React.FC = () => {
         </div>
       )}
 
-      {/* Hiệu ứng mở khung chat */}
+      {/* Animation */}
       <style jsx>{`
         @keyframes fade-in-up {
           from {

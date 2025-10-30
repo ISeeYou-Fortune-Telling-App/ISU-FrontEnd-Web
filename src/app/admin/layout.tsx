@@ -1,24 +1,21 @@
-import React from 'react';
-import ThemeSwitchToggle from '../../components/ui/ThemeSwitchToggle'; 
-import {
-  Eye,
-  Menu,
-  Search,
-  Bell,
-} from 'lucide-react';
+'use client';
 
-import ClientSidebarWrapper from './ClientSidebarWrapper'; 
+import React from 'react';
+import ThemeSwitchToggle from '../../components/ui/ThemeSwitchToggle';
+import { usePathname } from 'next/navigation';
+import { Eye, Menu, Search, Bell } from 'lucide-react';
+import AdminSidebarNav from './AdminSidebarNav';
 
 const AdminHeader = ({ notificationCount }: { notificationCount: number }) => (
-  <header className="fixed top-0 right-0 z-20 h-16 
+  <header
+    className="fixed top-0 right-0 z-20 h-16 
       bg-white dark:bg-gray-800 
-      border-b border-gray-300 dark:border-gray-700 
-      shadow-sm flex items-center justify-between px-6 
+      border-b border-gray-400 dark:border-gray-700 
+      flex items-center justify-between px-6 
       ml-64 w-[calc(100%-16rem)]"
   >
-    {/* ... (Nội dung AdminHeader không đổi) ... */}
     <div className="flex items-center space-x-6">
-      <Menu className="w-6 h-6 text-gray-500 dark:text-gray-300 cursor-pointer" />
+      <Menu className="w-6 h-6 text-gray-500 dark:text-gray-400 cursor-pointer" />
 
       <div className="relative flex items-center bg-gray-100 dark:bg-gray-700 rounded-3xl h-10 px-3">
         <Search className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" />
@@ -40,29 +37,26 @@ const AdminHeader = ({ notificationCount }: { notificationCount: number }) => (
     </div>
 
     <div className="flex items-center space-x-4">
-      <ThemeSwitchToggle /> 
+      <ThemeSwitchToggle />
     </div>
   </header>
 );
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const accountsCount = 12;
-  const certificatesCount = 2;
-  const chatHistoryCount = 5;
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const notificationsCount = 9;
+  const pathname = usePathname();
+  const isProfilePage = pathname === '/admin/profile';
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-gray-900"> 
-      <aside className="w-64 
+    <div className="flex min-h-screen bg-white dark:bg-gray-900">
+      <aside
+        className="w-64 
           bg-white dark:bg-gray-900 
           text-gray-900 dark:text-white 
-          flex flex-col fixed h-full shadow-lg z-30 border-r border-gray-300 dark:border-gray-700">
-        <div className="h-16 border-b border-gray-300 dark:border-gray-700"> 
-          <div className="flex items-center space-x-4 px-6 h-full"> 
+          flex flex-col fixed h-full z-30 border-r border-gray-400 dark:border-gray-700"
+      >
+        <div className="h-16 border-b border-gray-400 dark:border-gray-700">
+          <div className="flex items-center space-x-4 px-6 h-full">
             <div className="p-1 bg-blue-600 rounded-lg">
               <Eye className="w-7 h-7 text-white" />
             </div>
@@ -72,20 +66,12 @@ export default function AdminLayout({
             </div>
           </div>
         </div>
-
-        <ClientSidebarWrapper 
-                    accountsCount={accountsCount}
-                    certificatesCount={certificatesCount}
-                    chatHistoryCount={chatHistoryCount}
-                    notificationsCount={notificationsCount}
-                />
+        <AdminSidebarNav />
       </aside>
 
       <div className="flex-1 ml-64">
         <AdminHeader notificationCount={notificationsCount} />
-        <main className="p-6 pt-20">
-          {children}
-        </main>
+        <main className={isProfilePage ? 'pt-16' : 'p-6 pt-20'}>{children}</main>
       </div>
     </div>
   );

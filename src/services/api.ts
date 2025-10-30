@@ -10,54 +10,41 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    // 🔸 Kiểm tra môi trường: chỉ chạy ở client
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken');
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
       }
-      console.log('🔑 Token attached?', !!token, config.url);
+      console.log('Token attached?', !!token, config.url);
     }
+
+    // Nếu là FormData → xóa Content-Type
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// ================================
-// 🚨 RESPONSE INTERCEPTOR
-// ================================
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('❌ API error:', error.response?.status, error.response?.data);
-    if (error.response?.status === 401) {
-      // Token hết hạn hoặc không hợp lệ
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('accessToken');
-        window.location.href = '/login';
-      }
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
-export const apiFetch = async <T>(
-  url: string,
-  config?: any
-): Promise<T> => {
+export const apiFetch = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
   try {
     const response = await api(url, config);
     return response.data;
   } catch (error: any) {
-    console.error('API error:', error.response?.data || error.message);
     throw error;
   }
 };
-
-// ----- Wrapper chung của BE -----
-export interface SingleResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}

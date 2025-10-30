@@ -4,10 +4,10 @@ import React from 'react';
 import { X, Calendar, Mail, Phone, User, Star } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { Badge } from '../common/Badge';
-import { UserAccount } from '@/services/account/account.type';
-import { ROLE_LABELS, STATUS_LABELS } from '@/services/account/account.constant';
+import { UserAccount } from '@/types/account/account.type';
+import { ROLE_LABELS, STATUS_LABELS } from '@/constants/account.constant';
 
-interface UserDetailModalProps {
+interface AccountDetailModalProps {
   user: UserAccount | null;
   onClose: () => void;
 }
@@ -17,25 +17,16 @@ const DetailItem: React.FC<{
   value?: string | number | null;
 }> = ({ label, value }) => (
   <div className="flex flex-col">
-    <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-      {label}
-    </span>
-    <span className="font-medium text-gray-900 dark:text-white">
-      {value || '(Trống)'}
-    </span>
+    <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</span>
+    <span className="font-medium text-gray-900 dark:text-white">{value || '(Trống)'}</span>
   </div>
 );
 
-export const UserDetailModal: React.FC<UserDetailModalProps> = ({
-  user,
-  onClose,
-}) => {
+export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({ user, onClose }) => {
   useScrollLock(!!user);
   if (!user) return null;
 
-  const handleBackdropClick = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>
-  ) => {
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (event.target === event.currentTarget) onClose();
   };
 
@@ -64,14 +55,8 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   {user.fullName || '(Không có tên)'}
                 </h3>
                 <div className="flex space-x-2 mt-1">
-                  <Badge
-                    type="status"
-                    value={STATUS_LABELS[user.status] || user.status}
-                  />
-                  <Badge
-                    type="role"
-                    value={ROLE_LABELS[user.role] || user.role}
-                  />
+                  <Badge type="status" value={STATUS_LABELS[user.status] || user.status} />
+                  <Badge type="role" value={ROLE_LABELS[user.role] || user.role} />
                 </div>
               </div>
             </div>
@@ -103,9 +88,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({
               />
             </div>
             <div className="col-span-2 mt-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Tiểu sử:
-              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tiểu sử:</p>
               <p className="text-sm italic text-gray-800 dark:text-gray-200">
                 {user.profileDescription || '(Chưa có tiểu sử)'}
               </p>
@@ -119,18 +102,9 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({
                 Hồ sơ chiêm tinh
               </h4>
               <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-gray-700 dark:text-gray-300">
-                <DetailItem
-                  label="Cung hoàng đạo"
-                  value={profile.zodiacSign}
-                />
-                <DetailItem
-                  label="Con giáp"
-                  value={profile.chineseZodiac}
-                />
-                <DetailItem
-                  label="Ngũ hành"
-                  value={profile.fiveElements}
-                />
+                <DetailItem label="Cung hoàng đạo" value={profile.zodiacSign} />
+                <DetailItem label="Con giáp" value={profile.chineseZodiac} />
+                <DetailItem label="Ngũ hành" value={profile.fiveElements} />
               </div>
             </>
           )}
@@ -145,11 +119,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({
                 : 'bg-red-600 hover:bg-red-700'
             }`}
           >
-            <span>
-              {user.status === 'BLOCKED'
-                ? 'Mở khóa tài khoản'
-                : 'Khóa tài khoản'}
-            </span>
+            <span>{user.status === 'BLOCKED' ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}</span>
           </button>
         </div>
       </div>

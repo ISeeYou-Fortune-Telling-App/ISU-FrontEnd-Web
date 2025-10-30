@@ -12,7 +12,7 @@ import {
 import { Badge } from '../common/Badge';
 import { PostDetailModal } from './PackageDetailModal';
 import { PackageService } from '@/services/packages/package.service';
-import { ServicePackage } from '@/services/packages/package.type';
+import { ServicePackage } from '@/types/packages/package.type';
 
 type StatusFilterType = 'Tất cả' | 'AVAILABLE' | 'DISABLED' | 'HIDDEN';
 
@@ -118,9 +118,13 @@ export const PackageTable: React.FC = () => {
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
         {loading ? (
-          <div className="p-6 text-center text-gray-500 dark:text-gray-400">⏳ Đang tải dữ liệu...</div>
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+            ⏳ Đang tải dữ liệu...
+          </div>
         ) : filteredPackages.length === 0 ? (
-          <div className="p-6 text-center text-gray-500 dark:text-gray-400">Không có gói dịch vụ nào</div>
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+            Không có gói dịch vụ nào
+          </div>
         ) : (
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -157,20 +161,20 @@ export const PackageTable: React.FC = () => {
                 >
                   {/* 🧙‍♂️ Tác giả */}
                   <td className="px-6 py-3 w-[180px] whitespace-nowrap">
-                  <div className="flex items-center">
-                    <img
-                      src={pkg.seer.avatarUrl}
-                      alt={pkg.seer.fullName}
-                      className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-200 dark:border-gray-700"
-                    />
-                    <span
-                      className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[130px]"
-                      title={pkg.seer.fullName}
-                    >
-                      {pkg.seer.fullName}
-                    </span>
-                  </div>
-                </td>
+                    <div className="flex items-center">
+                      <img
+                        src={pkg.seer.avatarUrl}
+                        alt={pkg.seer.fullName}
+                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-200 dark:border-gray-700"
+                      />
+                      <span
+                        className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[130px]"
+                        title={pkg.seer.fullName}
+                      >
+                        {pkg.seer.fullName}
+                      </span>
+                    </div>
+                  </td>
 
                   {/* 📘 Tiêu đề */}
                   <td className="px-6 py-3 w-[260px] text-sm text-gray-800 dark:text-gray-200">
@@ -188,7 +192,6 @@ export const PackageTable: React.FC = () => {
                       </span>
                     </div>
                   </td>
-
 
                   {/* 🏷️ Danh mục */}
                   <td className="px-6 py-3 w-[140px] whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 truncate">
@@ -239,7 +242,6 @@ export const PackageTable: React.FC = () => {
                 </tr>
               ))}
             </tbody>
-
           </table>
         )}
       </div>

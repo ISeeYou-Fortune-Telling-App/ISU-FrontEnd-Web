@@ -1,25 +1,29 @@
-import { apiFetch } from '../api'; 
+import { apiFetch } from '../api';
+import {
+  ForgotPasswordRequest,
+  ResetPasswordVerifyRequest,
+  ResendOTPRequest,
+} from '../../types/auth/forgot-password.type';
 
-interface ForgotPasswordRequestPayload {
-  email: string;
-}
-
-interface ResetPasswordVerifyPayload {
-  email: string;
-  otpCode: string;
-  password: string;
-  confirmPassword: string;
-}
-
-interface Response {
-  statusCode: number;
-  message: string;
-}
+import { SimpleResponse, ValidationErrorResponse } from '../../types/response.type';
 
 export const requestPasswordReset = async (
-  data: ForgotPasswordRequestPayload
-): Promise<Response> => {
-  const response = await apiFetch<Response>('/auth/forgot-password', {
+  data: ForgotPasswordRequest,
+): Promise<SimpleResponse | ValidationErrorResponse> => {
+  const response = await apiFetch<SimpleResponse | ValidationErrorResponse>(
+    '/auth/forgot-password',
+    {
+      method: 'POST',
+      data,
+    },
+  );
+  return response;
+};
+
+export const resendOTP = async (
+  data: ResendOTPRequest,
+): Promise<SimpleResponse | ValidationErrorResponse> => {
+  const response = await apiFetch<SimpleResponse | ValidationErrorResponse>('/auth/resend-otp', {
     method: 'POST',
     data,
   });
@@ -27,11 +31,14 @@ export const requestPasswordReset = async (
 };
 
 export const verifyAndResetPassword = async (
-  data: ResetPasswordVerifyPayload
-): Promise<Response> => {
-  const response = await apiFetch<Response>('/auth/forgot-password/verify', {
-    method: 'POST',
-    data,
-  });
+  data: ResetPasswordVerifyRequest,
+): Promise<SimpleResponse | ValidationErrorResponse> => {
+  const response = await apiFetch<SimpleResponse | ValidationErrorResponse>(
+    '/auth/forgot-password/verify',
+    {
+      method: 'POST',
+      data,
+    },
+  );
   return response;
 };

@@ -1,24 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Search,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Loader2,
-} from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { AccountService } from '@/services/account/account.service';
-import { ROLE_LABELS, STATUS_LABELS } from '@/services/account/account.constant';
-import {
-  UserAccount,
-  Role,
-  Status,
-  GetAccountsParams,
-} from '@/services/account/account.type';
+import { ROLE_LABELS, STATUS_LABELS } from '@/constants/account.constant';
+import { UserAccount, Role, Status, GetAccountsParams } from '@/types/account/account.type';
 import { Badge } from '../common/Badge';
-import { UserDetailModal } from '../accounts/UserDetailModal';
+import { AccountDetailModal } from './AccountDetailModal';
+import { useDebounce } from '@/hooks/useDebounce'; // ✅ import custom hook
 
 const ITEMS_PER_PAGE = 10;
 
@@ -31,15 +20,16 @@ const STATUS_DISPLAY: Record<string, string> = {
   BLOCKED: 'Bị khóa',
 };
 
-export const UserTable: React.FC = () => {
+export const AccountTable: React.FC = () => {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
   const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 500); // ✅ debounce 0.5s
+
   const [selectedRole, setSelectedRole] = useState<'Tất cả' | Role>('Tất cả');
-  const [selectedStatus, setSelectedStatus] =
-    useState<'Tất cả' | Status>('Tất cả');
+  const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | Status>('Tất cả');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -47,21 +37,14 @@ export const UserTable: React.FC = () => {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Đóng dropdown khi click ra ngoài
+  // Đóng dropdown khi click ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsStatusDropdownOpen(false);
       }
     };
-    if (isStatusDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
+    if (isStatusDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isStatusDropdownOpen]);
 
@@ -71,7 +54,7 @@ export const UserTable: React.FC = () => {
       if (showSkeleton) setLoading(true);
       else setIsRefreshing(true);
 
-      const commonParams: GetAccountsParams = {
+      const params: GetAccountsParams = {
         page,
         limit: ITEMS_PER_PAGE,
         sortType: 'desc',
@@ -79,36 +62,35 @@ export const UserTable: React.FC = () => {
       };
 
       let res;
-      if (searchTerm.trim()) {
+
+      if (debouncedSearch.trim()) {
         res = await AccountService.searchAccounts({
-          ...commonParams,
-          keyword: searchTerm.trim(),
+          ...params,
+          keyword: debouncedSearch.trim(),
         });
 
         let filtered = res.data;
         if (selectedRole !== 'Tất cả')
-          filtered = filtered.filter((u) => u.role === selectedRole);
+          filtered = filtered.filter((u: any) => u.role === selectedRole);
         if (selectedStatus !== 'Tất cả')
-          filtered = filtered.filter((u) => u.status === selectedStatus);
+          filtered = filtered.filter((u: any) => u.status === selectedStatus);
 
         setUsers(filtered);
-        setPaging({
-          ...res.paging,
-          page: (res.paging.page ?? 0) + 1,
-        });
       } else {
         res = await AccountService.getAccounts({
-          ...commonParams,
+          ...params,
           role: selectedRole !== 'Tất cả' ? selectedRole : undefined,
           status: selectedStatus !== 'Tất cả' ? selectedStatus : undefined,
         });
 
         setUsers(res.data);
-        setPaging({
-          ...res.paging,
-          page: (res.paging.page ?? 0) + 1,
-        });
       }
+
+      setPaging({
+        page: res.paging?.page ?? 1,
+        totalPages: res.paging?.totalPages ?? 1,
+        total: res.paging?.total ?? res.data.length ?? 0,
+      });
     } catch (error) {
       console.error('❌ Lỗi khi tải danh sách tài khoản:', error);
     } finally {
@@ -117,17 +99,17 @@ export const UserTable: React.FC = () => {
     }
   };
 
+  // Lần đầu load
   useEffect(() => {
     fetchAccounts(1, true);
   }, []);
 
+  // Khi bộ lọc, trang, hoặc search thay đổi (debounced)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!loading) fetchAccounts(paging.page, false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [selectedRole, selectedStatus, searchTerm, paging.page]);
+    if (!loading) fetchAccounts(paging.page, false);
+  }, [selectedRole, selectedStatus, debouncedSearch, paging.page]);
 
+  // Chuyển trang
   const goToNextPage = () => {
     if (paging.page < paging.totalPages && !isRefreshing) {
       setPaging((prev) => ({ ...prev, page: prev.page + 1 }));
@@ -148,7 +130,7 @@ export const UserTable: React.FC = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
       {/* 🔍 Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
         {/* Search box */}
@@ -166,7 +148,7 @@ export const UserTable: React.FC = () => {
           />
         </div>
 
-        {/* Dropdown trạng thái - styled đẹp + click outside */}
+        {/* Dropdown trạng thái */}
         <div className="relative flex-shrink-0" ref={dropdownRef}>
           <button
             onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
@@ -188,28 +170,21 @@ export const UserTable: React.FC = () => {
                          ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10 animate-fadeIn"
             >
               <div className="py-1">
-                {[
-                  { label: 'Tất cả', value: 'Tất cả' },
-                  { label: 'Đang hoạt động', value: 'ACTIVE' },
-                  { label: 'Ngưng hoạt động', value: 'INACTIVE' },
-                  { label: 'Đã xác thực', value: 'VERIFIED' },
-                  { label: 'Chưa xác thực', value: 'UNVERIFIED' },
-                  { label: 'Bị khóa', value: 'BLOCKED' },
-                ].map((status) => (
+                {Object.entries(STATUS_DISPLAY).map(([key, label]) => (
                   <button
-                    key={status.value}
+                    key={key}
                     onClick={() => {
-                      setSelectedStatus(status.value as any);
+                      setSelectedStatus(key as any);
                       setIsStatusDropdownOpen(false);
                       setPaging((prev) => ({ ...prev, page: 1 }));
                     }}
                     className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                      selectedStatus === status.value
+                      selectedStatus === key
                         ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
                         : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
                   >
-                    {status.label}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -247,14 +222,14 @@ export const UserTable: React.FC = () => {
       </div>
 
       {/* 📋 Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 relative">
+      <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative">
         {isRefreshing && (
           <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none">
             <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
           </div>
         )}
 
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+        <table className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th className="w-[220px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
@@ -278,7 +253,7 @@ export const UserTable: React.FC = () => {
             </tr>
           </thead>
 
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
             {users.map((user) => (
               <tr
                 key={user.id}
@@ -289,7 +264,7 @@ export const UserTable: React.FC = () => {
                     <img
                       src={user.avatarUrl || '/default_avatar.jpg'}
                       alt={user.fullName}
-                      className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-200 dark:border-gray-700"
+                      className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-400 dark:border-gray-700"
                     />
                     <span
                       className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[140px]"
@@ -344,10 +319,10 @@ export const UserTable: React.FC = () => {
         </table>
       </div>
 
-      {/* 📄 Pagination */}
-      <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+      {/* Pagination */}
+      <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          Trang {paging.page}/{paging.totalPages} • {paging.total} tài khoản
+          Trang {paging.page + 1}/{paging.totalPages} • {paging.total} tài khoản
         </span>
         <div className="flex items-center space-x-2">
           <button
@@ -377,7 +352,7 @@ export const UserTable: React.FC = () => {
 
       {/* 🪄 Modal chi tiết */}
       {selectedUser && (
-        <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+        <AccountDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
       )}
     </div>
   );
