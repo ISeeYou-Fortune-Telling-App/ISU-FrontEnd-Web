@@ -46,12 +46,20 @@ export interface AccountStats {
   blockedAccounts: number;
 }
 
-export type GetStatsResponse = SingleResponse<AccountStats>;
-export type GetAccountByIdResponse = SingleResponse<UserAccount>;
-export type GetAccountsResponse = ListResponse<UserAccount>;
+export interface UpdateUserRoleRequest {
+  role: Role;
+}
 
+export interface UpdateUserStatusRequest {
+  newStatus: Status;
+}
+
+export type GetStatsResponse = SingleResponse<AccountStats> | SimpleResponse;
+export type GetAccountByIdResponse = SingleResponse<UserAccount> | SimpleResponse;
+export type GetAccountsResponse = ListResponse<UserAccount> | SimpleResponse;
 export type UploadAvatarResponse = SingleResponse<Record<string, never>> | SimpleResponse;
 export type UploadCoverResponse = SingleResponse<Record<string, never>> | SimpleResponse;
+export type DeleteAccountResponse = SingleResponse<Record<string, never>> | SimpleResponse;
 
 export interface GetAccountsParams extends PagingParams {
   role?: Role;

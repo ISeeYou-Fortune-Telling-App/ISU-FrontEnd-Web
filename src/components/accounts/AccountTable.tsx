@@ -1,43 +1,31 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
-import { AccountService } from '@/services/account/account.service';
+import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2, X } from 'lucide-react';
+import { getAccounts, searchAccounts, getAccountById } from '@/services/account';
 import { ROLE_LABELS, STATUS_LABELS } from '@/constants/account.constant';
 import { UserAccount, Role, Status, GetAccountsParams } from '@/types/account/account.type';
 import { Badge } from '../common/Badge';
 import { AccountDetailModal } from './AccountDetailModal';
-import { useDebounce } from '@/hooks/useDebounce'; // ✅ import custom hook
+import { useDebounce } from '@/hooks/useDebounce';
 
 const ITEMS_PER_PAGE = 10;
-
-const STATUS_DISPLAY: Record<string, string> = {
-  'Tất cả': 'Tất cả',
-  ACTIVE: 'Đang hoạt động',
-  INACTIVE: 'Ngưng hoạt động',
-  VERIFIED: 'Đã xác thực',
-  UNVERIFIED: 'Chưa xác thực',
-  BLOCKED: 'Bị khóa',
-};
 
 export const AccountTable: React.FC = () => {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
   const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
-
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 500); // ✅ debounce 0.5s
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
   const [selectedRole, setSelectedRole] = useState<'Tất cả' | Role>('Tất cả');
   const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | Status>('Tất cả');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Đóng dropdown khi click ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -48,7 +36,6 @@ export const AccountTable: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isStatusDropdownOpen]);
 
-  // ====================== FETCH DATA ======================
   const fetchAccounts = async (page = 1, showSkeleton = false) => {
     try {
       if (showSkeleton) setLoading(true);
@@ -62,32 +49,25 @@ export const AccountTable: React.FC = () => {
       };
 
       let res;
-
       if (debouncedSearch.trim()) {
-        res = await AccountService.searchAccounts({
-          ...params,
-          keyword: debouncedSearch.trim(),
-        });
-
+        res = await searchAccounts({ ...params, keyword: debouncedSearch.trim() });
         let filtered = res.data;
         if (selectedRole !== 'Tất cả')
           filtered = filtered.filter((u: any) => u.role === selectedRole);
         if (selectedStatus !== 'Tất cả')
           filtered = filtered.filter((u: any) => u.status === selectedStatus);
-
         setUsers(filtered);
       } else {
-        res = await AccountService.getAccounts({
+        res = await getAccounts({
           ...params,
           role: selectedRole !== 'Tất cả' ? selectedRole : undefined,
           status: selectedStatus !== 'Tất cả' ? selectedStatus : undefined,
         });
-
         setUsers(res.data);
       }
 
       setPaging({
-        page: res.paging?.page ?? 1,
+        page: (res.paging?.page ?? 0) + 1,
         totalPages: res.paging?.totalPages ?? 1,
         total: res.paging?.total ?? res.data.length ?? 0,
       });
@@ -99,22 +79,20 @@ export const AccountTable: React.FC = () => {
     }
   };
 
-  // Lần đầu load
   useEffect(() => {
     fetchAccounts(1, true);
   }, []);
 
-  // Khi bộ lọc, trang, hoặc search thay đổi (debounced)
   useEffect(() => {
     if (!loading) fetchAccounts(paging.page, false);
   }, [selectedRole, selectedStatus, debouncedSearch, paging.page]);
 
-  // Chuyển trang
   const goToNextPage = () => {
     if (paging.page < paging.totalPages && !isRefreshing) {
       setPaging((prev) => ({ ...prev, page: prev.page + 1 }));
     }
   };
+
   const goToPrevPage = () => {
     if (paging.page > 1 && !isRefreshing) {
       setPaging((prev) => ({ ...prev, page: prev.page - 1 }));
@@ -133,13 +111,12 @@ export const AccountTable: React.FC = () => {
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
       {/* 🔍 Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
-        {/* Search box */}
         <div className="relative flex-grow mr-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -148,15 +125,16 @@ export const AccountTable: React.FC = () => {
           />
         </div>
 
-        {/* Dropdown trạng thái */}
         <div className="relative flex-shrink-0" ref={dropdownRef}>
           <button
             onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
             className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
                        dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
-                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
+                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
           >
-            <span>{STATUS_DISPLAY[selectedStatus]}</span>
+            <span>
+              {selectedStatus === 'Tất cả' ? 'Tất cả' : STATUS_LABELS[selectedStatus as Status]}
+            </span>
             <ChevronDown
               className={`w-4 h-4 ml-1 transition-transform ${
                 isStatusDropdownOpen ? 'rotate-180' : ''
@@ -170,7 +148,7 @@ export const AccountTable: React.FC = () => {
                          ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10 animate-fadeIn"
             >
               <div className="py-1">
-                {Object.entries(STATUS_DISPLAY).map(([key, label]) => (
+                {[['Tất cả', 'Tất cả'], ...Object.entries(STATUS_LABELS)].map(([key, label]) => (
                   <button
                     key={key}
                     onClick={() => {
@@ -193,29 +171,23 @@ export const AccountTable: React.FC = () => {
         </div>
       </div>
 
-      {/* 🧭 Filter theo vai trò */}
+      {/* Filter theo vai trò */}
       <div className="flex space-x-2 mb-4">
-        <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
-          {[
-            { label: 'Tất cả', value: 'Tất cả' },
-            { label: 'Người dùng', value: 'CUSTOMER' },
-            { label: 'Nhà tiên tri', value: 'SEER' },
-            { label: 'Chưa xác thực', value: 'UNVERIFIED_SEER' },
-            { label: 'Quản trị viên', value: 'ADMIN' },
-          ].map((role) => (
+        <div className="flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
+          {[['Tất cả', 'Tất cả'], ...Object.entries(ROLE_LABELS)].map(([key, label]) => (
             <button
-              key={role.value}
+              key={key}
               onClick={() => {
-                setSelectedRole(role.value as any);
+                setSelectedRole(key as any);
                 setPaging((prev) => ({ ...prev, page: 1 }));
               }}
               className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors ${
-                selectedRole === role.value
+                selectedRole === key
                   ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
-              {role.label}
+              {label}
             </button>
           ))}
         </div>
@@ -229,13 +201,16 @@ export const AccountTable: React.FC = () => {
           </div>
         )}
 
-        <table className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed">
-          <thead className="bg-gray-50 dark:bg-gray-700">
+        <table
+          className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed"
+          style={{ tableLayout: 'fixed', width: '100%' }}
+        >
+          <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
             <tr>
-              <th className="w-[220px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[180px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Người dùng
               </th>
-              <th className="w-[220px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[200px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Email
               </th>
               <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
@@ -244,77 +219,93 @@ export const AccountTable: React.FC = () => {
               <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Trạng thái
               </th>
-              <th className="w-[160px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Ngày tạo
               </th>
-              <th className="w-[300px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[150px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thao tác
               </th>
             </tr>
           </thead>
 
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
-            {users.map((user) => (
-              <tr
-                key={user.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
-              >
-                <td className="px-6 py-3 w-[220px] whitespace-nowrap">
-                  <div className="flex items-center">
-                    <img
-                      src={user.avatarUrl || '/default_avatar.jpg'}
-                      alt={user.fullName}
-                      className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-400 dark:border-gray-700"
-                    />
-                    <span
-                      className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[140px]"
-                      title={user.fullName}
-                    >
-                      {user.fullName || '(Không có tên)'}
-                    </span>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700 relative">
+            {/* overlay chỉ trong tbody */}
+            {isRefreshing && (
+              <tr>
+                <td colSpan={6}>
+                  <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm">
+                    <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
                   </div>
                 </td>
+              </tr>
+            )}
 
+            {users.length === 0 ? (
+              <tr>
                 <td
-                  className="px-6 py-3 w-[220px] text-sm text-gray-500 dark:text-gray-300 truncate text-center"
-                  title={user.email}
+                  colSpan={6}
+                  className="text-center py-10 text-gray-500 dark:text-gray-400 italic"
                 >
-                  {user.email}
-                </td>
-
-                <td className="px-6 py-3 w-[140px] text-center whitespace-nowrap">
-                  <Badge type="role" value={ROLE_LABELS[user.role]} />
-                </td>
-
-                <td className="px-6 py-3 w-[140px] text-center whitespace-nowrap">
-                  <Badge type="status" value={STATUS_LABELS[user.status]} />
-                </td>
-
-                <td className="px-6 py-3 w-[160px] text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap text-center">
-                  {new Date(user.createdAt).toLocaleDateString('vi-VN')}
-                </td>
-
-                <td className="px-6 py-3 w-[120px] text-center text-sm font-medium">
-                  <button
-                    title="Xem chi tiết"
-                    onClick={async () => {
-                      try {
-                        setIsRefreshing(true);
-                        const detail = await AccountService.getAccountById(user.id);
-                        setSelectedUser(detail);
-                      } catch (error) {
-                        console.error('❌ Lỗi khi tải chi tiết người dùng:', error);
-                      } finally {
-                        setIsRefreshing(false);
-                      }
-                    }}
-                    className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
-                  >
-                    <Eye className="w-5 h-5 inline-block" />
-                  </button>
+                  Không có dữ liệu
                 </td>
               </tr>
-            ))}
+            ) : (
+              users.map((user) => (
+                <tr
+                  key={user.id}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 ${
+                    isRefreshing ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                >
+                  <td className="px-6 py-3 w-[180px] whitespace-nowrap">
+                    <div className="flex items-center">
+                      <img
+                        src={user.avatarUrl || '/default_avatar.jpg'}
+                        alt={user.fullName}
+                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-400 dark:border-gray-700"
+                      />
+                      <span
+                        className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[140px]"
+                        title={user.fullName}
+                      >
+                        {user.fullName || '(Không có tên)'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-500 dark:text-gray-300 truncate text-center">
+                    {user.email}
+                  </td>
+                  <td className="px-3 py-3 text-center">
+                    <Badge type="AccountRole" value={ROLE_LABELS[user.role]} />
+                  </td>
+                  <td className="px-3 py-3 text-center">
+                    <Badge type="AccountStatus" value={STATUS_LABELS[user.status]} />
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                    {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                  </td>
+                  <td className="px-6 py-3 text-center text-sm font-medium">
+                    <button
+                      title="Xem chi tiết"
+                      onClick={async () => {
+                        try {
+                          setIsRefreshing(true);
+                          const detail = await getAccountById(user.id);
+                          setSelectedUser(detail);
+                        } catch (error) {
+                          console.error('Lỗi khi tải chi tiết người dùng:', error);
+                        } finally {
+                          setIsRefreshing(false);
+                        }
+                      }}
+                      className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
+                    >
+                      <Eye className="w-5 h-5 inline-block" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -322,8 +313,9 @@ export const AccountTable: React.FC = () => {
       {/* Pagination */}
       <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          Trang {paging.page + 1}/{paging.totalPages} • {paging.total} tài khoản
+          Trang {paging.page}/{paging.totalPages} • {paging.total} tài khoản
         </span>
+
         <div className="flex items-center space-x-2">
           <button
             onClick={goToPrevPage}
@@ -336,6 +328,7 @@ export const AccountTable: React.FC = () => {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
+
           <button
             onClick={goToNextPage}
             disabled={paging.page >= paging.totalPages || isRefreshing}
@@ -350,9 +343,12 @@ export const AccountTable: React.FC = () => {
         </div>
       </div>
 
-      {/* 🪄 Modal chi tiết */}
       {selectedUser && (
-        <AccountDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+        <AccountDetailModal
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+          onActionComplete={() => fetchAccounts(paging.page)}
+        />
       )}
     </div>
   );

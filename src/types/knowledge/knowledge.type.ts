@@ -1,4 +1,4 @@
-import { SingleResponse, ListResponse } from '@/types/response.type';
+import { ListResponse } from '@/types/response.type';
 import { PagingParams } from '@/types/paging.type';
 
 export type KnowledgeStatus = 'DRAFT' | 'PUBLISH' | 'HIDDEN';
@@ -10,6 +10,8 @@ export interface KnowledgeCategory {
   name: string;
   description: string;
 }
+
+export type KnowledgeCategoryName = KnowledgeCategory['name'];
 
 export interface KnowledgeItem {
   id: string;
@@ -24,7 +26,7 @@ export interface KnowledgeItem {
 }
 
 export type KnowledgeCategoriesResponse = ListResponse<KnowledgeCategory>;
-export type KnowledgeItemResponse = SingleResponse<KnowledgeItem>;
+export type KnowledgeItemResponse = KnowledgeItem;
 export type KnowledgeItemListResponse = ListResponse<KnowledgeItem>;
 
 export interface KnowledgeItemSearchParams extends PagingParams {

@@ -15,3 +15,33 @@ export const STATUS_LABELS: Record<Status, string> = {
   UNVERIFIED: 'Chờ duyệt',
   BLOCKED: 'Đã khóa',
 };
+
+export const CHINESE_ZODIAC_ICONS: Record<string, string> = {
+  Tý: '🐀',
+  Sửu: '🐂',
+  Dần: '🐅',
+  Mão: '🐇',
+  Thìn: '🐉',
+  Tỵ: '🐍',
+  Ngọ: '🐎',
+  Mùi: '🐐',
+  Thân: '🐒',
+  Dậu: '🐓',
+  Tuất: '🐕',
+  Hợi: '🐖',
+};
+
+export const WESTERN_ZODIAC_ICONS: Record<string, string> = {
+  'Bạch Dương': '♈',
+  'Kim Ngưu': '♉',
+  'Song Tử': '♊',
+  'Cự Giải': '♋',
+  'Sư Tử': '♌',
+  'Xử Nữ': '♍',
+  'Thiên Bình': '♎',
+  'Bọ Cạp': '♏',
+  'Nhân Mã': '♐',
+  'Ma Kết': '♑',
+  'Bảo Bình': '♒',
+  'Song Ngư': '♓',
+};

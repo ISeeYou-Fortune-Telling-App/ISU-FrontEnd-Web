@@ -1,88 +1,53 @@
-'use client'
+'use client';
+
 import React from 'react';
 import {
   Clock,
   ShieldAlert,
   ShieldCheck,
   CircleX,
-  ClosedCaption,
-  Flag,
-  CircleCheck,
   RefreshCcw,
   UserCog,
   User,
   UserCheck,
   UserMinus,
 } from 'lucide-react';
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-export type BadgeType = 'status' | 'expertise' | 'role' | 'post' | 'payment';
-export type BadgeStatus =
+export type BadgeType = 'AccountStatus' | 'AccountRole' | 'expertise' | 'post' | 'payment';
+export type BadgeAccountStatus =
+  | 'Đang hoạt động'
+  | 'Ngừng hoạt động'
   | 'Đã duyệt'
   | 'Chờ duyệt'
   | 'Đã khóa'
-  | 'Đã từ chối'
-  | 'Hoàn thành'
+  | 'Đã hoàn tiền'
   | 'Bị hủy'
   | 'Đã xác nhận'
   | 'Chờ xác nhận'
-  | 'Đang diễn ra'
-  | 'Đang hoạt động'
-  | 'Ngưng hoạt động'
-  | 'Đã xác minh'
-  | 'Chưa xác minh'
   | string;
 
-export type BadgeExpertise =
-  | 'Cung Hoàng Đạo'
-  | 'Ngũ Hành'
-  | 'Tarot'
-  | 'Nhân Tướng Học'
-  | 'Chỉ Tay'
-  | string;
-
-export type BadgeRole =
+export type BadgeAccountRole =
   | 'Nhà tiên tri'
   | 'Nhà tiên tri (chưa xác minh)'
   | 'Khách hàng'
   | 'Quản trị viên'
+  | 'Khách vãng lai'
   | string;
 
-export type BadgePayment = 'Đã thanh toán' | 'Đã hoàn tiền' | string;
-
-interface CommonBadgeProps {
-  type: BadgeType;
-  value: BadgeStatus | BadgeExpertise | BadgeRole | BadgePayment;
-}
-
-const getStatusStyle = (
-  status: BadgeStatus
-): { classes: string; Icon: LucideIcon | null } => {
-  let classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
+/* 🎨 Style cho trạng thái tiếng Việt */
+const getStatusStyle = (status: BadgeAccountStatus) => {
   let Icon: LucideIcon | null = null;
+  let classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
 
   switch (status) {
-    // === Trạng thái hoạt động người dùng ===
     case 'Đang hoạt động':
-    case 'Đã xác minh':
       classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
       Icon = ShieldCheck;
       break;
-    case 'Ngưng hoạt động':
-    case 'Chưa xác minh':
-      classes = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
-      Icon = Clock;
-      break;
-    case 'Đã khóa':
-      classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+    case 'Ngừng hoạt động':
+      classes = 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
       Icon = ShieldAlert;
-      break;
-
-    // === Các trạng thái đơn khác (bài viết, thanh toán, tiến trình, v.v.) ===
-    case 'Hoàn thành':
-    case 'Thành công':
-      classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
-      Icon = CircleCheck;
       break;
     case 'Đã duyệt':
       classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
@@ -91,69 +56,37 @@ const getStatusStyle = (
     case 'Chờ duyệt':
     case 'Chờ xác nhận':
       classes = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
-      Icon = Flag;
+      Icon = Clock;
       break;
-    case 'Đã xác nhận':
-      classes = 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100';
-      break;
-    case 'Đã từ chối':
-    case 'Thất bại':
-    case 'Đã ẩn':
-    case 'Bị hủy':
+    case 'Đã khóa':
       classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
-      Icon = CircleX;
-      break;
-    case 'Đang diễn ra':
-      classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
+      Icon = ShieldAlert;
       break;
     case 'Đã hoàn tiền':
       classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
       Icon = RefreshCcw;
       break;
+    case 'Bị hủy':
+      classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+      Icon = CircleX;
+      break;
     default:
       classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
   }
+
   return { classes, Icon };
 };
 
-const getPaymentStyle = (paymentStatus: BadgePayment): { classes: string } => {
-  let classes =
-    'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
-  switch (paymentStatus) {
-    case 'Đã thanh toán':
-      classes =
-        'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
-      break;
-    case 'Đã hoàn tiền':
-      classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
-      break;
-  }
-  return { classes };
-};
-
-const getExpertiseStyle = (expertise: BadgeExpertise): string => {
-  switch (expertise) {
-    case 'Cung Hoàng Đạo':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-    case 'Tarot':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-    case 'Ngũ Hành':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-    case 'Nhân Tướng Học':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-    case 'Chỉ Tay':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-  }
-};
-
-const getRoleStyle = (role: BadgeRole): { classes: string; Icon: LucideIcon | null } => {
-  let classes =
-    'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
+/* 👑 Style cho vai trò tiếng Việt */
+const getRoleStyle = (role: BadgeAccountRole) => {
   let Icon: LucideIcon | null = null;
+  let classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
 
   switch (role) {
+    case 'Quản trị viên':
+      classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+      Icon = UserCog;
+      break;
     case 'Nhà tiên tri':
       classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
       Icon = UserCheck;
@@ -163,48 +96,43 @@ const getRoleStyle = (role: BadgeRole): { classes: string; Icon: LucideIcon | nu
       Icon = Clock;
       break;
     case 'Khách hàng':
-      classes = 'bg-gray-600 text-white border-white dark:bg-gray-300 dark:text-gray-900';
+      classes = 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
       Icon = User;
       break;
-    case 'Quản trị viên':
-      classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
-      Icon = UserCog;
+    case 'Khách vãng lai':
+      classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
+      Icon = UserMinus;
       break;
     default:
-      Icon = UserMinus;
+      classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
   }
 
   return { classes, Icon };
 };
 
-export const Badge: React.FC<CommonBadgeProps> = ({ type, value }) => {
-  let classes =
-    'px-3 py-1 text-xs font-semibold rounded-lg whitespace-nowrap ';
+/* 🎯 Component chính */
+export const Badge: React.FC<{ type: BadgeType; value: string }> = ({ type, value }) => {
+  const base =
+    'px-3 py-1 text-xs font-semibold rounded-lg inline-flex items-center space-x-1 border border-current';
   let Icon: LucideIcon | null = null;
-  let displayValue = value;
-  let hasIcon = true;
+  let classes = '';
 
-  if (type === 'status') {
-    const style = getStatusStyle(value as BadgeStatus);
-    classes += ' inline-flex items-center space-x-1 ' + style.classes;
-  } else if (type === 'payment') {
-    const style = getPaymentStyle(value as BadgePayment);
-    classes += ' inline-flex items-center space-x-1 ' + style.classes;
-  } else if (type === 'expertise') {
-    classes += ' inline-block ' + getExpertiseStyle(value as BadgeExpertise);
-  } else if (type === 'role') {
-    const style = getRoleStyle(value as BadgeRole);
-    classes += ' inline-flex items-center space-x-1 ' + style.classes;
+  if (type === 'AccountStatus') {
+    const style = getStatusStyle(value as BadgeAccountStatus);
+    Icon = style.Icon;
+    classes = style.classes;
+  } else if (type === 'AccountRole') {
+    const style = getRoleStyle(value as BadgeAccountRole);
+    Icon = style.Icon;
+    classes = style.classes;
   } else {
-    classes +=
-      ' inline-block bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
+    classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
   }
 
-  const finalClasses = `border border-current ${classes}`.trim();
-
   return (
-    <span className={finalClasses}>
-      <span>{displayValue}</span>
+    <span className={`${base} ${classes}`}>
+      {Icon && <Icon className="w-3.5 h-3.5 mr-1" />}
+      <span>{value}</span>
     </span>
   );
 };
