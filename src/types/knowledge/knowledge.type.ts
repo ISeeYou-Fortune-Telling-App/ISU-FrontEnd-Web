@@ -1,7 +1,7 @@
-import { ListResponse } from '@/types/response.type';
-import { PagingParams } from '@/types/paging.type';
+import { ListResponse, SimpleResponse, SingleResponse } from '../response.type';
+import { PagingParams } from '../paging.type';
 
-export type KnowledgeStatus = 'DRAFT' | 'PUBLISH' | 'HIDDEN';
+export type KnowledgeStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN';
 
 export interface KnowledgeCategory {
   id: string;
@@ -25,12 +25,15 @@ export interface KnowledgeItem {
   viewCount: number;
 }
 
-export type KnowledgeCategoriesResponse = ListResponse<KnowledgeCategory>;
-export type KnowledgeItemResponse = KnowledgeItem;
-export type KnowledgeItemListResponse = ListResponse<KnowledgeItem>;
-
 export interface KnowledgeItemSearchParams extends PagingParams {
   title?: string;
   categoryIds?: string[];
   status?: KnowledgeStatus;
 }
+
+export type GetKnowledgeCategoriesResponse = ListResponse<KnowledgeCategory> | SimpleResponse;
+export type GetKnowledgeItemListResponse = ListResponse<KnowledgeItem> | SimpleResponse;
+export type GetKnowledgeItemResponse = SingleResponse<KnowledgeItem> | SimpleResponse;
+export type UpdateKnowledgeItemResponse = SingleResponse<KnowledgeItem> | SimpleResponse;
+export type UpdateKnowledgeCategoryResponse = SingleResponse<KnowledgeCategory> | SimpleResponse;
+export type DeleteKnowledgeResponse = SingleResponse<Record<string, never>> | SimpleResponse;

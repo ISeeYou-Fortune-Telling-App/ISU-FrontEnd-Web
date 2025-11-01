@@ -109,7 +109,7 @@ export const AccountTable: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
-      {/* 🔍 Search + Dropdown */}
+      {/* Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
         <div className="relative flex-grow mr-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -193,7 +193,7 @@ export const AccountTable: React.FC = () => {
         </div>
       </div>
 
-      {/* 📋 Table */}
+      {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative">
         {isRefreshing && (
           <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none">
