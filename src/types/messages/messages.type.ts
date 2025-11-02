@@ -1,5 +1,9 @@
+import { SingleResponse, ListResponse, SimpleResponse } from '../response.type';
+import { PagingParams } from '../paging.type';
+
 export type ConversationStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 export type ConversationCanceler = 'SEER' | 'CUSTOMER' | 'BOTH' | null;
+export type ConversationType = 'BOOKING_SESSION' | 'ADMIN_CHAT';
 
 export interface ConversationSession {
   id: string;
@@ -23,3 +27,20 @@ export interface ConversationSession {
   sessionCanceledBy: ConversationCanceler;
   sessionCanceledTime: string | null;
 }
+
+export interface ConversationParams extends PagingParams {
+  sortBy: string;
+  participantName?: string;
+  type?: ConversationType;
+  status?: ConversationStatus;
+}
+
+export interface MessagesStats {
+  totalUsers: number;
+  totalActives: number;
+  totalSentMessages: number;
+  readPercent: number;
+}
+
+export type GetMessagesStatsResponse = SingleResponse<MessagesStats> | SimpleResponse;
+export type GetSearchConversationsResponse = ListResponse<ConversationSession>;

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2, X } from 'lucide-react';
-import { getAccounts, searchAccounts, getAccountById } from '@/services/account';
+import { getAccounts, getAccountById } from '@/services/account';
 import { ROLE_LABELS, STATUS_LABELS } from '@/constants/account.constant';
 import { UserAccount, Role, Status, GetAccountsParams } from '@/types/account/account.type';
 import { Badge } from '../common/Badge';
@@ -50,7 +50,7 @@ export const AccountTable: React.FC = () => {
 
       let res;
       if (debouncedSearch.trim()) {
-        res = await searchAccounts({ ...params, keyword: debouncedSearch.trim() });
+        res = await getAccounts({ ...params, keyword: debouncedSearch.trim() });
         let filtered = res.data;
         if (selectedRole !== 'Tất cả')
           filtered = filtered.filter((u: any) => u.role === selectedRole);

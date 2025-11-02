@@ -14,7 +14,13 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-export type BadgeType = 'AccountStatus' | 'AccountRole' | 'expertise' | 'post' | 'payment';
+export type BadgeType =
+  | 'status'
+  | 'AccountStatus'
+  | 'AccountRole'
+  | 'expertise'
+  | 'post'
+  | 'payment';
 export type BadgeAccountStatus =
   | 'Đang hoạt động'
   | 'Ngừng hoạt động'
@@ -127,6 +133,61 @@ export const Badge: React.FC<{ type: BadgeType; value: string }> = ({ type, valu
     classes = style.classes;
   } else {
     classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
+  }
+
+  if (type === 'status') {
+    switch (value) {
+      case 'COMPLETED':
+        classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
+        Icon = ShieldCheck;
+        value = 'Hoàn thành';
+        break;
+      case 'CONFIRMED':
+        classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
+        Icon = Clock;
+        value = 'Đã xác nhận';
+        break;
+      case 'PENDING':
+        classes = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
+        Icon = Clock;
+        value = 'Chờ xác nhận';
+        break;
+      case 'FAILED':
+        classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+        Icon = ShieldAlert;
+        value = 'Thất bại';
+        break;
+      case 'CANCELLED':
+        classes = 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
+        Icon = CircleX;
+        value = 'Đã hủy';
+        break;
+    }
+  }
+
+  if (type === 'payment') {
+    switch (value) {
+      case 'COMPLETED':
+        classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
+        Icon = ShieldCheck;
+        value = 'Đã thanh toán';
+        break;
+      case 'PENDING':
+        classes = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
+        Icon = Clock;
+        value = 'Đang xử lý';
+        break;
+      case 'REFUNDED':
+        classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
+        Icon = RefreshCcw;
+        value = 'Đã hoàn tiền';
+        break;
+      case 'FAILED':
+        classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+        Icon = CircleX;
+        value = 'Thanh toán thất bại';
+        break;
+    }
   }
 
   return (
