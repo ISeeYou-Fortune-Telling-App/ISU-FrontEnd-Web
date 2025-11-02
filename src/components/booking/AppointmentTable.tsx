@@ -170,7 +170,7 @@ export const AppointmentTable: React.FC = () => {
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{app.dateTime}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{app.duration}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <Badge type="status" value={app.status} />
+                  <Badge type="AccountStatus" value={app.status} />
                 </td>
                 <td className="px-6 py-3 whitespace-nowrap">
                   <Badge type="payment" value={app.paymentStatus} />

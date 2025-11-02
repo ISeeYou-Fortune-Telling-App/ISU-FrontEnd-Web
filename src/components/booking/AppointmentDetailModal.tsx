@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import { X, Calendar, User, Clock, Check, Ban } from 'lucide-react'; 
-import { Badge, BadgeStatus } from '../common/Badge'; 
+import { Badge, BadgeType } from '../common/Badge'; 
 
 // ==================== INTERFACE ====================
 export interface AppointmentDetail {
@@ -77,7 +77,7 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({ 
                   <span className="font-medium text-gray-900 dark:text-white">{appointment.clientName}</span>
                 </div>
                 <div className="mt-2">
-                  <Badge type="status" value={appointment.status as BadgeStatus} />
+                  <Badge type="AccountStatus" value={appointment.status as BadgeType} />
                 </div>
               </div>
               <div>

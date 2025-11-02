@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Eye,
@@ -8,82 +9,248 @@ import {
   ChevronRight,
   ThumbsUp,
   ThumbsDown,
+  MessageCircle,
+  ChevronDown,
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { PostDetailModal } from './PackageDetailModal';
 import { PackageService } from '@/services/packages/package.service';
-import { ServicePackage } from '@/types/packages/package.type';
-
-type StatusFilterType = 'Tất cả' | 'AVAILABLE' | 'DISABLED' | 'HIDDEN';
+import { ServiceCategoryEnum, ServicePackage } from '@/types/packages/package.type';
+import {
+  getCategoryDisplay,
+  getCategoryColorClass,
+  type StatusFilterType,
+} from '@/utils/packageHelpers';
 
 const ITEMS_PER_PAGE = 10;
 
+export const mockPackages = Array.from({ length: 100 }).map((_, i) => {
+  const id = i + 1;
+  const categories: ServiceCategoryEnum[] = [
+    ServiceCategoryEnum.PALM_READING,
+    ServiceCategoryEnum.CONSULTATION,
+    ServiceCategoryEnum.TAROT,
+    ServiceCategoryEnum.PHYSIOGNOMY,
+  ];
+  const statuses = ['AVAILABLE', 'CLOSED', 'HAVE_REPORT', 'HIDDEN'];
+  return {
+    id: id.toString(),
+    packageTitle: `Gói dịch vụ #${id}`,
+    packageContent: `Mô tả chi tiết cho gói dịch vụ số ${id}. Bao gồm các phân tích chuyên sâu và tư vấn cá nhân hóa.`,
+    imageUrl: `https://picsum.photos/seed/package-${id}/400/300`,
+    category: categories[i % categories.length],
+    status: statuses[i % statuses.length],
+    likeCount: Math.floor(Math.random() * 500),
+    dislikeCount: Math.floor(Math.random() * 50),
+    createdAt: new Date(
+      2024,
+      Math.floor(Math.random() * 12),
+      Math.floor(Math.random() * 28) + 1,
+      Math.floor(Math.random() * 24),
+      Math.floor(Math.random() * 60),
+    ).toISOString(),
+    updatedAt: new Date(
+      2024,
+      Math.floor(Math.random() * 12),
+      Math.floor(Math.random() * 28) + 1,
+      Math.floor(Math.random() * 24),
+      Math.floor(Math.random() * 60),
+    ).toISOString(),
+    durationMinutes: Math.floor(Math.random() * 120) + 15,
+    price: Math.floor(Math.random() * 1000000) + 100000,
+    seer: {
+      id: (100 + (i % 10)).toString(),
+      fullName: `Thầy/Cô ${
+        ['Minh', 'Thiên', 'Phương', 'Hoàng', 'Bảo', 'Thúy', 'Hải', 'Kim', 'Ngọc', 'Trí'][i % 10]
+      } ${['Tuệ', 'Ân', 'Tâm', 'Long', 'Linh', 'Anh', 'Đức', 'Hạnh', 'Phúc', 'Lộc'][i % 10]}`,
+      avatarUrl: `https://i.pravatar.cc/150?img=${(i % 70) + 1}`,
+      avgRating: parseFloat((Math.random() * 5).toFixed(2)),
+      totalRates: Math.floor(Math.random() * 1000),
+    },
+  };
+});
+
 export const PackageTable: React.FC = () => {
+  // ==================== STATE ====================
   const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<StatusFilterType>('Tất cả');
+  const [selectedCategory, setSelectedCategory] = useState<ServiceCategoryEnum | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPackage, setSelectedPackage] = useState<ServicePackage | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 🧠 Gọi API
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await PackageService.getAll({
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-          sortType: 'desc',
-          sortBy: 'createdAt',
-        });
-        setPackages(res.data);
+        setError(null);
+
+        // if (selectedCategory !== 'ALL') {
+        //   const res = await PackageService.getByCategory(selectedCategory, {
+        //     page: currentPage,
+        //     limit: ITEMS_PER_PAGE,
+        //     sortType: 'desc',
+        //     sortBy: 'createdAt',
+        //     minPrice: 0,
+        //     maxPrice: 10000000,
+        //   });
+        //   setPackages(res.data);
+        // } else {
+        //   const res = await PackageService.getAll({
+        //     page: currentPage,
+        //     limit: ITEMS_PER_PAGE,
+        //     sortType: 'desc',
+        //     sortBy: 'createdAt',
+        //     minPrice: 0,
+        //     maxPrice: 10000000,
+        //     status: selectedFilter !== 'Tất cả' ? selectedFilter as any : undefined,
+        //   });
+        //   setPackages(res.data);
+        // }
+
+        // FAKE DATA
+        setPackages(mockPackages);
       } catch (err) {
         console.error('❌ Lỗi khi tải danh sách gói:', err);
+        setError('Không thể tải danh sách gói dịch vụ');
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [currentPage]);
+  }, [currentPage, selectedCategory, selectedFilter]);
 
   // 🔍 Filter + Search
-  const filteredPackages = packages.filter((pkg) => {
-    const matchesSearch =
-      pkg.packageTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pkg.packageContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pkg.seer.fullName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedFilter === 'Tất cả' || pkg.status === selectedFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredPackages = useMemo(() => {
+    return packages.filter((pkg) => {
+      const matchesSearch =
+        pkg.packageTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pkg.packageContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pkg.seer.fullName.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const totalItems = filteredPackages.length;
-  const totalPages = 1; // Có thể update từ backend sau
+      let matchesStatus = true;
+      if (selectedFilter !== 'Tất cả') {
+        if (selectedFilter === 'DISABLED') {
+          matchesStatus = pkg.status === 'CLOSED' || pkg.status === 'HAVE_REPORT';
+        } else {
+          matchesStatus = pkg.status === selectedFilter;
+        }
+      }
 
-  const goToNextPage = () => setCurrentPage((prev) => prev + 1);
+      const matchesCategory = selectedCategory === 'ALL' || pkg.category === selectedCategory;
+
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [packages, searchTerm, selectedFilter, selectedCategory]);
+
+  // PAGINATION
+  const { totalItems, totalPages, startIndex, endIndex, currentPackages } = useMemo(() => {
+    const totalItems = filteredPackages.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const currentPackages = filteredPackages.slice(startIndex, endIndex);
+
+    return { totalItems, totalPages, startIndex, endIndex, currentPackages };
+  }, [filteredPackages, currentPage]);
+
+  const goToNextPage = () => setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
   const goToPrevPage = () => setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
 
-  const handleReject = (pkg: ServicePackage) => {
+  // ==================== ACTION ====================
+  const handleViewDetail = async (pkg: ServicePackage) => {
+    try {
+      //const res = (await PackageService.getInteractions(pkg.id)) as { data: ServicePackage };
+      setSelectedPackage(pkg);
+    } catch (err) {
+      console.error('❌ Lỗi khi tải chi tiết:', err);
+      setSelectedPackage(pkg);
+    }
+  };
+
+  const handleReject = async (pkg: ServicePackage) => {
     console.log('❌ Đã từ chối gói:', pkg.id, pkg.packageTitle);
   };
 
+  const mapPackageToPost = (pkg: ServicePackage | null) => {
+    if (!pkg) return null;
+
+    return {
+      id: pkg.id,
+      author: pkg.seer.fullName,
+      postedAt: new Date(pkg.createdAt).toLocaleString('vi-VN'),
+      title: pkg.packageTitle,
+      fullContent: pkg.packageContent,
+      categories: pkg.category ? [getCategoryDisplay(pkg.category)] : [],
+      likes: pkg.likeCount,
+      dislikes: pkg.dislikeCount,
+      comments: 0,
+      reports: 0,
+    };
+  };
+
+  // ==================== RENDER ====================
+  const categoryOptions: Array<{ value: ServiceCategoryEnum | 'ALL'; label: string }> = [
+    { value: 'ALL', label: 'Tất cả danh mục' },
+    {
+      value: ServiceCategoryEnum.PALM_READING,
+      label: getCategoryDisplay(ServiceCategoryEnum.PALM_READING),
+    },
+    {
+      value: ServiceCategoryEnum.CONSULTATION,
+      label: getCategoryDisplay(ServiceCategoryEnum.CONSULTATION),
+    },
+    { value: ServiceCategoryEnum.TAROT, label: getCategoryDisplay(ServiceCategoryEnum.TAROT) },
+    {
+      value: ServiceCategoryEnum.PHYSIOGNOMY,
+      label: getCategoryDisplay(ServiceCategoryEnum.PHYSIOGNOMY),
+    },
+  ];
+
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo tên Nhà tiên tri hoặc tiêu đề..."
-          className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
-                     focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
-                     text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
-          }}
-        />
+      {/* Search & Category Filter */}
+      <div className="flex gap-3 mb-4">
+        {/* Search Box */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên Nhà tiên tri hoặc tiêu đề..."
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+                       focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
+                       text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+
+        {/* Category Dropdown */}
+        <div className="relative">
+          <select
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value as ServiceCategoryEnum | 'ALL');
+              setCurrentPage(1);
+            }}
+            className="appearance-none flex items-center gap-2 px-2.5 py-2 rounded-[5px] bg-[#F0F2F5] dark:bg-gray-700 
+                       text-[#42454A] dark:text-gray-300 text-sm font-normal 
+                       border-none outline-none cursor-pointer pr-8 min-w-[180px]"
+          >
+            {categoryOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#42454A] dark:text-gray-300 w-[19px] h-[19px]" />
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -115,6 +282,13 @@ export const PackageTable: React.FC = () => {
         </div>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-600 dark:text-red-400 text-sm">❌ {error}</p>
+        </div>
+      )}
+
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
         {loading ? (
@@ -133,7 +307,7 @@ export const PackageTable: React.FC = () => {
                   Tác giả
                 </th>
                 <th className="w-[260px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Tiêu đề
+                  Nội dung
                 </th>
                 <th className="w-[140px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Danh mục
@@ -154,7 +328,7 @@ export const PackageTable: React.FC = () => {
             </thead>
 
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredPackages.map((pkg) => (
+              {currentPackages.map((pkg) => (
                 <tr
                   key={pkg.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
@@ -176,7 +350,7 @@ export const PackageTable: React.FC = () => {
                     </div>
                   </td>
 
-                  {/* 📘 Tiêu đề */}
+                  {/* 📘 Nội dung */}
                   <td className="px-6 py-3 w-[260px] text-sm text-gray-800 dark:text-gray-200">
                     <div className="flex items-center space-x-2 overflow-hidden">
                       <img
@@ -194,25 +368,40 @@ export const PackageTable: React.FC = () => {
                   </td>
 
                   {/* 🏷️ Danh mục */}
-                  <td className="px-6 py-3 w-[140px] whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 truncate">
-                    {pkg.category ?? '—'}
+                  <td className="px-6 py-3 w-[140px] whitespace-nowrap text-sm text-center">
+                    <div
+                      className={`flex flex-col justify-center items-center gap-[10px] p-[2px] rounded-[5px] ${getCategoryColorClass(
+                        pkg.category,
+                      )}`}
+                    >
+                      <span className="font-[Inter] text-[12px] font-normal leading-normal text-center">
+                        {getCategoryDisplay(pkg.category)}
+                      </span>
+                    </div>
                   </td>
 
                   {/* ⚙️ Trạng thái */}
                   <td className="px-6 py-3 w-[130px] whitespace-nowrap text-sm">
-                    <Badge type="status" value={pkg.status} />
+                    <Badge type={'status' as any} value={pkg.status} />
                   </td>
 
                   {/* 💬 Tương tác */}
-                  <td className="px-6 py-3 w-[140px] whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                    <div className="flex items-center justify-center space-x-4">
-                      <span className="flex items-center space-x-1">
-                        <ThumbsUp className="w-4 h-4 text-blue-500" />
-                        <span>{pkg.likeCount}</span>
+                  <td className="px-6 py-3 w-[140px] whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 align-middle">
+                    <div className="flex items-center justify-center gap-3">
+                      {/* each metric has fixed width so columns stay aligned top-to-bottom */}
+                      <span className="inline-flex items-center justify-center gap-1 w-[56px]">
+                        <ThumbsUp className="w-4 h-4" />
+                        <span className="text-sm leading-none">{pkg.likeCount}</span>
                       </span>
-                      <span className="flex items-center space-x-1">
-                        <ThumbsDown className="w-4 h-4 text-red-500" />
-                        <span>{pkg.dislikeCount}</span>
+
+                      <span className="inline-flex items-center justify-center gap-1 w-[56px]">
+                        <ThumbsDown className="w-4 h-4" />
+                        <span className="text-sm leading-none">{pkg.dislikeCount}</span>
+                      </span>
+
+                      <span className="inline-flex items-center justify-center gap-1 w-[56px]">
+                        <MessageCircle className="w-4 h-4" />
+                        <span className="text-sm leading-none">{pkg.dislikeCount}</span>
                       </span>
                     </div>
                   </td>
@@ -225,7 +414,7 @@ export const PackageTable: React.FC = () => {
                   {/* 🧩 Thao tác */}
                   <td className="px-6 py-3 w-[120px] whitespace-nowrap text-right text-sm font-medium flex justify-end space-x-2">
                     <button
-                      onClick={() => setSelectedPackage(pkg)}
+                      onClick={() => handleViewDetail(pkg)}
                       className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors"
                       title="Xem chi tiết"
                     >
@@ -272,8 +461,16 @@ export const PackageTable: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
-      {/* <PostDetailModal post={selectedPackage} onClose={() => setSelectedPackage(null)} /> */}
+      {/* Modal Detail */}
+      {selectedPackage && (
+        <PostDetailModal
+          post={mapPackageToPost(selectedPackage)}
+          onClose={() => setSelectedPackage(null)}
+          onReject={(id) => {
+            alert('Backend chưa hỗ trợ chức năng này');
+          }}
+        />
+      )}
     </div>
   );
 };
