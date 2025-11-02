@@ -67,29 +67,6 @@ export const AccountService = {
     throw new Error('Không nhận được dữ liệu người dùng hiện tại hợp lệ.');
   },
 
-  searchAccounts: async (params: PagingParams): Promise<ListUserAccountResponse> => {
-    const response = await apiFetch<GetAccountsResponse>('/account/search', {
-      method: 'GET',
-      params: {
-        keyword: params.keyword ?? '',
-        page: params.page ?? 1,
-        limit: params.limit ?? 15,
-        sortType: params.sortType ?? 'asc',
-        sortBy: params.sortBy ?? 'createdAt',
-      },
-    });
-
-    if (isListResponse<UserAccount>(response)) {
-      return response;
-    }
-
-    if (isSimpleResponse(response)) {
-      throw new Error(response.message || 'Lỗi khi tìm kiếm tài khoản.');
-    }
-
-    throw new Error('Định dạng phản hồi tìm kiếm tài khoản không hợp lệ.');
-  },
-
   getAccountById: async (id: string): Promise<SingleUserAccountResponse> => {
     const response = await apiFetch<GetAccountByIdResponse>(`/account/${id}`);
     if (isSingleResponse<UserAccount>(response)) {

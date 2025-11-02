@@ -40,6 +40,6 @@ export const logout = () => {
   localStorage.removeItem('userRole');
 
   if (typeof window !== 'undefined') {
-    window.location.href = '/login';
+    window.location.href = '/auth/login';
   }
 };

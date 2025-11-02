@@ -1,32 +1,19 @@
-'use client'
+'use client';
 import React from 'react';
 import { X, Calendar, User, CreditCard } from 'lucide-react';
 import { Badge } from '../common/Badge';
+import type { BookingPayment } from '@/types/payments/payments.type';
 
-interface Payment {
-  id: string;
-  customer: string;
-  seer: string;
-  service: string;
-  method: string;
-  amount: string;
-  status: 'Thành công' | 'Đã hoàn tiền' | 'Thất bại';
-  time: string;
-}
-
-interface PaymentDetailModalProps {
-  payment: Payment | null;
+interface Props {
+  payment: BookingPayment | null;
   onClose: () => void;
 }
 
-export type PaymentStatus = 'Thành công' | 'Thất bại' | 'Đã hoàn tiền';
-
-
-export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({ payment, onClose }) => {
+export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
   if (!payment) return null;
 
-  const isRefund = payment.status === 'Đã hoàn tiền';
-  const isFailed = payment.status === 'Thất bại';
+  const isRefund = payment.paymentStatus === 'REFUNDED';
+  const isFailed = payment.paymentStatus === 'FAILED';
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-end" onClick={onClose}>
@@ -36,74 +23,80 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({ payment,
       >
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-sm font-medium text-gray-500">Payment – View Details</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+          <h2 className="text-sm font-medium text-gray-500">Chi tiết thanh toán</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Content */}
         <div className="flex-grow overflow-y-auto p-6 space-y-6">
-          {/* Badge trạng thái */}
-          <Badge type="payment" value={payment.status} />
+          <Badge type="payment" value={payment.paymentStatus} />
 
-          {/* Thông tin khách + seer */}
+          {/* Khách và Seer */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-500 text-xs">Khách hàng</p>
               <p className="flex items-center font-medium text-gray-900 dark:text-white">
-                <User className="w-4 h-4 mr-2" /> {payment.customer}
+                <User className="w-4 h-4 mr-2" /> {payment.customer.fullName}
               </p>
             </div>
             <div>
               <p className="text-gray-500 text-xs">Nhà tiên tri</p>
               <p className="flex items-center font-medium text-gray-900 dark:text-white">
-                <User className="w-4 h-4 mr-2" /> {payment.seer}
+                <User className="w-4 h-4 mr-2" /> {payment.seer.fullName}
               </p>
             </div>
             <div className="col-span-2">
               <p className="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                <Calendar className="w-4 h-4 mr-2" /> {payment.time}
+                <Calendar className="w-4 h-4 mr-2" />{' '}
+                {new Date(payment.createdAt).toLocaleString('vi-VN')}
               </p>
             </div>
           </div>
 
           {/* Thông tin thanh toán */}
           <div className="space-y-1 border rounded-lg p-4 text-sm dark:border-gray-600">
-            <p>Mã giao dịch: <span className="font-medium">{payment.id}</span></p>
-            <p>Dịch vụ: {payment.service}</p>
-            <p>Trạng thái: {payment.status}</p>
-            <p>Giá tiền: {payment.amount}</p>
+            <p>
+              Mã giao dịch: <span className="font-medium">{payment.transactionId}</span>
+            </p>
+            <p>Dịch vụ: {payment.packageTitle}</p>
+            <p>Phương thức: {payment.paymentMethod}</p>
+            <p>Trạng thái: {payment.paymentStatus}</p>
+            <p>Giá tiền: {payment.amount.toLocaleString('vi-VN')}₫</p>
           </div>
 
-          {/* Lý do hoàn tiền/thất bại */}
-          {isRefund && (
+          {/* Lý do thất bại / hoàn tiền */}
+          {isRefund && payment.failureReason && (
             <div className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300">
-              Lý do hoàn tiền: <span className="italic">Seer bạn hủy đột xuất.</span>
+              Lý do hoàn tiền: <span className="italic">{payment.failureReason}</span>
             </div>
           )}
-          {isFailed && (
+          {isFailed && payment.failureReason && (
             <div className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300">
-              Lý do thất bại: <span className="italic">VNPay giao dịch lỗi hoặc tài khoản không đủ số dư.</span>
+              Lý do thất bại: <span className="italic">{payment.failureReason}</span>
             </div>
           )}
 
-          {/* Phương thức */}
+          {/* Tổng tiền chi tiết */}
           <div className="border rounded-lg p-4 dark:border-gray-600">
             <p className="flex items-center text-sm font-medium text-gray-900 dark:text-white mb-3">
-              <CreditCard className="w-4 h-4 mr-2" /> {payment.method}
+              <CreditCard className="w-4 h-4 mr-2" /> {payment.paymentMethod}
             </p>
             <div className="flex justify-between text-sm mb-1">
               <span>Tổng tiền</span>
-              <span>{isFailed ? '0 VND' : '299.000 VND'}</span>
+              <span>{payment.amount.toLocaleString('vi-VN')}₫</span>
             </div>
             <div className="flex justify-between text-sm mb-1">
               <span>Phí nền tảng (10%)</span>
-              <span>{isFailed ? '0 VND' : '29.900 VND'}</span>
+              <span>{Math.round(payment.amount * 0.1).toLocaleString('vi-VN')}₫</span>
             </div>
             <div className="flex justify-between text-sm font-bold text-green-600 dark:text-green-400">
-              <span>{isRefund ? 'Khách hàng nhận được' : 'Nhà tiên tri nhận được'}</span>
-              <span>{isFailed ? '0 VND' : '261.100 VND'}</span>
+              <span>{isRefund ? 'Khách hàng nhận lại' : 'Nhà tiên tri nhận được'}</span>
+              <span>{Math.round(payment.amount * 0.9).toLocaleString('vi-VN')}₫</span>
             </div>
           </div>
         </div>

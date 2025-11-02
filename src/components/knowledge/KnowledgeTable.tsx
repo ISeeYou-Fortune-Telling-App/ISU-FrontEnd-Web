@@ -1,8 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { KnowledgeDetailModal } from './KnowledgeDetailModal';
 import { Search, Eye, Trash2, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
-import { getCategories, getKnowledges, searchKnowledgeItem } from '@/services/knowledge';
+import {
+  getCategories,
+  getKnowledges,
+  searchKnowledgeItem,
+  getKnowledgeById,
+} from '@/services/knowledge';
 import type {
   KnowledgeItem,
   KnowledgeCategory,
@@ -12,7 +18,6 @@ import { useDebounce } from '@/hooks/useDebounce';
 
 const ITEMS_PER_PAGE = 10;
 
-// ---------- Badge hiển thị danh mục ----------
 const CategoryBadge = ({ value }: { value: string }) => {
   let colorClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
   if (value === 'Ngũ Hành')
@@ -29,6 +34,9 @@ const CategoryBadge = ({ value }: { value: string }) => {
 };
 
 export const KnowledgeTable: React.FC = () => {
+  const [selectedKnowledge, setSelectedKnowledge] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 500);
 
@@ -79,6 +87,20 @@ export const KnowledgeTable: React.FC = () => {
     } finally {
       if (isInitial) setLoading(false);
       else setRefreshing(false);
+    }
+  };
+
+  const handleViewDetail = async (id: string) => {
+    try {
+      setLoadingDetail(true);
+      const detail = await getKnowledgeById(id);
+      setSelectedKnowledge(detail);
+      setIsModalOpen(true);
+    } catch (err) {
+      console.error('❌ Lỗi khi tải chi tiết bài viết:', err);
+      alert('Không thể tải chi tiết bài viết.');
+    } finally {
+      setLoadingDetail(false);
     }
   };
 
@@ -276,25 +298,25 @@ export const KnowledgeTable: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed">
           <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
             <tr>
-              <th className="w-[320px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[290px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Bài viết
               </th>
-              <th className="w-[220px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[270px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Danh mục
               </th>
-              <th className="w-[120px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[250px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Trạng thái
               </th>
-              <th className="w-[100px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[50px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Lượt xem
               </th>
-              <th className="w-[160px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[130px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Ngày đăng
               </th>
-              <th className="w-[160px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[130px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Cập nhật
               </th>
-              <th className="w-[120px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[130px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thao tác
               </th>
             </tr>
@@ -316,22 +338,22 @@ export const KnowledgeTable: React.FC = () => {
                   key={k.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
                 >
-                  <td className="px-6 py-3 w-[320px]">
+                  <td className="px-4 py-2 w-[290px]">
                     <div className="flex items-start space-x-3">
                       <img
                         src={k.imageUrl || '/default_image.jpg'}
                         alt={k.title}
-                        className="w-16 h-12 object-cover rounded-md flex-shrink-0"
+                        className="w-10 h-10 object-cover rounded-md flex-shrink-0"
                       />
                       <div className="flex flex-col min-w-0">
                         <div
-                          className="font-semibold text-gray-900 dark:text-white truncate max-w-[180px]"
+                          className="font-semibold text-sm text-gray-900 dark:text-white truncate max-w-[290px]"
                           title={k.title}
                         >
                           {k.title}
                         </div>
                         <div
-                          className="text-xs font-light text-gray-600 dark:text-gray-400 truncate mt-0.5 max-w-[180px]"
+                          className="text-xs font-light text-gray-600 dark:text-gray-400 truncate mt-0.5 max-w-[290px]"
                           title={k.content}
                         >
                           {k.content}
@@ -340,15 +362,15 @@ export const KnowledgeTable: React.FC = () => {
                     </div>
                   </td>
 
-                  <td className="px-6 py-3 text-center w-[220px]">
-                    <div className="flex flex-wrap justify-center">
+                  <td className="px-6 py-3 text-center w-[310px]">
+                    <div className="flex flex-wrap justify-start">
                       {k.categories.map((cat, idx) => (
                         <CategoryBadge key={idx} value={cat} />
                       ))}
                     </div>
                   </td>
 
-                  <td className="px-6 py-3 text-center w-[120px]">
+                  <td className="px-6 py-3 text-center w-[250px]">
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusClass(
                         k.status,
@@ -362,25 +384,32 @@ export const KnowledgeTable: React.FC = () => {
                     </span>
                   </td>
 
-                  <td className="px-6 py-3 text-center w-[100px] text-gray-600 dark:text-gray-300">
+                  <td className="px-6 py-3 text-center w-[50px] text-gray-600 dark:text-gray-300 text-sm">
                     {k.viewCount}
                   </td>
 
-                  <td className="px-6 py-3 text-center w-[160px] text-gray-600 dark:text-gray-300">
+                  <td className="px-6 py-3 text-center w-[160px] text-gray-600 dark:text-gray-300 text-sm ">
                     {formatDateTime(k.createdAt)}
                   </td>
 
-                  <td className="px-6 py-3 text-center w-[160px] text-gray-600 dark:text-gray-300">
+                  <td className="px-6 py-3 text-center w-[160px] text-gray-600 dark:text-gray-300 text-sm">
                     {formatDateTime(k.updatedAt)}
                   </td>
 
-                  <td className="px-6 py-3 text-center w-[120px] space-x-2">
+                  <td className="px-4 py-3 text-center w-[150px] space-x-1">
                     <button
                       title="Xem chi tiết"
-                      className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
+                      onClick={() => handleViewDetail(k.id)}
+                      disabled={loadingDetail}
+                      className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors disabled:opacity-50"
                     >
-                      <Eye className="w-5 h-5 inline-block" />
+                      {loadingDetail ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Eye className="w-5 h-5 inline-block" />
+                      )}
                     </button>
+
                     <button
                       title="Xóa bài viết"
                       className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 transition-colors"
@@ -426,6 +455,9 @@ export const KnowledgeTable: React.FC = () => {
           </button>
         </div>
       </div>
+      {isModalOpen && selectedKnowledge && (
+        <KnowledgeDetailModal knowledge={selectedKnowledge} onClose={() => setIsModalOpen(false)} />
+      )}
     </div>
   );
 };
