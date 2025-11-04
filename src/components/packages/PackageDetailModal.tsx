@@ -4,7 +4,7 @@ import { X, ThumbsUp, ThumbsDown, MessageCircle, Flag, Image as ImageIcon, EyeOf
 import { Badge } from '../common/Badge';
 
 interface Post {
-  id: number;
+  id: string;
   author: string;
   postedAt: string;
   title: string;
