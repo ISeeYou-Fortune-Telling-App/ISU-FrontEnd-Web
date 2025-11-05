@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,7 +15,8 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
-import { PostDetailModal } from './PackageDetailModal';
+import { PackageDetailModal } from './PackageDetailModal';
+import { PackageReviewsModal } from './PackageReviewsModal';
 import { PackageService } from '@/services/packages/package.service';
 import { ServiceCategoryEnum, ServicePackage } from '@/types/packages/package.type';
 import {
@@ -23,52 +26,6 @@ import {
 } from '@/utils/packageHelpers';
 
 const ITEMS_PER_PAGE = 10;
-
-export const mockPackages = Array.from({ length: 100 }).map((_, i) => {
-  const id = i + 1;
-  const categories: ServiceCategoryEnum[] = [
-    ServiceCategoryEnum.PALM_READING,
-    ServiceCategoryEnum.CONSULTATION,
-    ServiceCategoryEnum.TAROT,
-    ServiceCategoryEnum.PHYSIOGNOMY,
-  ];
-  const statuses = ['AVAILABLE', 'CLOSED', 'HAVE_REPORT', 'HIDDEN'];
-  return {
-    id: id.toString(),
-    packageTitle: `Gói dịch vụ #${id}`,
-    packageContent: `Mô tả chi tiết cho gói dịch vụ số ${id}. Bao gồm các phân tích chuyên sâu và tư vấn cá nhân hóa.`,
-    imageUrl: `https://picsum.photos/seed/package-${id}/400/300`,
-    category: categories[i % categories.length],
-    status: statuses[i % statuses.length],
-    likeCount: Math.floor(Math.random() * 500),
-    dislikeCount: Math.floor(Math.random() * 50),
-    createdAt: new Date(
-      2024,
-      Math.floor(Math.random() * 12),
-      Math.floor(Math.random() * 28) + 1,
-      Math.floor(Math.random() * 24),
-      Math.floor(Math.random() * 60),
-    ).toISOString(),
-    updatedAt: new Date(
-      2024,
-      Math.floor(Math.random() * 12),
-      Math.floor(Math.random() * 28) + 1,
-      Math.floor(Math.random() * 24),
-      Math.floor(Math.random() * 60),
-    ).toISOString(),
-    durationMinutes: Math.floor(Math.random() * 120) + 15,
-    price: Math.floor(Math.random() * 1000000) + 100000,
-    seer: {
-      id: (100 + (i % 10)).toString(),
-      fullName: `Thầy/Cô ${
-        ['Minh', 'Thiên', 'Phương', 'Hoàng', 'Bảo', 'Thúy', 'Hải', 'Kim', 'Ngọc', 'Trí'][i % 10]
-      } ${['Tuệ', 'Ân', 'Tâm', 'Long', 'Linh', 'Anh', 'Đức', 'Hạnh', 'Phúc', 'Lộc'][i % 10]}`,
-      avatarUrl: `https://i.pravatar.cc/150?img=${(i % 70) + 1}`,
-      avgRating: parseFloat((Math.random() * 5).toFixed(2)),
-      totalRates: Math.floor(Math.random() * 1000),
-    },
-  };
-});
 
 export const PackageTable: React.FC = () => {
   // ==================== STATE ====================
@@ -80,6 +37,9 @@ export const PackageTable: React.FC = () => {
   const [selectedPackage, setSelectedPackage] = useState<ServicePackage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [packageToDelete, setPackageToDelete] = useState<ServicePackage | null>(null);
 
   // 🧠 Gọi API
   useEffect(() => {
@@ -88,31 +48,28 @@ export const PackageTable: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // if (selectedCategory !== 'ALL') {
-        //   const res = await PackageService.getByCategory(selectedCategory, {
-        //     page: currentPage,
-        //     limit: ITEMS_PER_PAGE,
-        //     sortType: 'desc',
-        //     sortBy: 'createdAt',
-        //     minPrice: 0,
-        //     maxPrice: 10000000,
-        //   });
-        //   setPackages(res.data);
-        // } else {
-        //   const res = await PackageService.getAll({
-        //     page: currentPage,
-        //     limit: ITEMS_PER_PAGE,
-        //     sortType: 'desc',
-        //     sortBy: 'createdAt',
-        //     minPrice: 0,
-        //     maxPrice: 10000000,
-        //     status: selectedFilter !== 'Tất cả' ? selectedFilter as any : undefined,
-        //   });
-        //   setPackages(res.data);
-        // }
-
-        // FAKE DATA
-        setPackages(mockPackages);
+        if (selectedCategory !== 'ALL') {
+          const res = await PackageService.getByCategory(selectedCategory, {
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            sortType: 'desc',
+            sortBy: 'createdAt',
+            minPrice: 0,
+            maxPrice: 10000000,
+          });
+          setPackages(res.data);
+        } else {
+          const res = await PackageService.getAll({
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            sortType: 'desc',
+            sortBy: 'createdAt',
+            minPrice: 0,
+            maxPrice: 10000000,
+            status: selectedFilter !== 'Tất cả' ? (selectedFilter as any) : undefined,
+          });
+          setPackages(res.data);
+        }
       } catch (err) {
         console.error('❌ Lỗi khi tải danh sách gói:', err);
         setError('Không thể tải danh sách gói dịch vụ');
@@ -131,65 +88,59 @@ export const PackageTable: React.FC = () => {
         pkg.packageContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pkg.seer.fullName.toLowerCase().includes(searchTerm.toLowerCase());
 
-      let matchesStatus = true;
-      if (selectedFilter !== 'Tất cả') {
-        if (selectedFilter === 'DISABLED') {
-          matchesStatus = pkg.status === 'CLOSED' || pkg.status === 'HAVE_REPORT';
-        } else {
-          matchesStatus = pkg.status === selectedFilter;
-        }
-      }
-
-      const matchesCategory = selectedCategory === 'ALL' || pkg.category === selectedCategory;
-
-      return matchesSearch && matchesStatus && matchesCategory;
+      return matchesSearch;
     });
-  }, [packages, searchTerm, selectedFilter, selectedCategory]);
+  }, [packages, searchTerm]);
 
   // PAGINATION
-  const { totalItems, totalPages, startIndex, endIndex, currentPackages } = useMemo(() => {
+  const { totalPages, currentPackages } = useMemo(() => {
     const totalItems = filteredPackages.length;
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const currentPackages = filteredPackages.slice(startIndex, endIndex);
 
-    return { totalItems, totalPages, startIndex, endIndex, currentPackages };
+    return { totalPages, currentPackages };
   }, [filteredPackages, currentPage]);
 
   const goToNextPage = () => setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
   const goToPrevPage = () => setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
 
-  // ==================== ACTION ====================
+  // ==================== ACTIONS ====================
   const handleViewDetail = async (pkg: ServicePackage) => {
     try {
-      //const res = (await PackageService.getInteractions(pkg.id)) as { data: ServicePackage };
-      setSelectedPackage(pkg);
+      const res = await PackageService.getInteractions(pkg.id);
+      setSelectedPackage(res.data);
     } catch (err) {
       console.error('❌ Lỗi khi tải chi tiết:', err);
       setSelectedPackage(pkg);
     }
   };
 
-  const handleReject = async (pkg: ServicePackage) => {
-    console.log('❌ Đã từ chối gói:', pkg.id, pkg.packageTitle);
+  const handleViewReviews = (pkg: ServicePackage) => {
+    setSelectedPackage(pkg);
+    setShowReviewsModal(true);
   };
 
-  const mapPackageToPost = (pkg: ServicePackage | null) => {
-    if (!pkg) return null;
+  const handleDeleteClick = (pkg: ServicePackage) => {
+    setPackageToDelete(pkg);
+    setShowDeleteConfirm(true);
+  };
 
-    return {
-      id: pkg.id,
-      author: pkg.seer.fullName,
-      postedAt: new Date(pkg.createdAt).toLocaleString('vi-VN'),
-      title: pkg.packageTitle,
-      fullContent: pkg.packageContent,
-      categories: pkg.category ? [getCategoryDisplay(pkg.category)] : [],
-      likes: pkg.likeCount,
-      dislikes: pkg.dislikeCount,
-      comments: 0,
-      reports: 0,
-    };
+  const handleDeleteConfirm = async () => {
+    if (!packageToDelete) return;
+
+    try {
+      await PackageService.delete(packageToDelete.id);
+      alert('Đã xóa gói dịch vụ thành công! Các booking chưa hoàn thành đã được hoàn tiền và hủy.');
+      setShowDeleteConfirm(false);
+      setPackageToDelete(null);
+      // Reload data
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Error deleting package:', err);
+      alert(err?.response?.data?.message || 'Không thể xóa gói dịch vụ');
+    }
   };
 
   // ==================== RENDER ====================
@@ -331,7 +282,8 @@ export const PackageTable: React.FC = () => {
               {currentPackages.map((pkg) => (
                 <tr
                   key={pkg.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
+                  onClick={() => handleViewDetail(pkg)}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 cursor-pointer"
                 >
                   {/* 🧙‍♂️ Tác giả */}
                   <td className="px-6 py-3 w-[180px] whitespace-nowrap">
@@ -388,7 +340,6 @@ export const PackageTable: React.FC = () => {
                   {/* 💬 Tương tác */}
                   <td className="px-6 py-3 w-[140px] whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 align-middle">
                     <div className="flex items-center justify-center gap-3">
-                      {/* each metric has fixed width so columns stay aligned top-to-bottom */}
                       <span className="inline-flex items-center justify-center gap-1 w-[56px]">
                         <ThumbsUp className="w-4 h-4" />
                         <span className="text-sm leading-none">{pkg.likeCount}</span>
@@ -401,7 +352,7 @@ export const PackageTable: React.FC = () => {
 
                       <span className="inline-flex items-center justify-center gap-1 w-[56px]">
                         <MessageCircle className="w-4 h-4" />
-                        <span className="text-sm leading-none">{pkg.dislikeCount}</span>
+                        <span className="text-sm leading-none">0</span>
                       </span>
                     </div>
                   </td>
@@ -412,21 +363,39 @@ export const PackageTable: React.FC = () => {
                   </td>
 
                   {/* 🧩 Thao tác */}
-                  <td className="px-6 py-3 w-[120px] whitespace-nowrap text-right text-sm font-medium flex justify-end space-x-2">
-                    <button
-                      onClick={() => handleViewDetail(pkg)}
-                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors"
-                      title="Xem chi tiết"
-                    >
-                      <Eye className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleReject(pkg)}
-                      className="text-red-500 hover:text-red-700 p-1 transition-colors"
-                      title="Từ chối gói"
-                    >
-                      <XIcon className="w-5 h-5" />
-                    </button>
+                  <td className="px-6 py-3 w-[120px] whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetail(pkg);
+                        }}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors"
+                        title="Xem chi tiết"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewReviews(pkg);
+                        }}
+                        className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
+                        title="Xem bình luận"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(pkg);
+                        }}
+                        className="text-red-500 hover:text-red-700 p-1 transition-colors"
+                        title="Xóa gói"
+                      >
+                        <XIcon className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -438,7 +407,7 @@ export const PackageTable: React.FC = () => {
       {/* Pagination */}
       <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          Trang {currentPage} / {totalPages}
+          Trang {currentPage} / {totalPages || 1}
         </span>
         <div className="flex items-center space-x-2">
           <button
@@ -454,7 +423,12 @@ export const PackageTable: React.FC = () => {
           </button>
           <button
             onClick={goToNextPage}
-            className="p-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300"
+            disabled={currentPage >= totalPages}
+            className={`p-1 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors ${
+              currentPage >= totalPages
+                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                : 'text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -462,14 +436,77 @@ export const PackageTable: React.FC = () => {
       </div>
 
       {/* Modal Detail */}
-      {selectedPackage && (
-        <PostDetailModal
-          post={mapPackageToPost(selectedPackage)}
+      {selectedPackage && !showReviewsModal && (
+        <PackageDetailModal
+          package={selectedPackage}
           onClose={() => setSelectedPackage(null)}
-          onReject={(id) => {
-            alert('Backend chưa hỗ trợ chức năng này');
+          onHide={async (id, reason) => {
+            try {
+              await PackageService.adminConfirm(id, 'HIDDEN', reason);
+              alert('Đã ẩn bài viết thành công!');
+              window.location.reload();
+            } catch (err: any) {
+              alert(err.message || 'Lỗi khi ẩn bài viết');
+            }
+          }}
+          onDelete={async (id) => {
+            try {
+              await PackageService.delete(id);
+              alert('Đã xóa bài viết thành công!');
+              window.location.reload();
+            } catch (err: any) {
+              alert(err.message || 'Lỗi khi xóa bài viết');
+            }
           }}
         />
+      )}
+
+      {/* Reviews Modal */}
+      {showReviewsModal && selectedPackage && (
+        <PackageReviewsModal
+          packageId={selectedPackage.id}
+          packageTitle={selectedPackage.packageTitle}
+          onClose={() => {
+            setShowReviewsModal(false);
+            setSelectedPackage(null);
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && packageToDelete && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              ⚠️ Xác nhận xóa
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
+              Bạn có chắc chắn muốn xóa gói dịch vụ{' '}
+              <strong>"{packageToDelete.packageTitle}"</strong>?
+              <br />
+              <br />
+              Các booking chưa hoàn thành (PENDING, CONFIRMED) sẽ được tự động hoàn tiền và hủy.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setPackageToDelete(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 
+                           rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

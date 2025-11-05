@@ -29,6 +29,12 @@ export interface SeerInfo {
   totalRates: number;
 }
 
+export interface UserInfo {
+  id: string;
+  fullName: string;
+  avatarUrl: string;
+}
+
 // Service Package
 export interface ServicePackage {
   id: string;
@@ -46,11 +52,37 @@ export interface ServicePackage {
   updatedAt: string;
 }
 
+// REVIEWS 
+export interface ServiceReview {
+  id: string;
+  user: UserInfo;
+  packageId: string;
+  comment: string;
+  parentReviewId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== REQUEST DTOs ====================
 
 // PackageInteractionRequest từ backend
 export interface PackageInteractionRequest {
   interactionType: InteractionTypeEnum  // Backend validate: "LIKE|DISLIKE"
+}
+
+export interface ServiceReviewRequest {
+  comment: string;
+  parentReviewId?: string | null; // null = top-level review, có giá trị = reply
+}
+
+export interface DeletePackageRequest {
+  id: string;
+}
+
+// Admin Confirm/Reject Request
+export interface AdminConfirmPackageRequest {
+  status: PackageStatusEnum;
+  rejectionReason?: string;
 }
 
 // ==================== RESPONSE DTOs ====================
@@ -69,6 +101,33 @@ export interface PackageInteractionResponse {
   data: ServicePackage;
 }
 
+export interface ServicePackageResponse {
+  statusCode: number;
+  message: string;
+  data: ServicePackage;
+}
+
+export interface DeletePackageResponse {
+  statusCode: number;
+  message: string;
+  data: string;
+}
+
+// Reviews Responses
+export interface GetReviewsResponse {
+  statusCode: number;
+  message: string;
+  data: ServiceReview[];
+  paging: Paging;
+}
+
+export interface ServiceReviewResponse {
+  statusCode: number;
+  message: string;
+  data: ServiceReview;
+}
+
+// ==================== PARAMS ====================
 export interface GetPackagesParams extends PagingParams {
   minPrice: number;
   maxPrice: number;
