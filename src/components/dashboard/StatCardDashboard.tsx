@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import React from 'react';
 import { TrendingUp, TrendingDown, TrendingUpDown } from 'lucide-react'; 
 
