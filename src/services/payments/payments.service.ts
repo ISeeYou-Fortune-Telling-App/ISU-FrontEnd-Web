@@ -15,10 +15,6 @@ export type GetPaymentByIdResponse = SingleResponse<BookingPayment> | SimpleResp
 
 // ==== SERVICE ====
 export const BookingPaymentService = {
-  /**
-   * 📜 Lấy danh sách các thanh toán (Booking Payments)
-   * Endpoint: GET /bookings/payments
-   */
   getPayments: async (params: PaymentParams): Promise<ListResponse<BookingPayment>> => {
     const response = await apiFetch<GetPaymentsResponse>('/bookings/payments', {
       method: 'GET',
@@ -34,10 +30,6 @@ export const BookingPaymentService = {
     throw new Error('Định dạng phản hồi danh sách thanh toán không hợp lệ.');
   },
 
-  /**
-   * 🔍 Lấy chi tiết thanh toán theo ID
-   * Endpoint: GET /bookings/payments/{paymentId}
-   */
   getPaymentById: async (paymentId: string): Promise<BookingPayment> => {
     const response = await apiFetch<GetPaymentByIdResponse>(`/bookings/payments/${paymentId}`, {
       method: 'GET',

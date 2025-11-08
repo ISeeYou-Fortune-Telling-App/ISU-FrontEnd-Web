@@ -1,66 +1,23 @@
-import { SingleResponse, ListResponse, SimpleResponse } from '../response.type';
-import { PagingParams } from '../paging.type';
+import { ListResponse } from '../response.type';
+import { Paging } from '../paging.type';
 
-export type Role = 'GUEST' | 'CUSTOMER' | 'SEER' | 'UNVERIFIED_SEER' | 'ADMIN';
+export type CertificateStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
-export type Status = 'APPROVED';
-export interface UserDetailProfile {
-  zodiacSign?: string;
-  chineseZodiac?: string;
-  fiveElements?: string;
-}
-
-export interface UserAccount {
+export interface Certificate {
   id: string;
   createdAt: string;
   updatedAt: string;
-  role: Role;
-  email: string;
-  phone: string;
-  gender: string;
-  fullName: string;
-  avatarUrl: string;
-  coverUrl: string;
-  profileDescription: string;
-  birthDate: string;
-  status: Status;
-  profile: UserDetailProfile;
+  seerName: string;
+  certificateName: string;
+  certificateDescription: string;
+  issuedBy: string;
+  issuedAt: string;
+  expirationDate: string | null;
+  certificateUrl: string;
+  status: CertificateStatus;
+  decisionReason: string | null;
+  decisionDate: string | null;
+  categories: string[];
 }
 
-export interface UpdateProfileRequest {
-  email?: string;
-  phone?: string;
-  gender?: string;
-  fullName?: string;
-  birthDate?: string;
-  profileDescription?: string;
-}
-
-export interface AccountStats {
-  totalAccounts: number;
-  customerAccounts: number;
-  seerAccounts: number;
-  adminAccounts: number;
-  pendingAccounts: number;
-  blockedAccounts: number;
-}
-
-export interface UpdateUserRoleRequest {
-  role: Role;
-}
-
-export interface UpdateUserStatusRequest {
-  newStatus: Status;
-}
-
-export type GetStatsResponse = SingleResponse<AccountStats> | SimpleResponse;
-export type GetAccountByIdResponse = SingleResponse<UserAccount> | SimpleResponse;
-export type GetAccountsResponse = ListResponse<UserAccount> | SimpleResponse;
-export type UploadAvatarResponse = SingleResponse<Record<string, never>> | SimpleResponse;
-export type UploadCoverResponse = SingleResponse<Record<string, never>> | SimpleResponse;
-export type DeleteAccountResponse = SingleResponse<Record<string, never>> | SimpleResponse;
-
-export interface GetAccountsParams extends PagingParams {
-  role?: Role;
-  status?: Status;
-}
+export type GetCertificatesResponse = ListResponse<Certificate>;

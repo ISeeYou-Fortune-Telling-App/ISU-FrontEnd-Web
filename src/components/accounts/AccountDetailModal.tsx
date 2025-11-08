@@ -11,12 +11,12 @@ import {
   CHINESE_ZODIAC_ICONS,
   WESTERN_ZODIAC_ICONS,
 } from '@/constants/account.constant';
-import { AccountService } from '@/services/account';
+import { AccountService } from '@/services/account/account.service';
 
 interface AccountDetailModalProps {
   user: UserAccount | null;
   onClose: () => void;
-  onActionComplete?: () => void; // callback để reload danh sách
+  onActionComplete?: () => void;
 }
 
 const DetailItem: React.FC<{ label: string; value?: string | number | null }> = ({

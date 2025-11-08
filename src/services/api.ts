@@ -1,5 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import axios, { AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig, AxiosError } from 'axios';
+import {
+  SimpleResponse,
+  SingleResponse,
+  ListResponse,
+  ValidationErrorResponse,
+} from '@/types/response.type';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -9,6 +14,7 @@ const api = axios.create({
   withCredentials: false,
 });
 
+//Gắn thêm accessToken vào mỗi request
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
@@ -17,10 +23,9 @@ api.interceptors.request.use(
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
       }
-      console.log('Token attached?', !!token, config.url);
     }
 
-    // Nếu là FormData → xóa Content-Type
+    //Formdata thì tự xóa Content-Type
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
     }
@@ -35,17 +40,62 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
     }
     return Promise.reject(error);
   },
 );
 
-export const apiFetch = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+export const apiFetch = async <
+  T extends SingleResponse<any> | ListResponse<any> | SimpleResponse | ValidationErrorResponse,
+>(
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<T> => {
   try {
     const response = await api(url, config);
-    return response.data;
-  } catch (error: any) {
-    throw error;
+    const data = response.data;
+
+    // Nếu trả về đúng định dạng chuẩn
+    if (data && typeof data === 'object' && 'statusCode' in data) {
+      return data as T;
+    }
+
+    // Nếu chỉ trả data trần hoặc object khác → wrap lại
+    return {
+      statusCode: response.status || 200,
+      message: 'Success',
+      data,
+    } as T;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const axiosErr = err as AxiosError<any>;
+
+      const statusCode = axiosErr.response?.status || axiosErr.response?.data?.statusCode || 500;
+      const message =
+        axiosErr.response?.data?.message ||
+        axiosErr.response?.statusText ||
+        'Lỗi không xác định từ máy chủ.';
+
+      const validationItems = axiosErr.response?.data?.items;
+      if (validationItems) {
+        // Trả về ValidationErrorResponse nếu có field cụ thể
+        throw {
+          statusCode,
+          message,
+          items: validationItems,
+        } as ValidationErrorResponse;
+      }
+
+      throw {
+        statusCode,
+        message,
+      } as SimpleResponse;
+    }
+
+    throw {
+      statusCode: 500,
+      message: 'Lỗi không xác định.',
+    } as SimpleResponse;
   }
 };

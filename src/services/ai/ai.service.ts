@@ -1,88 +1,66 @@
-import { apiFetch } from '@/services/api';
-import {
-  ChatQueryStreamRequest,
-  ImageAnalysisResponse,
-  AnalysisType,
-} from '../../types/ai/ai.type';
+// src/services/vannaService.ts
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
-import { SingleResponse } from '@/types/response.type';
+export interface VannaResponse {
+  rich?: {
+    id: string;
+    type: string;
+    lifecycle: string;
+    data?: {
+      content?: string;
+    };
+  };
+  conversation_id?: string;
+  request_id?: string;
+}
 
-export const AIService = {
-  chatQueryStream: async (
-    payload: ChatQueryStreamRequest,
-    onChunk: (text: string) => void,
-    onComplete?: (finalAnswer: string) => void,
-    onError?: (error: Error) => void,
-  ) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai-chat/query-stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+const API_URL = 'http://localhost:8000/api/vanna/v2/chat_sse';
 
-      if (!response.body) throw new Error('No response body');
+export async function sendVannaMessageV2(
+  message: string,
+  onEvent: (event: any) => void,
+): Promise<void> {
+  const conversationId = localStorage.getItem('conversation_id') || '';
+  const requestId = localStorage.getItem('request_id') || '';
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let typingTimer: NodeJS.Timeout | null = null;
-      let fullAnswer = '';
+  const payload: Record<string, string> = { message };
+  if (conversationId && requestId) {
+    payload.conversation_id = conversationId;
+    payload.request_id = requestId;
+  }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+  const res = await fetch('http://localhost:8000/api/vanna/v2/chat_sse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
+  const reader = res.body?.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
 
-        buffer = lines.pop() || '';
+  while (true) {
+    const { value, done } = await reader!.read();
+    if (done) break;
 
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue;
-          const text = line.replace('data:', '').trim();
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n\n');
 
-          if (text === '[DONE]') {
-            onComplete?.(fullAnswer.trim());
-            return;
-          }
-
-          fullAnswer += text + ' ';
-          onChunk(text);
+    for (const part of parts.slice(0, -1)) {
+      if (part.startsWith('data:')) {
+        try {
+          const json = JSON.parse(part.replace(/^data:\s*/, ''));
+          if (json.conversation_id) localStorage.setItem('conversation_id', json.conversation_id);
+          if (json.request_id) localStorage.setItem('request_id', json.request_id);
+          if (json.rich) onEvent(json.rich);
+        } catch {
+          // ignore malformed chunk
         }
       }
-
-      onComplete?.(fullAnswer.trim());
-    } catch (err) {
-      console.error('[AIService.chatQueryStream] Error:', err);
-      onError?.(err as Error);
     }
-  },
-
-  analyzePalm: async (file: File): Promise<ImageAnalysisResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await apiFetch<ImageAnalysisResponse>('/ai-chat/analyze-palm', {
-      method: 'POST',
-      data: formData,
-      headers: {},
-    });
-
-    return response;
-  },
-
-  analyzeFace: async (file: File): Promise<ImageAnalysisResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await apiFetch<ImageAnalysisResponse>('/ai-chat/analyze-face', {
-      method: 'POST',
-      data: formData,
-    });
-
-    return response;
-  },
-};
+    buffer = parts[parts.length - 1];
+  }
+}

@@ -126,6 +126,12 @@ export default function AdminSidebarNav() {
           label="Thông báo"
           isActive={currentPath === '/admin/notifications'}
         />
+        <SidebarItem
+          href="/admin/ai-analysis"
+          icon={Bell}
+          label="AI phân tích"
+          isActive={currentPath === '/admin/ai-analysis'}
+        />
       </nav>
 
       {/* Profile */}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2, X } from 'lucide-react';
-import { getAccounts, getAccountById } from '@/services/account';
+import { AccountService } from '@/services/account/account.service';
 import { ROLE_LABELS, STATUS_LABELS } from '@/constants/account.constant';
 import { UserAccount, Role, Status, GetAccountsParams } from '@/types/account/account.type';
 import { Badge } from '../common/Badge';
@@ -50,7 +50,7 @@ export const AccountTable: React.FC = () => {
 
       let res;
       if (debouncedSearch.trim()) {
-        res = await getAccounts({ ...params, keyword: debouncedSearch.trim() });
+        res = await AccountService.getAccounts({ ...params, keyword: debouncedSearch.trim() });
         let filtered = res.data;
         if (selectedRole !== 'Tất cả')
           filtered = filtered.filter((u: any) => u.role === selectedRole);
@@ -58,7 +58,7 @@ export const AccountTable: React.FC = () => {
           filtered = filtered.filter((u: any) => u.status === selectedStatus);
         setUsers(filtered);
       } else {
-        res = await getAccounts({
+        res = await AccountService.getAccounts({
           ...params,
           role: selectedRole !== 'Tất cả' ? selectedRole : undefined,
           status: selectedStatus !== 'Tất cả' ? selectedStatus : undefined,
@@ -290,8 +290,8 @@ export const AccountTable: React.FC = () => {
                       onClick={async () => {
                         try {
                           setIsRefreshing(true);
-                          const detail = await getAccountById(user.id);
-                          setSelectedUser(detail);
+                          const detail = await AccountService.getAccountById(user.id);
+                          setSelectedUser(detail.data);
                         } catch (error) {
                           console.error('Lỗi khi tải chi tiết người dùng:', error);
                         } finally {

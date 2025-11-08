@@ -19,18 +19,17 @@ export default function LoginPage() {
 
     setIsLoading(true);
     setError(null);
-    router.push('/admin/dashboard');
-    // try {
-    //   await login({ email, password, fcmToken: 'string' });
-    //   await router.prefetch('/admin/dashboard');
-    //   await new Promise((res) => setTimeout(res, 300));
-    //   router.push('/admin/dashboard');
-    // } catch (err: any) {
-    //   console.error('Login failed:', err);
-    //   setError('Đăng nhập thất bại. Vui lòng kiểm tra lại Email và Mật khẩu.');
-    // } finally {
-    //   setIsLoading(false);
-    // }
+    try {
+      await login({ email, password, fcmToken: 'string' });
+      await router.prefetch('/admin/dashboard');
+      await new Promise((res) => setTimeout(res, 300));
+      router.push('/admin/dashboard');
+    } catch (err: any) {
+      console.error('Login failed:', err);
+      setError('Đăng nhập thất bại. Vui lòng kiểm tra lại Email và Mật khẩu.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = () => {

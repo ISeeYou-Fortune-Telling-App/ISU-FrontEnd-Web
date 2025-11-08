@@ -3,12 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { KnowledgeDetailModal } from './KnowledgeDetailModal';
 import { Search, Eye, Trash2, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
-import {
-  getCategories,
-  getKnowledges,
-  searchKnowledgeItem,
-  getKnowledgeById,
-} from '@/services/knowledge';
+import { KnowledgeService } from '@/services/knowledge/knowledge.service';
 import type {
   KnowledgeItem,
   KnowledgeCategory,
@@ -56,7 +51,7 @@ export const KnowledgeTable: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await getCategories({
+        const res = await KnowledgeService.getCategories({
           page: 1,
           limit: 50,
           sortType: 'asc',
@@ -74,7 +69,7 @@ export const KnowledgeTable: React.FC = () => {
     if (isInitial) setLoading(true);
     else setRefreshing(true);
     try {
-      const res = await getKnowledges({
+      const res = await KnowledgeService.getKnowledges({
         page: currentPage,
         limit: ITEMS_PER_PAGE,
         sortType: 'desc',
@@ -93,7 +88,7 @@ export const KnowledgeTable: React.FC = () => {
   const handleViewDetail = async (id: string) => {
     try {
       setLoadingDetail(true);
-      const detail = await getKnowledgeById(id);
+      const detail = await KnowledgeService.getKnowledgeById(id);
       setSelectedKnowledge(detail);
       setIsModalOpen(true);
     } catch (err) {
@@ -113,7 +108,7 @@ export const KnowledgeTable: React.FC = () => {
           ? categories.find((c) => c.name === selectedCategory)?.id
           : undefined;
 
-      const res = await searchKnowledgeItem({
+      const res = await KnowledgeService.searchKnowledgeItem({
         title: debouncedSearch || undefined,
         categoryIds: queryCategoryId ? [queryCategoryId] : undefined,
         status: selectedStatus !== 'Tất cả' ? (selectedStatus as KnowledgeStatus) : undefined,
