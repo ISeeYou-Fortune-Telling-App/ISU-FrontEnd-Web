@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/vannaService.ts
 export interface ChatMessage {
   role: 'user' | 'assistant';

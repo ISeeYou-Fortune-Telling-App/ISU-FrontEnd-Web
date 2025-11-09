@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Trash2,
 } from 'lucide-react';
 
 import { Badge } from '../common/Badge';
@@ -28,23 +29,24 @@ export const CertificateTable: React.FC = () => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 🧭 Gọi API thật
+  // Fetch certificates
+  const fetchCertificates = async () => {
+    try {
+      setLoading(true);
+      const response = await CertificateService.getCertificates();
+      setCertificates(response.data);
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách chứng chỉ:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchCertificates = async () => {
-      try {
-        setLoading(true);
-        const response = await CertificateService.getCertificates();
-        setCertificates(response.data);
-      } catch (err) {
-        console.error('Lỗi khi tải danh sách chứng chỉ:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchCertificates();
   }, []);
 
-  // 🔍 Lọc theo search + trạng thái
+  // Filter certificates
   const filteredCertificates = useMemo(() => {
     return certificates.filter((cert) => {
       const matchesSearch =
@@ -61,7 +63,7 @@ export const CertificateTable: React.FC = () => {
     });
   }, [searchTerm, selectedFilter, certificates]);
 
-  // 📄 Phân trang
+  // Pagination
   const totalItems = filteredCertificates.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const { startIndex, endIndex, currentCertificates } = useMemo(() => {
@@ -74,14 +76,71 @@ export const CertificateTable: React.FC = () => {
   const goToNextPage = () => setCurrentPage((p) => (p < totalPages ? p + 1 : p));
   const goToPrevPage = () => setCurrentPage((p) => (p > 1 ? p - 1 : p));
 
-  const handleAction = (action: string, cert: Certificate) => {
-    console.log(`${action} chứng chỉ:`, cert.id, cert.certificateName);
-    if (action === 'Duyệt' || action === 'Từ chối') setSelectedCertificate(null);
+  // Delete certificate
+  const handleDelete = async (cert: Certificate) => {
+    if (!confirm(`Bạn có chắc muốn xóa chứng chỉ "${cert.certificateName}"?`)) {
+      return;
+    }
+
+    try {
+      await CertificateService.deleteCertificate(cert.id);
+      alert('Xóa chứng chỉ thành công!');
+      await fetchCertificates(); // Refresh list
+    } catch (err) {
+      console.error('Lỗi khi xóa chứng chỉ:', err);
+      alert('Không thể xóa chứng chỉ. Vui lòng thử lại.');
+    }
+  };
+
+  // Approve certificate
+  const handleApprove = async (id: string, note: string) => {
+    try {
+      await CertificateService.approveCertificate(id, {
+        action: 'APPROVED',
+        decision_reason: note || undefined,
+      });
+      alert('Đã phê duyệt chứng chỉ thành công!');
+      setSelectedCertificate(null);
+      await fetchCertificates(); // Refresh list
+    } catch (err) {
+      console.error('Lỗi khi phê duyệt chứng chỉ:', err);
+      alert('Không thể phê duyệt chứng chỉ. Vui lòng thử lại.');
+    }
+  };
+
+  // Reject certificate
+  const handleReject = async (id: string, note: string) => {
+    if (!note.trim()) {
+      alert('Vui lòng nhập lý do từ chối!');
+      return;
+    }
+
+    try {
+      await CertificateService.approveCertificate(id, {
+        action: 'REJECTED',
+        decision_reason: note,
+      });
+      alert('Đã từ chối chứng chỉ.');
+      setSelectedCertificate(null);
+      await fetchCertificates(); // Refresh list
+    } catch (err) {
+      console.error('Lỗi khi từ chối chứng chỉ:', err);
+      alert('Không thể từ chối chứng chỉ. Vui lòng thử lại.');
+    }
+  };
+
+  // Download certificate
+  const handleDownload = (cert: Certificate) => {
+    if (cert.certificateUrl) {
+      window.open(cert.certificateUrl, '_blank');
+    } else {
+      alert('Không có file để tải xuống.');
+    }
   };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-      {/* Hàng 1: Search + Dropdown */}
+      {/* Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
         <div className="relative flex-grow mr-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -127,7 +186,7 @@ export const CertificateTable: React.FC = () => {
         </div>
       </div>
 
-      {/* Hàng 2: Filter Tabs */}
+      {/* Filter Tabs */}
       <div className="flex space-x-2 mb-4 overflow-x-auto pb-1">
         <div className="inline-flex border border-gray-300 rounded-lg p-0.5 bg-gray-100">
           {['Tất cả', 'Chờ duyệt', 'Đã duyệt', 'Đã từ chối'].map((status) => (
@@ -231,7 +290,7 @@ export const CertificateTable: React.FC = () => {
                       </button>
                       <button
                         title="Tải xuống"
-                        onClick={() => handleAction('Tải xuống', cert)}
+                        onClick={() => handleDownload(cert)}
                         className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
                       >
                         <Download className="w-5 h-5" />
@@ -240,20 +299,27 @@ export const CertificateTable: React.FC = () => {
                         <>
                           <button
                             title="Duyệt"
-                            onClick={() => handleAction('Duyệt', cert)}
+                            onClick={() => setSelectedCertificate(cert)}
                             className="text-green-500 hover:text-green-700 p-1 transition-colors"
                           >
                             <Check className="w-5 h-5" />
                           </button>
                           <button
                             title="Từ chối"
-                            onClick={() => handleAction('Từ chối', cert)}
+                            onClick={() => setSelectedCertificate(cert)}
                             className="text-red-500 hover:text-red-700 p-1 transition-colors"
                           >
                             <X className="w-5 h-5" />
                           </button>
                         </>
                       )}
+                      <button
+                        title="Xóa chứng chỉ"
+                        onClick={() => handleDelete(cert)}
+                        className="text-red-600 hover:text-red-800 p-1 transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -298,34 +364,37 @@ export const CertificateTable: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {/* <CertificateDetailModal
-        certificate={
-          selectedCertificate
-            ? {
-                ...selectedCertificate,
-                title: selectedCertificate.certificateName,
-                issueDate: new Date(selectedCertificate.issuedAt).toLocaleDateString('vi-VN'),
-                expiryDate: selectedCertificate.expirationDate
-                  ? new Date(selectedCertificate.expirationDate).toLocaleDateString('vi-VN')
-                  : null,
-                organization: selectedCertificate.issuedBy,
-                description: selectedCertificate.certificateDescription,
-                reviewerNote:
-                  selectedCertificate.status === 'APPROVED'
-                    ? selectedCertificate.decisionReason
-                    : selectedCertificate.status === 'REJECTED'
-                    ? selectedCertificate.decisionReason
-                    : undefined,
-                approvalTime: selectedCertificate.decisionDate
-                  ? new Date(selectedCertificate.decisionDate).toLocaleString('vi-VN')
-                  : undefined,
-              }
-            : null
-        }
-        onClose={() => setSelectedCertificate(null)}
-        onApprove={(id, note) => handleAction('Duyệt', selectedCertificate as Certificate)}
-        onReject={(id, note) => handleAction('Từ chối', selectedCertificate as Certificate)}
-      /> */}
+      {selectedCertificate && (
+        <CertificateDetailModal
+          certificate={{
+            id: parseInt(selectedCertificate.id) || 0,
+            title: selectedCertificate.certificateName,
+            seerName: selectedCertificate.seerName,
+            submissionDate: new Date(selectedCertificate.createdAt).toLocaleDateString('vi-VN'),
+            status:
+              selectedCertificate.status === 'PENDING'
+                ? 'Chờ duyệt'
+                : selectedCertificate.status === 'APPROVED'
+                ? 'Đã duyệt'
+                : 'Đã từ chối',
+            category: selectedCertificate.categories?.[0] || 'Khác',
+            issueDate: new Date(selectedCertificate.issuedAt).toLocaleDateString('vi-VN'),
+            expiryDate: selectedCertificate.expirationDate
+              ? new Date(selectedCertificate.expirationDate).toLocaleDateString('vi-VN')
+              : 'Không có',
+            organization: selectedCertificate.issuedBy,
+            description: selectedCertificate.certificateDescription,
+            fileName: selectedCertificate.certificateUrl.split('/').pop() || 'certificate.pdf',
+            approvalTime: selectedCertificate.decisionDate
+              ? new Date(selectedCertificate.decisionDate).toLocaleString('vi-VN')
+              : undefined,
+            reviewerNote: selectedCertificate.decisionReason || undefined,
+          }}
+          onClose={() => setSelectedCertificate(null)}
+          onApprove={(id, note) => handleApprove(selectedCertificate.id, note)}
+          onReject={(id, note) => handleReject(selectedCertificate.id, note)}
+        />
+      )}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const io = require('socket.io-client');
 
 export const createChatSocket = (adminId: string) => {
