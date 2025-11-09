@@ -2,7 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { createChatSocket } from '@/services/socket/chat.socket';
 
-interface ChatMessage {
+import type { Message } from '@/types/messages/messages.type';
+
+interface ChatMessage extends Partial<Message> {
   conversationId: string;
   senderId: string;
   textContent: string;
@@ -14,10 +16,9 @@ export const useAdminChat = () => {
   const [socketConnected, setSocketConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-
   const socketRef = useRef<any>(null);
 
-  // ✅ Lấy adminId từ localStorage sau khi component mount
+  // ✅ Lấy adminId từ localStorage sau khi FE mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedId = localStorage.getItem('userId');
@@ -25,10 +26,9 @@ export const useAdminChat = () => {
     }
   }, []);
 
-  // ✅ Khởi tạo socket chỉ khi có adminId
+  // ✅ Khởi tạo socket sau khi có adminId
   useEffect(() => {
     if (!adminId) return;
-
     const socket = createChatSocket(adminId);
     socketRef.current = socket;
 
@@ -36,31 +36,36 @@ export const useAdminChat = () => {
     socket.on('disconnect', () => setSocketConnected(false));
 
     socket.on('receive_message', (msg: ChatMessage) => {
-      if (msg.conversationId === currentConversationId) {
-        setMessages((prev) => [...prev, msg]);
-      }
+      console.log('📨 Received message:', msg);
+      setMessages((prev) => [...prev, msg]);
     });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [adminId, currentConversationId]);
+    return () => socket.disconnect();
+  }, [adminId]);
 
   // ✅ Join conversation
   const joinConversation = (conversationId: string) => {
     if (!socketRef.current) return;
     setCurrentConversationId(conversationId);
-    socketRef.current.emit('join_conversation', conversationId);
-  };
-
-  // ✅ Send message
-  const sendMessage = (text: string) => {
-    if (!socketRef.current || !currentConversationId) return;
-    socketRef.current.emit('send_message', {
-      conversationId: currentConversationId,
-      textContent: text,
+    socketRef.current.emit('join_conversation', conversationId, (res: string) => {
+      if (res === 'success') console.log(`✅ Joined conversation ${conversationId}`);
     });
   };
 
-  return { socketConnected, messages, joinConversation, sendMessage };
+  // ✅ Gửi tin nhắn
+  const sendMessage = (text: string) => {
+    if (!socketRef.current || !currentConversationId) return;
+    socketRef.current.emit(
+      'send_message',
+      { conversationId: currentConversationId, textContent: text },
+      (response: string) => {
+        if (response === 'success') console.log('📩 Message sent successfully');
+      },
+    );
+  };
+
+  // ✅ Clear tin nhắn khi rời cuộc trò chuyện
+  const clearMessages = () => setMessages([]);
+
+  return { socketConnected, messages, joinConversation, sendMessage, clearMessages };
 };

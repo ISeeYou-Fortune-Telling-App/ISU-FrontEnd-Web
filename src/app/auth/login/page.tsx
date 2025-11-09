@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 
-import { login } from '../../../services/auth/auth.service';
+import { AuthService } from '../../../services/auth/auth.service';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      await login({ email, password, fcmToken: 'string' });
+      await AuthService.login({ email, password, fcmToken: 'string' });
       await router.prefetch('/admin/dashboard');
       await new Promise((res) => setTimeout(res, 300));
       router.push('/admin/dashboard');
