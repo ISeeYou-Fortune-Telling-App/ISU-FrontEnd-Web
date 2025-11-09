@@ -2,7 +2,7 @@
 const io = require('socket.io-client');
 
 export const createChatSocket = (adminId: string) => {
-  const socket = io('http://localhost:8081/chat', {
+  const socket = io('http://localhost:8082/chat', {
     query: { userId: adminId },
     transports: ['websocket', 'polling'],
   });

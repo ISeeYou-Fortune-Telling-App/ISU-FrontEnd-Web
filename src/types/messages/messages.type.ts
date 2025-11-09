@@ -28,6 +28,26 @@ export interface ConversationSession {
   sessionCanceledTime: string | null;
 }
 
+export interface Message {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  conversationId: string;
+  customerId: string;
+  customerName: string;
+  customerAvatar: string;
+  seerId: string;
+  seerName: string;
+  seerAvatar: string;
+  textContent: string;
+  imageUrl: string | null;
+  videoUrl: string | null;
+  messageType: 'USER' | 'SYSTEM';
+  status: 'READ' | 'UNREAD';
+  deletedBy: string | null;
+  senderId: string;
+}
+
 export interface ConversationParams extends PagingParams {
   sortBy: string;
   participantName?: string;
@@ -44,3 +64,4 @@ export interface MessagesStats {
 
 export type GetMessagesStatsResponse = SingleResponse<MessagesStats> | SimpleResponse;
 export type GetSearchConversationsResponse = ListResponse<ConversationSession>;
+export type GetMessagesByConversationResponse = ListResponse<Message>;

@@ -4,6 +4,7 @@ import {
   GetMessagesStatsResponse,
   MessagesStats,
   GetSearchConversationsResponse,
+  GetMessagesByConversationResponse,
   ConversationSession,
   ConversationParams,
 } from '@/types/messages/messages.type';
@@ -36,5 +37,22 @@ export const MessagesService = {
     }
 
     throw new Error('Không nhận được dữ liệu hội thoại hợp lệ.');
+  },
+
+  getMessagesByConversation: async (
+    conversationId: string,
+    page = 1,
+    limit = 50,
+  ): Promise<GetMessagesByConversationResponse> => {
+    const response = await apiFetch<GetMessagesByConversationResponse>(
+      `/chat/conversations/${conversationId}/messages`,
+      {
+        method: 'GET',
+        params: { page, limit, sortType: 'desc', sortBy: 'createdAt' },
+      },
+    );
+
+    if (response?.data) return response;
+    throw new Error('Không nhận được dữ liệu tin nhắn hợp lệ.');
   },
 };
