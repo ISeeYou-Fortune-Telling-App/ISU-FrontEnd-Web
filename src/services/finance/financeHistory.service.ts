@@ -2,6 +2,7 @@ import { SingleResponse } from '@/types/response.type';
 import { apiFetch } from '../api';
 import {
   ChartData,
+  ChartDto,
   ChartType,
   CustomerAction,
   CustomerPotential,
@@ -228,8 +229,10 @@ export const ReportService = {
     chartType: ChartType,
     month?: number,
     year?: number,
-  ): Promise<SingleResponse<ChartData[]>> => {
-    const res = await apiFetch<SingleResponse<ChartData[]>>('/statistic-report/chart', {
+  ): Promise<SingleResponse<ChartData[]>> => { 
+    
+    // 2. Gọi API và dùng kiểu Backend (ChartDto)
+    const res = await apiFetch<SingleResponse<ChartDto>>('/statistic-report/chart', {
       method: 'GET',
       params: {
         chartType,
@@ -237,6 +240,20 @@ export const ReportService = {
         year,
       },
     });
-    return res;
+
+    // 3. Chuyển đổi dữ liệu từ Map { "T1": 100 } thành Array [{ label: "T1", value: 100 }]
+    const transformedData: ChartData[] = Object.entries(res.data.data).map(
+      ([key, value]) => ({
+        label: key,
+        value: value,
+      }),
+    );
+
+    // 4. Trả về dữ liệu đã chuyển đổi cho UI
+    return {
+      data: transformedData,
+      message: res.message,
+      statusCode: res.statusCode
+    };
   },
 };

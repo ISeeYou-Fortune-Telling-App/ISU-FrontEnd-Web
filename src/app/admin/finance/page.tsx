@@ -24,7 +24,7 @@ const SeerDetailModal: React.FC<{ seer: any; onClose: () => void }> = ({ seer, o
       </div>
 
       <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-        <p><b>Tên:</b> {seer.seerName || 'N/A'}</p>
+        <p><b>Tên:</b> {seer.fullname || 'N/A'}</p>
         <p><b>Ranking:</b> #{seer.ranking}</p>
         <p><b>Tier hiện tại:</b> {seer.performanceTier}</p>
         <p><b>Performance Point:</b> {seer.performancePoint}</p>
@@ -53,7 +53,7 @@ const CustomerDetailModal: React.FC<{ customer: any; onClose: () => void }> = ({
       </div>
 
       <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-        <p><b>Tên:</b> {customer.customerName || 'N/A'}</p>
+        <p><b>Tên:</b> {customer.fullName || 'N/A'}</p>
         <p><b>Ranking:</b> #{customer.ranking}</p>
         <p><b>Tier:</b> {customer.potentialTier}</p>
         <p><b>Điểm tiềm năng:</b> {customer.potentialPoint}</p>
@@ -410,9 +410,9 @@ const FinanceDashboard: React.FC = () => {
             ...seerFilters,
           });
           
-          const mappedSeers = response.items.map((seer: any) => ({
+          const mappedSeers = response.data.data.map((seer: any) => ({
             id: seer.seerId,
-            name: seer.seerName || 'N/A',
+            name: seer.fullName || 'N/A',
             avatar: `https://i.pravatar.cc/150?u=${seer.seerId}`,
             performance: seer.performancePoint,
             ranking: seer.ranking,
@@ -459,7 +459,7 @@ const FinanceDashboard: React.FC = () => {
             ...customerFilters,
           });
           
-          const mappedCustomers = response.items.map((customer: any) => ({
+          const mappedCustomers = response.data.data.map((customer: any) => ({
             id: customer.customerId,
             name: customer.customerName || 'N/A',
             avatar: `https://i.pravatar.cc/150?u=${customer.customerId}`,
@@ -515,24 +515,24 @@ const FinanceDashboard: React.FC = () => {
             title="Tổng doanh thu" 
             value={financeStats ? formatCurrency(financeStats.totalRevenue) : '...'} 
             icon={DollarSign} 
-            trend={financeStats ? `${financeStats.revenueChangePercentage > 0 ? '+' : ''}${financeStats.revenueChangePercentage.toFixed(1)}%` : undefined}
+            trend={financeStats ? `${financeStats.percentChangeTotalRevenue > 0 ? '+' : ''}${financeStats.percentChangeTotalRevenue.toFixed(1)}%` : undefined}
           />
           <StatCard 
             title="Phần trăm thuế" 
-            value="7%" 
+            value={financeStats ? formatCurrency(financeStats.totalNet) : '...'} 
             icon={TrendingUp} 
           />
           <StatCard 
             title="Net profit" 
-            value={financeStats ? formatCurrency(financeStats.netRevenue) : '...'} 
+            value={financeStats ? formatCurrency(financeStats.totalNet) : '...'}
             icon={Award} 
-            trend={financeStats ? `${financeStats.netRevenueChangePercentage > 0 ? '+' : ''}${financeStats.netRevenueChangePercentage.toFixed(1)}%` : undefined}
+            trend={financeStats ? `${financeStats.percentChangeTotalNet > 0 ? '+' : ''}${financeStats.percentChangeTotalNet.toFixed(1)}%` : undefined}
           />
           <StatCard 
             title="Tổng thuế" 
             value={financeStats ? formatCurrency(financeStats.totalTax) : '...'} 
             icon={Users} 
-            trend={financeStats ? `${financeStats.taxChangePercentage > 0 ? '+' : ''}${financeStats.taxChangePercentage.toFixed(1)}%` : undefined}
+            trend={financeStats ? `${financeStats.percentChangeTotalTax > 0 ? '+' : ''}${financeStats.percentChangeTotalTax.toFixed(1)}%` : undefined}
           />
         </div>
 

@@ -10,10 +10,9 @@ export interface ValidationErrorResponse extends SimpleResponse {
 }
 
 export interface SingleResponse<T> {
-  items: any;
-  statusCode: number;
+  data: T; 
+  statusCode: number; 
   message: string;
-  data: T;
 }
 
 export interface ListResponse<T> {

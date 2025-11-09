@@ -1,5 +1,12 @@
 import { PagingParams } from "./paging.type";
 
+export interface PagingResponse {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface MonthlyData {
   [key: string]: number;
 }
@@ -79,7 +86,7 @@ export interface SeerPerformanceParams extends PagingParams {
 export interface CustomerPotential {
   id: string;
   customerId: string;
-  customerName?: string;
+  fullName?: string;
   month: number;
   year: number;
   potentialPoint: number;
@@ -95,7 +102,7 @@ export interface CustomerPotential {
 export interface SeerPerformance {
   id: string;
   seerId: string;
-  seerName?: string;
+  fullName?: string;
   month: number;
   year: number;
   performancePoint: number;
@@ -115,11 +122,19 @@ export interface SeerPerformance {
 
 export interface FinanceStatistic {
   totalRevenue: number;
-  netRevenue: number;
+  percentChangeTotalRevenue: number; 
+  totalNet: number;                  
+  percentChangeTotalNet: number;     
   totalTax: number;
-  revenueChangePercentage: number;
-  netRevenueChangePercentage: number;
-  taxChangePercentage: number;
+  percentChangeTotalTax: number;     
+  totalRevenueDay: number;           
+  percentChangeTotalRevenueDay: number;
+}
+
+export interface ChartDto {
+  month: number;
+  year: number;
+  data: Record<string, number>; 
 }
 
 export interface ChartData {
@@ -133,14 +148,7 @@ export type CustomerAction = 'BOOKING' | 'SPENDING' | 'CANCELLING';
 export type SeerAction = 'CREATE_PACKAGE' | 'RATED' | 'RECEIVED_BOOKING' | 'COMPLETED_BOOKING' | 'CANCELLING' | 'EARNING';
 
 export interface PageResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  data: T[];
+  paging: PagingResponse;
 }
 
-export interface SingleResponse<T> {
-  data: T;
-  message: string;
-}
