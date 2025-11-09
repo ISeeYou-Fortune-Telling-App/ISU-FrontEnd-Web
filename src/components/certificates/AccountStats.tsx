@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 'use client';
 import React, { useState, useEffect } from 'react';
 
@@ -61,7 +62,7 @@ export const AccountStats: React.FC = () => {
     const fetchStats = async () => {
       try {
         const response = await AccountService.getAccountStats();
-        const mappedStats = mapStatsToCards(response);
+        const mappedStats = mapStatsToCards(response.data);
         setStats(mappedStats);
       } catch (err) {
         setError('Không thể tải dữ liệu thống kê tài khoản.');

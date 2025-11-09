@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 import React, { useState } from 'react';
 import { X, Calendar, User, Download, FileText, Check, Star } from 'lucide-react'; 

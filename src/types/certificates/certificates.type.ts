@@ -21,3 +21,36 @@ export interface Certificate {
 }
 
 export type GetCertificatesResponse = ListResponse<Certificate>;
+
+// Request types for Certificate operations
+export interface CertificateApprovalRequest {
+  action: 'APPROVED' | 'REJECTED';
+  decision_reason?: string;
+}
+
+export interface CertificateCreateRequest {
+  certificateName: string;
+  certificateDescription: string;
+  issuedBy: string;
+  issuedAt: string; // ISO string format
+  expirationDate?: string; // ISO string format
+  certificateFile: File;
+  categoryIds: string[];
+}
+
+export interface CertificateUpdateRequest {
+  certificateName?: string;
+  certificateDescription?: string;
+  issuedBy?: string;
+  issuedAt?: string;
+  expirationDate?: string;
+  certificateFile?: File;
+  categoryIds?: string[];
+}
+
+export interface CertificateQueryParams {
+  page?: number;
+  limit?: number;
+  sortType?: 'asc' | 'desc';
+  sortBy?: string;
+}

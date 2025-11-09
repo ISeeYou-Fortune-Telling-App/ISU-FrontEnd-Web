@@ -1,3 +1,5 @@
+import { PagingParams } from "./paging.type";
+
 export interface MonthlyData {
   [key: string]: number;
 }
@@ -31,3 +33,114 @@ export interface Customer {
 
 export type ActiveTab = 'system' | 'seer' | 'customer';
 export type Tier = 'Diamond' | 'Platinum' | 'Gold' | 'VIP Gold' | 'VIP Silver' | 'Regular' | 'all';
+
+export interface CustomerPotentialParams extends PagingParams {
+  month?: number;
+  year?: number;
+  minPotentialPoint?: number;
+  maxPotentialPoint?: number;
+  potentialTier?: 'CASUAL' | 'STANDARD' | 'PREMIUM' | 'VIP';
+  minRanking?: number;
+  maxRanking?: number;
+  minTotalBookingRequests?: number;
+  maxTotalBookingRequests?: number;
+  minTotalSpending?: number;
+  maxTotalSpending?: number;
+  minCancelledByCustomer?: number;
+  maxCancelledByCustomer?: number;
+}
+
+export interface SeerPerformanceParams extends PagingParams {
+  month?: number;
+  year?: number;
+  minPerformancePoint?: number;
+  maxPerformancePoint?: number;
+  performanceTier?: 'APPRENTICE' | 'PROFESSIONAL' | 'EXPERT' | 'MASTER';
+  minRanking?: number;
+  maxRanking?: number;
+  minTotalPackages?: number;
+  maxTotalPackages?: number;
+  minTotalRates?: number;
+  maxTotalRates?: number;
+  minAvgRating?: number;
+  maxAvgRating?: number;
+  minTotalBookings?: number;
+  maxTotalBookings?: number;
+  minCompletedBookings?: number;
+  maxCompletedBookings?: number;
+  minCancelledBySeer?: number;
+  maxCancelledBySeer?: number;
+  minTotalRevenue?: number;
+  maxTotalRevenue?: number;
+  minBonus?: number;
+  maxBonus?: number;
+}
+
+export interface CustomerPotential {
+  id: string;
+  customerId: string;
+  customerName?: string;
+  month: number;
+  year: number;
+  potentialPoint: number;
+  potentialTier: 'CASUAL' | 'STANDARD' | 'PREMIUM' | 'VIP';
+  ranking: number;
+  totalBookingRequests: number;
+  totalSpending: number;
+  cancelledByCustomer: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SeerPerformance {
+  id: string;
+  seerId: string;
+  seerName?: string;
+  month: number;
+  year: number;
+  performancePoint: number;
+  performanceTier: 'APPRENTICE' | 'PROFESSIONAL' | 'EXPERT' | 'MASTER';
+  ranking: number;
+  totalPackages: number;
+  totalRates: number;
+  avgRating: number;
+  totalBookings: number;
+  completedBookings: number;
+  cancelledBySeer: number;
+  totalRevenue: number;
+  bonus: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinanceStatistic {
+  totalRevenue: number;
+  netRevenue: number;
+  totalTax: number;
+  revenueChangePercentage: number;
+  netRevenueChangePercentage: number;
+  taxChangePercentage: number;
+}
+
+export interface ChartData {
+  label: string;
+  value: number;
+}
+
+export type ChartType = 'TOTAL_REVENUE' | 'TOTAL_BOOKING_REQUESTS' | 'TOTAL_BOOKING_COMPLETED' | 'TOTAL_PACKAGES';
+
+export type CustomerAction = 'BOOKING' | 'SPENDING' | 'CANCELLING';
+export type SeerAction = 'CREATE_PACKAGE' | 'RATED' | 'RECEIVED_BOOKING' | 'COMPLETED_BOOKING' | 'CANCELLING' | 'EARNING';
+
+export interface PageResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface SingleResponse<T> {
+  data: T;
+  message: string;
+}
