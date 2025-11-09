@@ -46,6 +46,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const notificationsCount = 9;
   const pathname = usePathname();
   const isProfilePage = pathname === '/admin/profile';
+  const isAiAnalysisPage = pathname === '/admin/ai-analysis';
+
+  let mainClassName = 'p-6 pt-20';
+  if (isProfilePage) {
+    mainClassName = 'pt-16';
+  } else if (isAiAnalysisPage) {
+    // Chiều cao cố định và Flexbox cho trang AI Chatbot
+    // w-full h-[calc(100vh-64px)]
+    // 100vh: Chiều cao toàn màn hình
+    // 64px: Chiều cao của AdminHeader (h-16)
+    // p-6: Giữ padding bên trong
+    mainClassName = 'p-6 **pt-20 w-full h-[calc(100vh-0px)] flex flex-col**'; // pt-20 để bù cho header (16px * 4 = 64px + 6px*2)
+  }
 
   return (
     <div className="flex min-h-screen bg-white dark:bg-gray-900">
@@ -55,12 +68,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           text-gray-900 dark:text-white 
           flex flex-col fixed h-full z-30 border-r border-gray-400 dark:border-gray-700"
       >
-        <div className="h-16 border-b border-gray-400 dark:border-gray-700">
-          <div className="flex items-center space-x-4 px-6 h-full">
-            <div className="p-1 bg-blue-600 rounded-lg">
+        <div className="h-16 pt-5 border-b border-gray-400 dark:border-gray-700">
+          <div className="flex items-center space-x-4 px-6 h-full ">
+            <div className="p-1 bg-blue-600 rounded-lg mt-[-12px]">
               <Eye className="w-7 h-7 text-white" />
             </div>
-            <div className="flex flex-col leading-none">
+            <div className="flex flex-col leading-none pb-5">
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">I See You</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">Admin Panel</p>
             </div>

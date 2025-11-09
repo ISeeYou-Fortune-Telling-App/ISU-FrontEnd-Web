@@ -16,7 +16,7 @@ import {
   LogOut,
   Settings,
 } from 'lucide-react';
-import { logout } from '@/services/auth/auth.service';
+import { AuthService } from '@/services/auth/auth.service';
 
 const SidebarItem = ({
   href,
@@ -31,14 +31,14 @@ const SidebarItem = ({
 }) => (
   <Link
     href={href}
-    className={`flex items-center p-3 rounded-lg transition duration-150 ${
+    className={`flex items-center px-4 py-2 rounded-lg transition duration-150 text-md ${
       isActive
-        ? 'bg-blue-100 dark:bg-blue-600 font-semibold text-blue-800 dark:text-white hover:bg-blue-200 dark:hover:bg-blue-700'
+        ? 'bg-blue-100 dark:bg-blue-600 font-medium text-blue-800 dark:text-white hover:bg-blue-200 dark:hover:bg-blue-700'
         : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
     }`}
   >
     <IconComponent
-      className={`w-5 h-5 mr-3 ${
+      className={`w-4 h-4 mr-2 ${
         isActive ? 'text-blue-600 dark:text-white' : 'text-gray-500 dark:text-gray-400'
       }`}
     />
@@ -57,9 +57,9 @@ export default function AdminSidebarNav() {
   }, []);
 
   return (
-    <div className="flex flex-col justify-between">
-      {/* Sidebar  */}
-      <nav className="flex-1 p-4 overflow-y-auto space-y-1">
+    <div className="flex flex-col h-full justify-between">
+      {/* Sidebar list scrollable */}
+      <nav className="flex-1 pt-2 px-3 overflow-y-auto space-y-2">
         <SidebarItem
           href="/admin/dashboard"
           icon={LayoutDashboard}
@@ -134,21 +134,21 @@ export default function AdminSidebarNav() {
         />
       </nav>
 
-      {/* Profile */}
+      {/* Profile — fixed bottom */}
       {isAdmin && (
-        <div className="border-t border-gray-400 dark:border-gray-700 p-4">
+        <div className="absolute bottom-0 left-0 w-full bg-white dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700 p-3">
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.push('/admin/profile')}
-              className="flex items-center space-x-3 group"
+              className="flex items-center space-x-2 group"
             >
               <img
                 src="/default_avatar.jpg"
                 alt="Admin Avatar"
-                className="w-10 h-10 rounded-full object-cover border border-gray-400 dark:border-gray-600 group-hover:scale-105 transition-transform"
+                className="w-8 h-8 rounded-full object-cover border border-gray-400 dark:border-gray-600 group-hover:scale-105 transition-transform"
               />
               <div className="text-left">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:underline">
+                <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:underline">
                   Quản trị viên
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Hồ sơ cá nhân</p>
@@ -158,7 +158,7 @@ export default function AdminSidebarNav() {
             <div className="flex items-center space-x-2">
               <button
                 title="Đăng xuất"
-                onClick={logout}
+                onClick={AuthService.logout}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
               >
                 <LogOut className="w-5 h-5" />

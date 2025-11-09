@@ -34,7 +34,7 @@ export const CertificateTable: React.FC = () => {
       try {
         setLoading(true);
         const response = await CertificateService.getCertificates();
-        setCertificates(response.data);
+        setCertificates(response);
       } catch (err) {
         console.error('Lỗi khi tải danh sách chứng chỉ:', err);
       } finally {

@@ -48,7 +48,7 @@ export const MessageTable: React.FC = () => {
       };
 
       const res = await MessagesService.getSearchConversations(params);
-      setConversations(res.data);
+      setConversations(res);
     } catch (err: any) {
       setError(err.message || 'Lỗi khi tải danh sách hội thoại.');
     } finally {
@@ -77,7 +77,7 @@ export const MessageTable: React.FC = () => {
   const goToPrevPage = () => page > 1 && setPage(page - 1);
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-2 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 h-[700px] flex">
+    <div className="bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-400 dark:border-gray-700 h-[700px] flex">
       {/* --- Left Column: Conversation list --- */}
       <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col p-3">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">

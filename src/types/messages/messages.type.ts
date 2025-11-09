@@ -1,9 +1,9 @@
 import { SingleResponse, ListResponse, SimpleResponse } from '../response.type';
 import { PagingParams } from '../paging.type';
 
-export type ConversationStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
+export type ConversationStatus = 'ACTIVE' | 'CANCELLED' | 'ENDED' | 'WAITING';
 export type ConversationCanceler = 'SEER' | 'CUSTOMER' | 'BOTH' | null;
-export type ConversationType = 'BOOKING_SESSION' | 'ADMIN_CHAT';
+export type ConversationType = 'ADMIN_CHAT';
 
 export interface ConversationSession {
   id: string;
