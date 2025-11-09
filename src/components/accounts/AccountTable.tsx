@@ -145,7 +145,7 @@ export const AccountTable: React.FC = () => {
           {isStatusDropdownOpen && (
             <div
               className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 
-                         ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10 animate-fadeIn"
+                         ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-20 animate-fadeIn"
             >
               <div className="py-1">
                 {[['Tất cả', 'Tất cả'], ...Object.entries(STATUS_LABELS)].map(([key, label]) => (

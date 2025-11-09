@@ -10,6 +10,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +22,14 @@ export default function LoginPage() {
     setError(null);
     try {
       await AuthService.login({ email, password, fcmToken: 'string' });
+
+      // Lưu email nếu "Remember me" được bật
+      if (rememberMe) {
+        localStorage.setItem('remembered_email', email);
+      } else {
+        localStorage.removeItem('remembered_email');
+      }
+
       await router.prefetch('/admin/dashboard');
       await new Promise((res) => setTimeout(res, 300));
       router.push('/admin/dashboard');
@@ -33,8 +42,17 @@ export default function LoginPage() {
   };
 
   const handleForgotPassword = () => {
-    router.push('/forgot-password');
+    router.push('/auth/forgot-password');
   };
+
+  // Lấy email đã lưu (nếu có)
+  useState(() => {
+    const savedEmail = localStorage.getItem('remembered_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  });
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-black relative overflow-hidden">
@@ -114,7 +132,18 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-1">
+            {/* Remember me + Forgot password */}
+            <div className="flex justify-between items-center pt-1">
+              <label className="flex items-center space-x-2 text-sm text-gray-300 select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 accent-cyan-400 bg-gray-900 border-gray-700 rounded focus:ring-cyan-400"
+                />
+                <span>Ghi nhớ đăng nhập</span>
+              </label>
+
               <button
                 type="button"
                 onClick={handleForgotPassword}

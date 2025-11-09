@@ -29,7 +29,6 @@ export const CertificateTable: React.FC = () => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch certificates
   const fetchCertificates = async () => {
     try {
       setLoading(true);
@@ -46,7 +45,6 @@ export const CertificateTable: React.FC = () => {
     fetchCertificates();
   }, []);
 
-  // Filter certificates
   const filteredCertificates = useMemo(() => {
     return certificates.filter((cert) => {
       const matchesSearch =
@@ -63,7 +61,6 @@ export const CertificateTable: React.FC = () => {
     });
   }, [searchTerm, selectedFilter, certificates]);
 
-  // Pagination
   const totalItems = filteredCertificates.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const { startIndex, endIndex, currentCertificates } = useMemo(() => {
@@ -76,23 +73,18 @@ export const CertificateTable: React.FC = () => {
   const goToNextPage = () => setCurrentPage((p) => (p < totalPages ? p + 1 : p));
   const goToPrevPage = () => setCurrentPage((p) => (p > 1 ? p - 1 : p));
 
-  // Delete certificate
   const handleDelete = async (cert: Certificate) => {
-    if (!confirm(`Bạn có chắc muốn xóa chứng chỉ "${cert.certificateName}"?`)) {
-      return;
-    }
-
+    if (!confirm(`Bạn có chắc muốn xóa chứng chỉ "${cert.certificateName}"?`)) return;
     try {
       await CertificateService.deleteCertificate(cert.id);
       alert('Xóa chứng chỉ thành công!');
-      await fetchCertificates(); // Refresh list
+      await fetchCertificates();
     } catch (err) {
       console.error('Lỗi khi xóa chứng chỉ:', err);
       alert('Không thể xóa chứng chỉ. Vui lòng thử lại.');
     }
   };
 
-  // Approve certificate
   const handleApprove = async (id: string, note: string) => {
     try {
       await CertificateService.approveCertificate(id, {
@@ -101,20 +93,18 @@ export const CertificateTable: React.FC = () => {
       });
       alert('Đã phê duyệt chứng chỉ thành công!');
       setSelectedCertificate(null);
-      await fetchCertificates(); // Refresh list
+      await fetchCertificates();
     } catch (err) {
       console.error('Lỗi khi phê duyệt chứng chỉ:', err);
       alert('Không thể phê duyệt chứng chỉ. Vui lòng thử lại.');
     }
   };
 
-  // Reject certificate
   const handleReject = async (id: string, note: string) => {
     if (!note.trim()) {
       alert('Vui lòng nhập lý do từ chối!');
       return;
     }
-
     try {
       await CertificateService.approveCertificate(id, {
         action: 'REJECTED',
@@ -122,24 +112,20 @@ export const CertificateTable: React.FC = () => {
       });
       alert('Đã từ chối chứng chỉ.');
       setSelectedCertificate(null);
-      await fetchCertificates(); // Refresh list
+      await fetchCertificates();
     } catch (err) {
       console.error('Lỗi khi từ chối chứng chỉ:', err);
       alert('Không thể từ chối chứng chỉ. Vui lòng thử lại.');
     }
   };
 
-  // Download certificate
   const handleDownload = (cert: Certificate) => {
-    if (cert.certificateUrl) {
-      window.open(cert.certificateUrl, '_blank');
-    } else {
-      alert('Không có file để tải xuống.');
-    }
+    if (cert.certificateUrl) window.open(cert.certificateUrl, '_blank');
+    else alert('Không có file để tải xuống.');
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
       {/* Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
         <div className="relative flex-grow mr-4">
@@ -147,8 +133,8 @@ export const CertificateTable: React.FC = () => {
           <input
             type="text"
             placeholder="Tìm kiếm theo tên Nhà tiên tri hoặc Tên Chứng chỉ..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg 
-                       focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+                       focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -160,8 +146,8 @@ export const CertificateTable: React.FC = () => {
         <div className="relative flex-shrink-0">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg 
-                       hover:bg-gray-50 border border-gray-300"
+            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 rounded-lg 
+                       hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
           >
             <span>Trạng thái Mẫu</span>
             <ChevronDown
@@ -169,13 +155,13 @@ export const CertificateTable: React.FC = () => {
             />
           </button>
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+            <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10">
               <div className="py-1">
                 {['Tùy chọn Mẫu 1', 'Tùy chọn Mẫu 2'].map((option) => (
                   <button
                     key={option}
                     onClick={() => setIsDropdownOpen(false)}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     {option}
                   </button>
@@ -188,7 +174,7 @@ export const CertificateTable: React.FC = () => {
 
       {/* Filter Tabs */}
       <div className="flex space-x-2 mb-4 overflow-x-auto pb-1">
-        <div className="inline-flex border border-gray-300 rounded-lg p-0.5 bg-gray-100">
+        <div className="inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
           {['Tất cả', 'Chờ duyệt', 'Đã duyệt', 'Đã từ chối'].map((status) => (
             <button
               key={status}
@@ -198,8 +184,8 @@ export const CertificateTable: React.FC = () => {
               }}
               className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
                 selectedFilter === status
-                  ? 'bg-white shadow-sm text-blue-600 font-semibold'
-                  : 'text-gray-600 hover:bg-gray-200'
+                  ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 font-semibold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               {status}
@@ -209,62 +195,60 @@ export const CertificateTable: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Chứng chỉ
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Nhà tiên tri
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Danh mục
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Ngày cấp
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Trạng thái
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">
-                Thao tác
-              </th>
+              {['Chứng chỉ', 'Nhà tiên tri', 'Danh mục', 'Ngày cấp', 'Trạng thái', 'Thao tác'].map(
+                (header, i) => (
+                  <th
+                    key={i}
+                    className={`${
+                      i === 5 ? 'text-right' : 'text-left'
+                    } px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase`}
+                  >
+                    {header}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {loading ? (
               <tr>
-                <td colSpan={6} className="text-center py-6 text-gray-500">
+                <td colSpan={6} className="text-center py-6 text-gray-500 dark:text-gray-400">
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : currentCertificates.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-6 text-gray-500">
+                <td colSpan={6} className="text-center py-6 text-gray-500 dark:text-gray-400">
                   Không có dữ liệu phù hợp
                 </td>
               </tr>
             ) : (
               currentCertificates.map((cert) => (
-                <tr key={cert.id} className="hover:bg-gray-50 transition duration-150">
+                <tr key={cert.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                   <td className="px-6 py-3 whitespace-nowrap">
                     <div className="flex items-center">
                       <Download className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" />
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {cert.certificateName}
                         </div>
-                        <div className="text-xs text-gray-500">{cert.issuedBy}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {cert.issuedBy}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-3 text-sm text-gray-900">{cert.seerName}</td>
+                  <td className="px-6 py-3 text-sm text-gray-900 dark:text-gray-100">
+                    {cert.seerName}
+                  </td>
                   <td className="px-6 py-3 text-sm">
                     <Badge type="expertise" value={cert.categories?.[0] || 'Khác'} />
                   </td>
-                  <td className="px-6 py-3 text-sm text-gray-600">
+                  <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300">
                     {new Date(cert.issuedAt).toLocaleDateString('vi-VN')}
                   </td>
                   <td className="px-6 py-3">
@@ -284,14 +268,14 @@ export const CertificateTable: React.FC = () => {
                       <button
                         title="Xem chi tiết chứng chỉ"
                         onClick={() => setSelectedCertificate(cert)}
-                        className="text-gray-500 hover:text-gray-700 p-1 transition-colors"
+                        className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white p-1"
                       >
                         <Eye className="w-5 h-5" />
                       </button>
                       <button
                         title="Tải xuống"
                         onClick={() => handleDownload(cert)}
-                        className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
+                        className="text-blue-500 hover:text-blue-700 p-1"
                       >
                         <Download className="w-5 h-5" />
                       </button>
@@ -300,14 +284,14 @@ export const CertificateTable: React.FC = () => {
                           <button
                             title="Duyệt"
                             onClick={() => setSelectedCertificate(cert)}
-                            className="text-green-500 hover:text-green-700 p-1 transition-colors"
+                            className="text-green-500 hover:text-green-700 p-1"
                           >
                             <Check className="w-5 h-5" />
                           </button>
                           <button
                             title="Từ chối"
                             onClick={() => setSelectedCertificate(cert)}
-                            className="text-red-500 hover:text-red-700 p-1 transition-colors"
+                            className="text-red-500 hover:text-red-700 p-1"
                           >
                             <X className="w-5 h-5" />
                           </button>
@@ -316,7 +300,7 @@ export const CertificateTable: React.FC = () => {
                       <button
                         title="Xóa chứng chỉ"
                         onClick={() => handleDelete(cert)}
-                        className="text-red-600 hover:text-red-800 p-1 transition-colors"
+                        className="text-red-600 hover:text-red-800 p-1"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -330,21 +314,21 @@ export const CertificateTable: React.FC = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center pt-4 border-t border-gray-200 mt-4">
-        <span className="text-sm text-gray-700">
+      <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+        <span className="text-sm text-gray-700 dark:text-gray-300">
           {startIndex + 1}-{Math.min(endIndex, totalItems)} / {totalItems}
         </span>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-gray-700 dark:text-gray-300">
             {currentPage}/{totalPages}
           </span>
           <button
             onClick={goToPrevPage}
             disabled={currentPage === 1}
-            className={`p-1 border border-gray-300 rounded-lg ${
+            className={`p-1 border rounded-lg ${
               currentPage === 1
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'text-gray-400 border-gray-300 dark:border-gray-600 cursor-not-allowed'
+                : 'text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronLeft className="w-4 h-4" />
@@ -352,10 +336,10 @@ export const CertificateTable: React.FC = () => {
           <button
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className={`p-1 border border-gray-300 rounded-lg ${
+            className={`p-1 border rounded-lg ${
               currentPage === totalPages
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'text-gray-400 border-gray-300 dark:border-gray-600 cursor-not-allowed'
+                : 'text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronRight className="w-4 h-4" />

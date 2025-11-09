@@ -6,6 +6,8 @@ import { MessagesService } from '@/services/messages/messages.service';
 import type { ConversationSession, ConversationParams } from '@/types/messages/messages.type';
 import { useDebounce } from '@/hooks/useDebounce';
 import { MessageDetailPanel } from './MessageDetailPanel';
+import { useAdminChat } from '@/hooks/useAdminChat';
+import { CreateConversationModal } from './CreateConversationModal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -16,6 +18,7 @@ export const MessageTable: React.FC = () => {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [messageMode, setMessageMode] = useState<'group' | 'individual'>('individual');
   const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set());
+  const [showModal, setShowModal] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 400);
@@ -48,6 +51,30 @@ export const MessageTable: React.FC = () => {
     fetchConversations();
   }, [page, debouncedSearch]);
 
+  // ✅ Dùng socket chung cho cả table và panel
+  const { socketConnected, messages, joinConversation, sendMessage, clearMessages } = useAdminChat({
+    onNewMessage: (msg) => {
+      setConversations((prev) => {
+        const idx = prev.findIndex(
+          (c) => c.conversationId === msg.conversationId || c.id === msg.conversationId,
+        );
+
+        if (idx !== -1) {
+          const updated = {
+            ...prev[idx],
+            lastMessageContent: msg.textContent,
+            lastMessageTime: msg.createdAt,
+          };
+          const newList = [...prev];
+          newList.splice(idx, 1);
+          newList.unshift(updated);
+          return newList;
+        }
+        return prev;
+      });
+    },
+  });
+
   // ---- Select conversation ----
   const handleSelectConversation = (convId: string) => {
     if (messageMode === 'group') {
@@ -67,7 +94,6 @@ export const MessageTable: React.FC = () => {
         <button
           onClick={() => {
             setMessageMode('group');
-            setSelectedConvId(null);
           }}
           className={`flex-1 text-center py-2 text-sm font-medium transition duration-200 rounded-lg ${
             messageMode === 'group'
@@ -80,7 +106,6 @@ export const MessageTable: React.FC = () => {
         <button
           onClick={() => {
             setMessageMode('individual');
-            setSelectedConversations(new Set());
           }}
           className={`flex-1 text-center py-2 text-sm font-medium transition duration-200 rounded-lg ${
             messageMode === 'individual'
@@ -175,26 +200,15 @@ export const MessageTable: React.FC = () => {
             </div>
           )}
 
-          {/* Pagination */}
-          {!loading && totalPages > 1 && (
-            <div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                Trang {page}/{totalPages}
-              </span>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => page > 1 && setPage(page - 1)}
-                  className="p-1 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => page < totalPages && setPage(page + 1)}
-                  className="p-1 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+          {/* --- Cuối danh sách hội thoại --- */}
+          {messageMode === 'individual' && (
+            <div className="border-t border-gray-200 dark:border-gray-700 mt-3 pt-3">
+              <button
+                onClick={() => setShowModal(true)}
+                className="w-full py-2 text-sm font-medium text-center text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg hover:opacity-90 transition"
+              >
+                + Tạo hội thoại mới
+              </button>
             </div>
           )}
         </div>
@@ -204,8 +218,24 @@ export const MessageTable: React.FC = () => {
           conversationId={selectedConvId}
           messageMode={messageMode}
           selectedConversations={selectedConversations}
+          joinConversation={joinConversation}
+          sendMessage={sendMessage}
+          clearMessages={clearMessages}
+          messages={messages} // không cần "as Message[]"
+          socketConnected={socketConnected}
         />
       </div>
+      <CreateConversationModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onCreated={(newConv) => {
+          // ✅ chèn hội thoại mới vào đầu danh sách
+          setConversations((prev) => [newConv as unknown as ConversationSession, ...prev]);
+
+          // ✅ mở luôn panel hội thoại vừa tạo
+          setSelectedConvId(newConv.id);
+        }}
+      />
     </div>
   );
 };

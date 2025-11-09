@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 
 interface ChatMessage {
   role: 'user' | 'ai';
-  type: 'text' | 'dataframe' | 'chart';
+  type: 'text' | 'dataframe' | 'chart' | 'html' | 'image' | 'status' | 'error';
   text?: string;
   data?: any;
 }
@@ -19,17 +19,14 @@ export default function ChatPage() {
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Dọn session khi reload
   useEffect(() => {
-    window.addEventListener('beforeunload', () => {
+    const clearStorage = () => {
       localStorage.removeItem('conversation_id');
       localStorage.removeItem('request_id');
-    });
-    return () => {
-      window.removeEventListener('beforeunload', () => {
-        localStorage.removeItem('conversation_id');
-        localStorage.removeItem('request_id');
-      });
     };
+    window.addEventListener('beforeunload', clearStorage);
+    return () => window.removeEventListener('beforeunload', clearStorage);
   }, []);
 
   const handleSend = async () => {
@@ -45,28 +42,50 @@ export default function ChatPage() {
       await sendVannaMessageV2(
         question,
         (event: ChatEvent) => {
-          if (event.type === 'text') {
-            const content = event.content ?? '';
-            setMessages((prev) => {
-              const last = prev[prev.length - 1];
-              if (last && last.role === 'ai' && last.type === 'text') {
-                return [...prev.slice(0, -1), { ...last, text: (last.text || '') + content }];
-              }
-              return [...prev, { role: 'ai', type: 'text', text: content }];
-            });
-          }
+          switch (event.type) {
+            case 'text':
+              setMessages((prev) => {
+                const content = event.content ?? '';
+                const last = prev[prev.length - 1];
+                if (last && last.role === 'ai' && last.type === 'text') {
+                  return [...prev.slice(0, -1), { ...last, text: (last.text || '') + content }];
+                }
+                return [...prev, { role: 'ai', type: 'text', text: content }];
+              });
+              break;
 
-          if (event.type === 'dataframe') {
-            setMessages((prev) => [...prev, { role: 'ai', type: 'dataframe', data: event.data }]);
-          }
+            case 'dataframe':
+              setMessages((prev) => [...prev, { role: 'ai', type: 'dataframe', data: event.data }]);
+              break;
 
-          if (event.type === 'chart') {
-            setMessages((prev) => [...prev, { role: 'ai', type: 'chart', data: event.data }]);
-          }
+            case 'chart':
+              setMessages((prev) => [...prev, { role: 'ai', type: 'chart', data: event.data }]);
+              break;
 
-          if (event.type === 'status' && event.data?.message) {
-            // Cập nhật “đang xử lý” trong status
-            setIsThinking(true);
+            case 'html':
+              setMessages((prev) => [
+                ...prev,
+                { role: 'ai', type: 'html', data: event.data?.content },
+              ]);
+              break;
+
+            case 'image':
+              setMessages((prev) => [...prev, { role: 'ai', type: 'image', data: event.data }]);
+              break;
+
+            case 'status':
+              setIsThinking(true);
+              break;
+
+            case 'error':
+              setMessages((prev) => [
+                ...prev,
+                { role: 'ai', type: 'error', text: event.content || 'Đã xảy ra lỗi từ server.' },
+              ]);
+              break;
+
+            default:
+              console.warn('Unknown event type:', event);
           }
         },
         () => {
@@ -78,7 +97,7 @@ export default function ChatPage() {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { role: 'ai', type: 'text', text: '⚠️ Đã xảy ra lỗi khi kết nối với AI.' },
+        { role: 'ai', type: 'text', text: '⚠️ Lỗi kết nối tới máy chủ AI.' },
       ]);
       setIsThinking(false);
       setIsLoading(false);
@@ -97,6 +116,7 @@ export default function ChatPage() {
         </h1>
       </header>
 
+      {/* Nội dung chat */}
       <div className="flex-1 overflow-y-auto px-4">
         <div className="max-w-4xl mx-auto p-4 pb-28">
           {messages.length === 0 ? (
@@ -106,6 +126,7 @@ export default function ChatPage() {
           ) : (
             messages.map((m, i) => (
               <div key={i} className={`mb-4 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
+                {/* --- TEXT --- */}
                 {m.type === 'text' && (
                   <div
                     className={`px-4 py-3 rounded-lg inline-block max-w-[80%] leading-relaxed shadow ${
@@ -118,6 +139,7 @@ export default function ChatPage() {
                   </div>
                 )}
 
+                {/* --- DATAFRAME --- */}
                 {m.type === 'dataframe' && (
                   <div className="overflow-x-auto border rounded-lg bg-white dark:bg-gray-800 mt-2 shadow">
                     <div className="border-b px-4 py-2 text-left font-semibold text-sm bg-gray-100 dark:bg-gray-700">
@@ -153,6 +175,32 @@ export default function ChatPage() {
                     </div>
                   </div>
                 )}
+
+                {/* --- HTML --- */}
+                {m.type === 'html' && (
+                  <div
+                    className="p-4 mt-2 rounded-lg bg-white dark:bg-gray-800 text-sm prose dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: m.data }}
+                  />
+                )}
+
+                {/* --- IMAGE --- */}
+                {m.type === 'image' && m.data?.url && (
+                  <div className="mt-3">
+                    <img
+                      src={m.data.url}
+                      alt="AI generated"
+                      className="max-w-full rounded-lg shadow"
+                    />
+                  </div>
+                )}
+
+                {/* --- ERROR --- */}
+                {m.type === 'error' && (
+                  <div className="mt-2 text-red-500 text-sm font-medium">
+                    ⚠️ {m.text || 'Đã xảy ra lỗi.'}
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -166,6 +214,7 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {/* Thanh nhập tin nhắn */}
       <div className="fixed bottom-0 left-0 right-0 ml-64 z-10 bg-gradient-to-t from-gray-50 via-gray-50 dark:from-gray-900 dark:via-gray-900 pt-6 pb-4">
         <div className="max-w-3xl mx-auto px-4 flex items-center">
           <input
