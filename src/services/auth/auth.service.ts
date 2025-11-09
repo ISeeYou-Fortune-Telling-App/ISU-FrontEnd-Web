@@ -1,28 +1,38 @@
 import { apiFetch } from '../api';
-import { SingleResponse, SimpleResponse, ValidationErrorResponse } from '../../types/response.type';
-import { LoginRequest, LoginResponse } from '../../types/auth/auth.type';
+import { SingleResponse } from '@/types/response.type';
+import { LoginRequest, LoginResponse } from '@/types/auth/auth.type';
 
-const setAuthData = (data: LoginResponse) => {
-  if (data.role !== 'ADMIN') throw new Error('Bạn không có quyền truy cập vào hệ thống Admin.');
+const AUTH_KEYS = ['accessToken', 'refreshToken', 'userId', 'userRole'] as const;
 
-  localStorage.setItem('accessToken', data.token);
-  localStorage.setItem('refreshToken', data.refreshToken);
-  localStorage.setItem('userId', data.userId);
-  localStorage.setItem('userRole', data.role);
+const AuthStorage = {
+  set: (data: LoginResponse) => {
+    if (data.role !== 'ADMIN') throw new Error('Bạn không có quyền truy cập vào hệ thống Admin.');
+
+    localStorage.setItem('accessToken', data.token);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    localStorage.setItem('userId', data.userId);
+    localStorage.setItem('userRole', data.role);
+  },
+
+  clear: () => {
+    AUTH_KEYS.forEach((key) => localStorage.removeItem(key));
+  },
 };
 
-export const login = async (data: LoginRequest): Promise<LoginResponse> => {
-  const res = await apiFetch<SingleResponse<LoginResponse>>('/auth/login', {
-    method: 'POST',
-    data,
-  });
+export const AuthService = {
+  login: async (payload: LoginRequest): Promise<LoginResponse> => {
+    const response = await apiFetch<SingleResponse<LoginResponse>>('/auth/login', {
+      method: 'POST',
+      data: payload,
+    });
 
-  const loginData = res.data;
-  setAuthData(loginData);
-  return loginData;
-};
+    const data = response.data;
+    AuthStorage.set(data);
+    return data;
+  },
 
-export const logout = () => {
-  ['accessToken', 'refreshToken', 'userId', 'userRole'].forEach((k) => localStorage.removeItem(k));
-  if (typeof window !== 'undefined') window.location.href = '/auth/login';
+  logout: () => {
+    AuthStorage.clear();
+    if (typeof window !== 'undefined') window.location.href = '/auth/login';
+  },
 };

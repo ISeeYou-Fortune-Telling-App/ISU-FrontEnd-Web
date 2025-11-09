@@ -14,7 +14,6 @@ import {
 import { PagingParams } from '@/types/paging.type';
 
 export const PackageService = {
-  // ==================== PACKAGE MANAGEMENT ====================
   getAll: async (params?: GetPackagesParams): Promise<GetPackagesResponse> => {
     const res = await apiFetch<GetPackagesResponse>('/service-packages/admin', {
       method: 'GET',
@@ -56,21 +55,18 @@ export const PackageService = {
   adminConfirm: async (
     packageId: string,
     status: string,
-    rejectionReason?: string
+    rejectionReason?: string,
   ): Promise<ServicePackageResponse> => {
-    const res = await apiFetch<ServicePackageResponse>(
-      `/service-packages/${packageId}/confirm`,
-      {
-        method: 'PUT',
-        data: {
-          status,
-          rejectionReason,
-        },
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const res = await apiFetch<ServicePackageResponse>(`/service-packages/${packageId}/confirm`, {
+      method: 'PUT',
+      data: {
+        status,
+        rejectionReason,
+      },
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     return res;
   },
 
@@ -122,7 +118,7 @@ export const PackageService = {
 
   getReviewReplies: async (
     reviewId: string,
-    params?: PagingParams
+    params?: PagingParams,
   ): Promise<GetReviewsResponse> => {
     const res = await apiFetch<GetReviewsResponse>(
       `/service-packages/reviews/${reviewId}/replies`,
@@ -134,32 +130,28 @@ export const PackageService = {
           sortType: params?.sortType ?? 'asc',
           sortBy: params?.sortBy ?? 'createdAt',
         },
-      }
+      },
     );
     return res;
   },
 
   createReview: async (
     packageId: string,
-    data: ServiceReviewRequest
+    data: ServiceReviewRequest,
   ): Promise<ServiceReviewResponse> => {
-    const res = await apiFetch<ServiceReviewResponse>(
-      `/service-packages/${packageId}/reviews`,
-      {
-        method: 'POST',
-        data,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const res = await apiFetch<ServiceReviewResponse>(`/service-packages/${packageId}/reviews`, {
+      method: 'POST',
+      data,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     return res;
   },
 
-
   updateReview: async (
     reviewId: string,
-    data: ServiceReviewRequest
+    data: ServiceReviewRequest,
   ): Promise<ServiceReviewResponse> => {
     const res = await apiFetch<ServiceReviewResponse>(`/service-packages/reviews/${reviewId}`, {
       method: 'PUT',

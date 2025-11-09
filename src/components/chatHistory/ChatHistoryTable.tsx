@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Eye, X, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { ChatHistoryService } from '@/services/chatHistory/chatHistory.service';
 import { Conversation } from '@/types/chatHistory/chatHistory.type';
+import { ChatHistoryModal } from './ChatHistoryModal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -15,7 +16,6 @@ const ConversationBadge = ({ value }: { value: string }) => {
     colorClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
   if (value === 'Bị hủy' || value === 'CANCELLED')
     colorClass = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${colorClass}`}
@@ -33,6 +33,7 @@ export const ConversationTable: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -43,7 +44,7 @@ export const ConversationTable: React.FC = () => {
           limit: ITEMS_PER_PAGE,
           participantName: searchTerm || undefined,
         });
-        setConversations(res.data); // res là ListResponse<Conversation>
+        setConversations(res);
       } catch (err) {
         console.error('Lỗi khi tải hội thoại:', err);
       } finally {
@@ -65,7 +66,27 @@ export const ConversationTable: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
+      {/* Stats row */}
+      <div className="grid grid-cols-5 gap-4 mb-6">
+        {[
+          { label: 'Tổng Cuộc trò chuyện Booking', value: 70, color: 'text-blue-600' },
+          { label: 'Tổng Cuộc trò chuyện Hỗ trợ', value: 0, color: 'text-purple-600' },
+          { label: 'Tổng Cuộc trò chuyện Admin', value: 80, color: 'text-indigo-600' },
+          { label: 'Tổng người dùng hoạt động', value: 26, color: 'text-green-600' },
+          { label: 'Tổng tin nhắn đã gửi', value: 277, color: 'text-red-600' },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 text-center"
+          >
+            <div className={`text-2xl font-semibold ${stat.color}`}>{stat.value}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search and filter */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
@@ -101,6 +122,7 @@ export const ConversationTable: React.FC = () => {
         </div>
       </div>
 
+      {/* Table */}
       {loading ? (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
           Đang tải dữ liệu...
@@ -121,7 +143,7 @@ export const ConversationTable: React.FC = () => {
                 ].map((header) => (
                   <th
                     key={header}
-                    className={`px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider`}
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                   >
                     {header}
                   </th>
@@ -162,8 +184,11 @@ export const ConversationTable: React.FC = () => {
                   <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                     {conv.sessionStartTime ? new Date(conv.sessionStartTime).toLocaleString() : '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    <button className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1 transition-colors">
+                  <td className="px-4 py-3 text-right text-sm font-medium space-x-2">
+                    <button
+                      onClick={() => setSelectedConversation(conv)}
+                      className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1 transition-colors"
+                    >
                       <Eye className="w-5 h-5" />
                     </button>
                     <button className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 p-1 transition-colors">
@@ -177,6 +202,7 @@ export const ConversationTable: React.FC = () => {
         </div>
       )}
 
+      {/* Pagination */}
       <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
           Trang {currentPage}/{totalPages}
@@ -201,6 +227,14 @@ export const ConversationTable: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Modal */}
+      {selectedConversation && (
+        <ChatHistoryModal
+          conversation={selectedConversation}
+          onClose={() => setSelectedConversation(null)}
+        />
+      )}
     </div>
   );
 };

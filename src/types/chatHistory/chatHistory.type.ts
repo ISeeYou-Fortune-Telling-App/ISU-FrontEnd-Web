@@ -1,7 +1,7 @@
 import { SingleResponse, ListResponse, SimpleResponse } from '../response.type';
 import { PagingParams } from '../paging.type';
 
-export type ConversationType = 'BOOKING_SESSION' | 'ADMIN_CHAT' | 'SUPPORT';
+export type ConversationType = 'BOOKING_SESSION' | 'SUPPORT' | 'ADMIN_CHAT';
 export type ConversationStatus = 'WAITING' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
 
 export interface ChatHistoryStats {
