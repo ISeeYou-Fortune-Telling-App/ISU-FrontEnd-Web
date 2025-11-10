@@ -33,7 +33,7 @@ export const MessagesService = {
       method: 'GET',
       params: {
         ...params,
-        sortBy: 'sessionStartTime',
+        sortBy: 'lastMessageTime',
         type: 'ADMIN_CHAT',
         status: 'ACTIVE',
       },
@@ -91,6 +91,20 @@ export const MessagesService = {
 
     if (response?.data) return response;
     throw new Error('Không nhận được đường dẫn file hợp lệ từ server.');
+  },
+
+  markAsRead: async (conversationId: string): Promise<void> => {
+    try {
+      const response = await apiFetch<{ statusCode: number; message: string }>(
+        `/chat/conversations/${conversationId}/mark-read`,
+        { method: 'POST' },
+      );
+      if (response.statusCode !== 200) {
+        console.warn('⚠️ Mark-read response:', response);
+      }
+    } catch (err) {
+      console.error('❌ Lỗi khi đánh dấu đã đọc:', err);
+    }
   },
 };
 

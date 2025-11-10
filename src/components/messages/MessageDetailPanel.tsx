@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Image as ImageIcon, Video, X } from 'lucide-react';
+import { Send, Image as ImageIcon, X } from 'lucide-react';
 import { MessagesService } from '@/services/messages/messages.service';
-import type { Message } from '@/types/messages/messages.type';
+import type { Message, ConversationSession } from '@/types/messages/messages.type';
 
 interface Props {
   conversationId: string | null;
@@ -14,6 +14,7 @@ interface Props {
   clearMessages: () => void;
   messages: Message[];
   socketConnected: boolean;
+  convInfo?: ConversationSession | null;
 }
 
 export const MessageDetailPanel: React.FC<Props> = ({
@@ -25,20 +26,20 @@ export const MessageDetailPanel: React.FC<Props> = ({
   clearMessages,
   messages,
   socketConnected,
+  convInfo,
 }) => {
   const [dbMessages, setDbMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [sendingMedia, setSendingMedia] = useState(false);
   const [adminId, setAdminId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setAdminId(localStorage.getItem('userId'));
-    }
+    setAdminId(localStorage.getItem('userId'));
   }, []);
 
   useEffect(() => {
@@ -57,26 +58,18 @@ export const MessageDetailPanel: React.FC<Props> = ({
         setLoading(false);
       }
     };
-
     fetchMessages();
   }, [conversationId, messageMode]);
 
   const combined = [...dbMessages, ...messages];
 
-  // cuộn xuống khi load lần đầu
   useEffect(() => {
     if (!bottomRef.current || !conversationId) return;
-    if (!loading && dbMessages.length > 0) {
-      bottomRef.current.scrollIntoView({ behavior: 'auto' });
-    }
+    bottomRef.current.scrollIntoView({ behavior: 'auto' });
   }, [conversationId, loading]);
 
-  // cuộn mượt khi nhận tin mới
   useEffect(() => {
-    if (!bottomRef.current) return;
-    if (messages.length > 0) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (messages.length > 0) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = async () => {
@@ -87,33 +80,30 @@ export const MessageDetailPanel: React.FC<Props> = ({
     let imagePath = '';
     let videoPath = '';
 
-    // ❌ Không cho group upload file
-    if (messageMode === 'group') {
-      const ids = Array.from(selectedConversations);
-      if (ids.length > 0) sendMessage(text, ids);
-      return;
-    }
+    try {
+      if (file) {
+        setSendingMedia(true);
 
-    // ✅ Chỉ upload file nếu là gửi đơn
-    if (file) {
-      const formData = new FormData();
-      if (file.type.startsWith('image')) formData.append('image', file);
-      else if (file.type.startsWith('video')) formData.append('video', file);
+        const formData = new FormData();
+        if (file.type.startsWith('image')) formData.append('image', file);
+        else if (file.type.startsWith('video')) formData.append('video', file);
 
-      try {
         const res = await MessagesService.uploadChatFile(formData);
         imagePath = res.data.imagePath || '';
         videoPath = res.data.videoPath || '';
-      } catch (err) {
-        console.error('❌ Upload file lỗi:', err);
+
+        setFile(null);
+        setPreview(null);
+        setSendingMedia(false);
       }
 
-      setFile(null);
-      setPreview(null);
-    }
-
-    if (conversationId) {
-      sendMessage(text || imagePath || videoPath);
+      if (conversationId) {
+        sendMessage(text || imagePath || videoPath);
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 150);
+      }
+    } catch (err) {
+      console.error('❌ Upload lỗi:', err);
+      setSendingMedia(false);
     }
   };
 
@@ -132,7 +122,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
             <p className="mb-3 text-sm">Đã chọn {selectedConversations.size} người nhận</p>
             <div className="flex p-3 border-t bg-white dark:bg-gray-900 w-2/3 rounded-xl shadow">
               <input
-                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-full px-3 py-2 text-sm dark:bg-gray-800"
+                className="flex-1 border border-gray-400 dark:border-gray-600 rounded-full px-3 py-2 text-sm dark:bg-gray-800"
                 placeholder="Nhập nội dung tin nhắn..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -164,11 +154,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
 
   return (
     <div className="flex-1 flex flex-col">
-      <div className="p-3 text-black flex justify-between items-center">
-        <span className="text-xs">{socketConnected ? '🟢 Online' : '🔴 Offline'}</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-800 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 dark:bg-gray-800 space-y-3">
         {loading ? (
           <p className="text-center text-gray-500 mt-10">Đang tải tin nhắn...</p>
         ) : combined.length === 0 ? (
@@ -176,7 +162,9 @@ export const MessageDetailPanel: React.FC<Props> = ({
         ) : (
           combined.map((msg) => {
             const isAdmin = msg.senderId === adminId;
-            const isMedia = msg.textContent?.match(/\.(jpg|jpeg|png|gif|mp4|mov|webm)$/i);
+            const isImage = msg.textContent?.match(/\.(jpg|jpeg|png|gif)$/i);
+            const isVideo = msg.textContent?.match(/\.(mp4|mov|webm)$/i);
+
             return (
               <div
                 key={msg.id || msg.createdAt}
@@ -186,7 +174,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
                   <img
                     src={msg.customerAvatar || '/default_avatar.jpg'}
                     alt={msg.customerName}
-                    className="w-8 h-8 rounded-full object-cover border border-gray-300"
+                    className="w-8 h-8 rounded-full object-cover border border-gray-400"
                   />
                 )}
 
@@ -197,49 +185,77 @@ export const MessageDetailPanel: React.FC<Props> = ({
                       : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none shadow'
                   }`}
                 >
-                  {isMedia ? (
-                    msg.textContent.match(/\.(mp4|mov|webm)$/i) ? (
-                      <video
-                        controls
-                        className="max-w-[250px] max-h-[180px] rounded-md"
-                        src={msg.textContent}
-                      />
-                    ) : (
-                      <img
-                        src={msg.textContent}
-                        alt="media"
-                        className="max-w-[250px] max-h-[180px] rounded-md"
-                      />
-                    )
+                  {isImage ? (
+                    <img
+                      src={msg.textContent}
+                      alt="media"
+                      className="max-w-[250px] max-h-[180px] rounded-lg cursor-pointer border border-gray-400 dark:border-gray-600"
+                      onClick={() => {
+                        setPreview(msg.textContent);
+                        setFile(null);
+                      }}
+                    />
+                  ) : isVideo ? (
+                    <video
+                      controls
+                      className="max-w-[250px] max-h-[180px] rounded-lg border border-gray-400 dark:border-gray-600"
+                      src={msg.textContent}
+                    />
                   ) : (
                     <p className="text-sm">{msg.textContent}</p>
                   )}
-                  <p className="text-[10px] mt-1 opacity-70 text-right">
-                    {msg.createdAt
-                      ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : ''}
-                  </p>
+
+                  <div className="text-[10px] mt-1 opacity-80 text-right space-x-1">
+                    <span>
+                      {msg.createdAt
+                        ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : ''}
+                    </span>
+                    {isAdmin && (
+                      <span>
+                        {(() => {
+                          const lastMsg = combined[combined.length - 1];
+                          const isLastFromAdmin = lastMsg?.senderId === adminId;
+                          const isAllRead =
+                            (convInfo?.customerUnreadCount ?? 0) === 0 &&
+                            (convInfo?.seerUnreadCount ?? 0) === 0;
+
+                          return isLastFromAdmin && isAllRead ? (
+                            <span className="text-gray-200 font-medium">Đã xem</span>
+                          ) : (
+                            <span className="italic text-gray-200">Đã gửi</span>
+                          );
+                        })()}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {isAdmin && (
                   <img
                     src={msg.seerAvatar || '/default_avatar.jpg'}
                     alt={msg.seerName}
-                    className="w-8 h-8 rounded-full object-cover border border-gray-300"
+                    className="w-8 h-8 rounded-full object-cover border border-gray-400"
                   />
                 )}
               </div>
             );
           })
         )}
+
+        {sendingMedia && (
+          <div className="flex justify-end pr-3">
+            <div className="animate-spin h-5 w-5 border-2 border-indigo-400 border-t-transparent rounded-full mt-1"></div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
-      {/* preview ảnh/video trước khi gửi */}
-      {preview && (
+      {/* Preview ảnh/video trước khi gửi */}
+      {preview && file && !sendingMedia && (
         <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 flex items-center gap-3">
           {file?.type.startsWith('video') ? (
             <video src={preview} className="max-h-[100px] rounded-md" controls />
@@ -258,9 +274,10 @@ export const MessageDetailPanel: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="flex p-3 border-t bg-white dark:bg-gray-900 items-center">
+      {/* Thanh nhập */}
+      <div className="flex p-3 border-t border-gray-400 bg-white dark:bg-gray-900 items-center">
         <input
-          className="flex-1 border border-gray-300 dark:border-gray-600 rounded-full px-3 py-2 text-sm dark:bg-gray-800"
+          className="flex-1 border border-gray-400 dark:border-gray-600 rounded-full px-4 py-2 text-sm dark:bg-gray-800"
           placeholder="Nhập tin nhắn..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -274,7 +291,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
           onChange={handleFileSelect}
         />
         <button
-          className="ml-2 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300"
+          className="ml-2 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-400"
           onClick={() => fileInputRef.current?.click()}
         >
           <ImageIcon size={18} />
@@ -287,6 +304,26 @@ export const MessageDetailPanel: React.FC<Props> = ({
           <Send size={16} />
         </button>
       </div>
+
+      {/* Modal xem ảnh full */}
+      {preview && !file && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+          onClick={() => setPreview(null)}
+        >
+          <img
+            src={preview}
+            alt="preview"
+            className="max-w-[90vw] max-h-[85vh] rounded-lg border border-gray-500 shadow-lg"
+          />
+          <button
+            className="absolute top-4 right-4 text-white hover:text-red-400"
+            onClick={() => setPreview(null)}
+          >
+            <X size={28} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

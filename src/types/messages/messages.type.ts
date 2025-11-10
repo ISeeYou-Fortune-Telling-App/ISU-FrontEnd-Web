@@ -18,22 +18,25 @@ export interface ConversationSession {
   createdAt: string;
   updatedAt: string;
   conversationId: string;
-  seerId: string;
-  seerName: string;
-  seerAvatarUrl: string;
-  customerId: string;
-  customerName: string;
-  customerAvatarUrl: string;
-  sessionStartTime: string;
+  seerId: string | null;
+  seerName: string | null;
+  seerAvatarUrl: string | null;
+  customerId: string | null;
+  customerName: string | null;
+  customerAvatarUrl: string | null;
+  sessionStartTime: string | null;
   sessionEndTime: string | null;
   sessionDurationMinutes: number | null;
   seerUnreadCount: number;
   customerUnreadCount: number;
-  lastMessageContent: string;
-  lastMessageTime: string;
+  adminUnreadCount: number;
+  unreadForAdmin?: boolean;
+  lastMessageContent: string | null;
+  lastMessageTime: string | null;
   status: ConversationStatus;
   sessionCanceledBy: ConversationCanceler;
   sessionCanceledTime: string | null;
+  lastMessageSenderId?: string; // ✅ chỉ để FE dùng
 }
 
 export interface Message {

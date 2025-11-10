@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 import { AuthService } from '../../../services/auth/auth.service';
@@ -15,6 +15,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('remembered_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -23,15 +31,7 @@ export default function LoginPage() {
     try {
       await AuthService.login({ email, password, fcmToken: 'string' });
 
-      // Lưu email nếu "Remember me" được bật
-      if (rememberMe) {
-        localStorage.setItem('remembered_email', email);
-      } else {
-        localStorage.removeItem('remembered_email');
-      }
-
       await router.prefetch('/admin/dashboard');
-      await new Promise((res) => setTimeout(res, 300));
       router.push('/admin/dashboard');
     } catch (err: any) {
       console.error('Login failed:', err);
@@ -44,15 +44,6 @@ export default function LoginPage() {
   const handleForgotPassword = () => {
     router.push('/auth/forgot-password');
   };
-
-  // Lấy email đã lưu (nếu có)
-  useState(() => {
-    const savedEmail = localStorage.getItem('remembered_email');
-    if (savedEmail) {
-      setEmail(savedEmail);
-      setRememberMe(true);
-    }
-  });
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-black relative overflow-hidden">
