@@ -67,25 +67,6 @@ export const ConversationTable: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
-      {/* Stats row */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
-        {[
-          { label: 'Tổng Cuộc trò chuyện Booking', value: 70, color: 'text-blue-600' },
-          { label: 'Tổng Cuộc trò chuyện Hỗ trợ', value: 0, color: 'text-purple-600' },
-          { label: 'Tổng Cuộc trò chuyện Admin', value: 80, color: 'text-indigo-600' },
-          { label: 'Tổng người dùng hoạt động', value: 26, color: 'text-green-600' },
-          { label: 'Tổng tin nhắn đã gửi', value: 277, color: 'text-red-600' },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 text-center"
-          >
-            <div className={`text-2xl font-semibold ${stat.color}`}>{stat.value}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">{stat.label}</div>
-          </div>
-        ))}
-      </div>
-
       {/* Search and filter */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

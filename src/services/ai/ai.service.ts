@@ -1,28 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/services/vannaService.ts
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-export interface VannaResponse {
-  rich?: {
-    id: string;
-    type: string;
-    lifecycle: string;
-    data?: {
-      content?: string;
-    };
-  };
-  conversation_id?: string;
-  request_id?: string;
+export interface ChatEvent {
+  type: 'text' | 'dataframe' | 'chart' | 'status' | 'html' | 'image' | 'error' | 'unknown';
+  content?: string;
+  data?: any;
 }
 
 const API_URL = 'http://localhost:8000/api/vanna/v2/chat_sse';
 
 export async function sendVannaMessageV2(
   message: string,
-  onEvent: (event: any) => void,
+  onEvent: (event: ChatEvent) => void,
+  onDone?: () => void,
 ): Promise<void> {
   const conversationId = localStorage.getItem('conversation_id') || '';
   const requestId = localStorage.getItem('request_id') || '';
@@ -33,7 +21,7 @@ export async function sendVannaMessageV2(
     payload.request_id = requestId;
   }
 
-  const res = await fetch('http://localhost:8000/api/vanna/v2/chat_sse', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -45,23 +33,53 @@ export async function sendVannaMessageV2(
 
   while (true) {
     const { value, done } = await reader!.read();
-    if (done) break;
+    if (done) {
+      onDone?.();
+      break;
+    }
 
     buffer += decoder.decode(value, { stream: true });
     const parts = buffer.split('\n\n');
 
     for (const part of parts.slice(0, -1)) {
-      if (part.startsWith('data:')) {
-        try {
-          const json = JSON.parse(part.replace(/^data:\s*/, ''));
-          if (json.conversation_id) localStorage.setItem('conversation_id', json.conversation_id);
-          if (json.request_id) localStorage.setItem('request_id', json.request_id);
-          if (json.rich) onEvent(json.rich);
-        } catch {
-          // ignore malformed chunk
+      if (!part.startsWith('data:')) continue;
+
+      try {
+        const json = JSON.parse(part.replace(/^data:\s*/, ''));
+
+        if (json.conversation_id) localStorage.setItem('conversation_id', json.conversation_id);
+        if (json.request_id) localStorage.setItem('request_id', json.request_id);
+
+        if (json.rich) {
+          const rich = json.rich;
+          const event: ChatEvent = {
+            type:
+              rich.type === 'text'
+                ? 'text'
+                : rich.type === 'dataframe'
+                ? 'dataframe'
+                : rich.type === 'chart'
+                ? 'chart'
+                : rich.type === 'status_bar_update'
+                ? 'status'
+                : rich.type === 'html'
+                ? 'html'
+                : rich.type === 'image'
+                ? 'image'
+                : rich.type === 'error'
+                ? 'error'
+                : 'unknown',
+            content: rich.data?.content ?? '',
+            data: rich.data ?? null,
+          };
+
+          onEvent(event);
         }
+      } catch {
+        // ignore malformed chunks
       }
     }
+
     buffer = parts[parts.length - 1];
   }
 }

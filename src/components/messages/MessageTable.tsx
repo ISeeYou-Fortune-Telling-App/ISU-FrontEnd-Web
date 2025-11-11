@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { MessagesService } from '@/services/messages/messages.service';
 import type { ConversationSession, ConversationParams } from '@/types/messages/messages.type';
 import { useDebounce } from '@/hooks/useDebounce';
 import { MessageDetailPanel } from './MessageDetailPanel';
+import { useAdminChat } from '@/hooks/useAdminChat';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -16,13 +17,15 @@ export const MessageTable: React.FC = () => {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [messageMode, setMessageMode] = useState<'group' | 'individual'>('individual');
   const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set());
-
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 400);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  // ---- Fetch conversations ----
+  useEffect(() => {
+    if (messageMode === 'group') setSelectedConvId(null);
+    else setSelectedConversations(new Set());
+  }, [messageMode]);
+
   const fetchConversations = async () => {
     setLoading(true);
     setError(null);
@@ -34,9 +37,12 @@ export const MessageTable: React.FC = () => {
         participantName: debouncedSearch || undefined,
         type: 'ADMIN_CHAT',
       };
-
       const res = await MessagesService.getSearchConversations(params);
-      setConversations(res);
+      const formatted = res.map((c: any) => ({
+        ...c,
+        unreadForAdmin: c.adminUnreadCount > 0,
+      }));
+      setConversations(formatted);
     } catch (err: any) {
       setError(err.message || 'Lỗi khi tải danh sách hội thoại.');
     } finally {
@@ -48,7 +54,40 @@ export const MessageTable: React.FC = () => {
     fetchConversations();
   }, [page, debouncedSearch]);
 
-  // ---- Select conversation ----
+  const { socketConnected, getMessages, joinConversation, sendMessage, clearMessages } =
+    useAdminChat({
+      onNewMessage: (msg) => {
+        setConversations((prev) => {
+          const idx = prev.findIndex(
+            (c) => c.conversationId === msg.conversationId || c.id === msg.conversationId,
+          );
+          if (idx !== -1) {
+            const isActive = selectedConvId === msg.conversationId || selectedConvId === msg.id;
+            const updated = {
+              ...prev[idx],
+              lastMessageContent: msg.textContent,
+              lastMessageTime: msg.createdAt,
+              adminUnreadCount: isActive
+                ? 0
+                : msg.senderId !== localStorage.getItem('userId')
+                ? (prev[idx].adminUnreadCount || 0) + 1
+                : prev[idx].adminUnreadCount,
+              unreadForAdmin: isActive
+                ? false
+                : msg.senderId !== localStorage.getItem('userId')
+                ? true
+                : prev[idx].unreadForAdmin,
+            };
+            const newList = [...prev];
+            newList.splice(idx, 1);
+            newList.unshift(updated);
+            return newList;
+          }
+          return prev;
+        });
+      },
+    });
+
   const handleSelectConversation = (convId: string) => {
     if (messageMode === 'group') {
       const newSelected = new Set(selectedConversations);
@@ -57,34 +96,34 @@ export const MessageTable: React.FC = () => {
       setSelectedConversations(newSelected);
     } else {
       setSelectedConvId(convId);
+      MessagesService.markAsRead(convId);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convId ? { ...c, unreadForAdmin: false, adminUnreadCount: 0 } : c,
+        ),
+      );
     }
   };
 
   return (
-    <div>
-      {/* Tabs */}
-      <div className="w-full bg-gray-100 dark:bg-gray-700 p-1 rounded-xl flex mb-4">
+    <div className="flex flex-col">
+      {/* Thanh chế độ */}
+      <div className="w-full bg-gray-200 dark:bg-gray-800 p-1 rounded-xl flex mb-4 border border-gray-400 dark:border-gray-700">
         <button
-          onClick={() => {
-            setMessageMode('group');
-            setSelectedConvId(null);
-          }}
-          className={`flex-1 text-center py-2 text-sm font-medium transition duration-200 rounded-lg ${
+          onClick={() => setMessageMode('group')}
+          className={`flex-1 text-center py-2 text-sm font-medium rounded-lg transition ${
             messageMode === 'group'
-              ? 'bg-white shadow text-gray-900 dark:bg-gray-800 dark:text-white'
+              ? 'bg-white shadow text-gray-900 dark:bg-gray-700 dark:text-white'
               : 'text-gray-600 dark:text-gray-400'
           }`}
         >
           Soạn tin nhắn nhiều người
         </button>
         <button
-          onClick={() => {
-            setMessageMode('individual');
-            setSelectedConversations(new Set());
-          }}
-          className={`flex-1 text-center py-2 text-sm font-medium transition duration-200 rounded-lg ${
+          onClick={() => setMessageMode('individual')}
+          className={`flex-1 text-center py-2 text-sm font-medium rounded-lg transition ${
             messageMode === 'individual'
-              ? 'bg-white shadow text-gray-900 dark:bg-gray-800 dark:text-white'
+              ? 'bg-white shadow text-gray-900 dark:bg-gray-700 dark:text-white'
               : 'text-gray-600 dark:text-gray-400'
           }`}
         >
@@ -92,9 +131,10 @@ export const MessageTable: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-400 dark:border-gray-700 h-[700px] flex">
-        {/* --- Left Column --- */}
-        <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col p-3">
+      {/* Khung chính */}
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-400 dark:border-gray-700 h-[750px] flex shadow-sm">
+        {/* Sidebar */}
+        <div className="w-1/3 border-r border-gray-400 dark:border-gray-700 flex flex-col p-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
             Danh sách hội thoại
           </h2>
@@ -104,13 +144,13 @@ export const MessageTable: React.FC = () => {
               : 'Tra cứu và quản lý các cuộc hội thoại'}
           </p>
 
-          {/* Search Bar */}
+          {/* Tìm kiếm */}
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Tìm kiếm theo tên khách hàng..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -119,13 +159,13 @@ export const MessageTable: React.FC = () => {
             />
           </div>
 
-          {/* Loading / Error */}
-          {loading && <p className="text-center text-gray-500">Đang tải...</p>}
-          {error && <p className="text-center text-red-500">{error}</p>}
-
-          {/* Conversations */}
-          {!loading && !error && (
-            <div className="flex-grow overflow-y-auto pr-2 space-y-2">
+          {/* Danh sách hội thoại */}
+          {loading ? (
+            <p className="text-center text-gray-500">Đang tải...</p>
+          ) : error ? (
+            <p className="text-center text-red-500">{error}</p>
+          ) : (
+            <div className="flex-grow overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
               {conversations.length === 0 ? (
                 <p className="text-center text-gray-500">Không có hội thoại nào.</p>
               ) : (
@@ -133,10 +173,12 @@ export const MessageTable: React.FC = () => {
                   <div
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv.id)}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition ${
+                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition border ${
                       selectedConvId === conv.id || selectedConversations.has(conv.id)
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-400'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400 dark:border-indigo-600'
+                        : conv.unreadForAdmin
+                        ? 'bg-indigo-100 dark:bg-indigo-950/30 border-transparent'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-transparent'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
@@ -151,59 +193,55 @@ export const MessageTable: React.FC = () => {
                       )}
                       <img
                         src={conv.customerAvatarUrl || conv.seerAvatarUrl || '/default_avatar.jpg'}
-                        alt={conv.customerName || conv.seerName || 'User'}
-                        className="w-10 h-10 rounded-full object-cover"
+                        alt="avatar"
+                        className="w-10 h-10 rounded-full object-cover border border-gray-400 dark:border-gray-600"
                       />
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        <p
+                          className={`text-sm ${
+                            conv.unreadForAdmin
+                              ? 'font-semibold text-indigo-700 dark:text-indigo-300'
+                              : 'text-gray-900 dark:text-white'
+                          }`}
+                        >
                           {conv.customerName || conv.seerName || '(Không rõ tên)'}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
-                          {conv.lastMessageContent || '(Chưa có tin nhắn)'}
+                        <p
+                          className={`text-xs truncate max-w-[150px] ${
+                            conv.unreadForAdmin
+                              ? 'text-indigo-600 dark:text-indigo-400 font-medium'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {conv.lastMessageContent?.startsWith('http')
+                            ? '[Ảnh/Video]'
+                            : conv.lastMessageContent || '(Chưa có tin nhắn)'}
                         </p>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500">
-                      {new Date(conv.lastMessageTime).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
+                    {conv.unreadForAdmin && (
+                      <div className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full">
+                        {conv.adminUnreadCount}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
             </div>
           )}
-
-          {/* Pagination */}
-          {!loading && totalPages > 1 && (
-            <div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                Trang {page}/{totalPages}
-              </span>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => page > 1 && setPage(page - 1)}
-                  className="p-1 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => page < totalPages && setPage(page + 1)}
-                  className="p-1 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* --- Right Column (detail) --- */}
+        {/* Chat panel */}
         <MessageDetailPanel
           conversationId={selectedConvId}
           messageMode={messageMode}
           selectedConversations={selectedConversations}
+          joinConversation={joinConversation}
+          sendMessage={sendMessage}
+          clearMessages={clearMessages}
+          messages={getMessages(selectedConvId || '')}
+          socketConnected={socketConnected}
+          convInfo={conversations.find((c) => c.id === selectedConvId) || null}
         />
       </div>
     </div>

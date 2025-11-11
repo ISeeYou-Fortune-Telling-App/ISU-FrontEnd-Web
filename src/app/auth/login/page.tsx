@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 import { AuthService } from '../../../services/auth/auth.service';
@@ -10,9 +10,18 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('remembered_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +30,8 @@ export default function LoginPage() {
     setError(null);
     try {
       await AuthService.login({ email, password, fcmToken: 'string' });
+
       await router.prefetch('/admin/dashboard');
-      await new Promise((res) => setTimeout(res, 300));
       router.push('/admin/dashboard');
     } catch (err: any) {
       console.error('Login failed:', err);
@@ -33,7 +42,7 @@ export default function LoginPage() {
   };
 
   const handleForgotPassword = () => {
-    router.push('/forgot-password');
+    router.push('/auth/forgot-password');
   };
 
   return (
@@ -114,7 +123,18 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-1">
+            {/* Remember me + Forgot password */}
+            <div className="flex justify-between items-center pt-1">
+              <label className="flex items-center space-x-2 text-sm text-gray-300 select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 accent-cyan-400 bg-gray-900 border-gray-700 rounded focus:ring-cyan-400"
+                />
+                <span>Ghi nhớ đăng nhập</span>
+              </label>
+
               <button
                 type="button"
                 onClick={handleForgotPassword}

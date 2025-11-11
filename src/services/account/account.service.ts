@@ -17,6 +17,9 @@ export const AccountService = {
         limit: params.limit ?? 15,
         sortType: params.sortType ?? 'asc',
         sortBy: params.sortBy ?? 'createdAt',
+        keyword: params.keyword ?? undefined,
+        role: params.role ?? undefined,
+        status: params.status ?? undefined,
       },
     });
   },
