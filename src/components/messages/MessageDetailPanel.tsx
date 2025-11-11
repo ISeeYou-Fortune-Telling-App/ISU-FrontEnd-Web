@@ -37,6 +37,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
   const [adminId, setAdminId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null); // Giữ ref này nếu cần kiểm tra trạng thái scroll container
 
   useEffect(() => {
     setAdminId(localStorage.getItem('userId'));
@@ -63,14 +64,26 @@ export const MessageDetailPanel: React.FC<Props> = ({
 
   const combined = [...dbMessages, ...messages];
 
+  // **LOGIC CUỘN MỚI:** Đảm bảo cuộn xuống cuối cùng
   useEffect(() => {
-    if (!bottomRef.current || !conversationId) return;
-    bottomRef.current.scrollIntoView({ behavior: 'auto' });
-  }, [conversationId, loading]);
+    if (!conversationId) return;
 
-  useEffect(() => {
-    if (messages.length > 0) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const scroll = () => {
+      // Cuộn đến phần tử cuối cùng (bottomRef)
+      bottomRef.current?.scrollIntoView({
+        // Dùng 'auto' khi tải xong (loading chuyển từ true sang false)
+        // Dùng 'smooth' khi có tin nhắn mới (combined.length thay đổi sau khi gửi/nhận)
+        behavior: loading ? 'auto' : 'smooth',
+        block: 'end',
+      });
+    };
+
+    // Dùng setTimeout để đảm bảo hành động cuộn xảy ra sau khi DOM đã được cập nhật
+    const timeoutId = setTimeout(scroll, 50);
+
+    return () => clearTimeout(timeoutId);
+  }, [conversationId, combined.length, loading]);
+  // -----------------------------------------------------
 
   const handleSend = async () => {
     if (!input.trim() && (!file || messageMode === 'group')) return;
@@ -99,7 +112,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
 
       if (conversationId) {
         sendMessage(text || imagePath || videoPath);
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 150);
+        // Bỏ setTimeout cuộn thủ công ở đây, vì useEffect đã handle việc cuộn
       }
     } catch (err) {
       console.error('❌ Upload lỗi:', err);
@@ -154,7 +167,10 @@ export const MessageDetailPanel: React.FC<Props> = ({
 
   return (
     <div className="flex-1 flex flex-col">
-      <div className="flex-1 overflow-y-auto p-3 dark:bg-gray-800 space-y-3">
+      <div
+        className="flex-1 overflow-y-auto p-3 dark:bg-gray-800 space-y-3"
+        ref={scrollContainerRef}
+      >
         {loading ? (
           <p className="text-center text-gray-500 mt-10">Đang tải tin nhắn...</p>
         ) : combined.length === 0 ? (
@@ -214,23 +230,6 @@ export const MessageDetailPanel: React.FC<Props> = ({
                           })
                         : ''}
                     </span>
-                    {isAdmin && (
-                      <span>
-                        {(() => {
-                          const lastMsg = combined[combined.length - 1];
-                          const isLastFromAdmin = lastMsg?.senderId === adminId;
-                          const isAllRead =
-                            (convInfo?.customerUnreadCount ?? 0) === 0 &&
-                            (convInfo?.seerUnreadCount ?? 0) === 0;
-
-                          return isLastFromAdmin && isAllRead ? (
-                            <span className="text-gray-200 font-medium">Đã xem</span>
-                          ) : (
-                            <span className="italic text-gray-200">Đã gửi</span>
-                          );
-                        })()}
-                      </span>
-                    )}
                   </div>
                 </div>
 

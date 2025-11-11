@@ -203,7 +203,6 @@ const AdvancedFilterModal: React.FC<{
   );
 };
 
-
 const StatCard: React.FC<{
   title: string;
   value: string;
@@ -411,7 +410,7 @@ const FinanceDashboard: React.FC = () => {
             ...seerFilters,
           });
 
-          const mappedSeers = response.data.data.map((seer: any) => ({
+          const mappedSeers = response.data.map((seer: any) => ({
             id: seer.seerId,
             name: seer.fullName || 'N/A',
             avatar: `https://i.pravatar.cc/150?u=${seer.seerId}`,
@@ -423,7 +422,6 @@ const FinanceDashboard: React.FC = () => {
             avgRating: seer.avgRating,
             ...seer,
           }));
-
           setSeerRankings(mappedSeers);
 
           // Calculate tier distribution
@@ -460,7 +458,7 @@ const FinanceDashboard: React.FC = () => {
             ...customerFilters,
           });
 
-          const mappedCustomers = response.data.data.map((customer: any) => ({
+          const mappedCustomers = response.data.map((customer: any) => ({
             id: customer.customerId,
             name: customer.customerName || 'N/A',
             avatar: `https://i.pravatar.cc/150?u=${customer.customerId}`,

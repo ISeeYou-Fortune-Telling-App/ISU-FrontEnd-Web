@@ -28,9 +28,9 @@ const RankingItem: React.FC<RankingItemProps> = ({ item, type }) => {
 
   const handleViewDetail = () => {
     if (type === 'seer') {
-      router.push(`/finance/seer/${item.id}`);
+      router.push(`/admin/finance/seer/${item.id}`);
     } else {
-      router.push(`/finance/customer/${item.id}`);
+      router.push(`/admin/finance/customer/${item.id}`);
     }
   };
 

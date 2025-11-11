@@ -1,4 +1,4 @@
-import { PagingParams } from "./paging.type";
+import { PagingParams } from './paging.type';
 
 export interface PagingResponse {
   page: number;
@@ -122,19 +122,19 @@ export interface SeerPerformance {
 
 export interface FinanceStatistic {
   totalRevenue: number;
-  percentChangeTotalRevenue: number; 
-  totalNet: number;                  
-  percentChangeTotalNet: number;     
+  percentChangeTotalRevenue: number;
+  totalNet: number;
+  percentChangeTotalNet: number;
   totalTax: number;
-  percentChangeTotalTax: number;     
-  totalRevenueDay: number;           
+  percentChangeTotalTax: number;
+  totalRevenueDay: number;
   percentChangeTotalRevenueDay: number;
 }
 
 export interface ChartDto {
   month: number;
   year: number;
-  data: Record<string, number>; 
+  data: Record<string, number>;
 }
 
 export interface ChartData {
@@ -142,13 +142,22 @@ export interface ChartData {
   value: number;
 }
 
-export type ChartType = 'TOTAL_REVENUE' | 'TOTAL_BOOKING_REQUESTS' | 'TOTAL_BOOKING_COMPLETED' | 'TOTAL_PACKAGES';
+export type ChartType =
+  | 'TOTAL_REVENUE'
+  | 'TOTAL_BOOKING_REQUESTS'
+  | 'TOTAL_BOOKING_COMPLETED'
+  | 'TOTAL_PACKAGES';
 
 export type CustomerAction = 'BOOKING' | 'SPENDING' | 'CANCELLING';
-export type SeerAction = 'CREATE_PACKAGE' | 'RATED' | 'RECEIVED_BOOKING' | 'COMPLETED_BOOKING' | 'CANCELLING' | 'EARNING';
+export type SeerAction =
+  | 'CREATE_PACKAGE'
+  | 'RATED'
+  | 'RECEIVED_BOOKING'
+  | 'COMPLETED_BOOKING'
+  | 'CANCELLING'
+  | 'EARNING';
 
 export interface PageResponse<T> {
-  data: T[];
+  item: T[];
   paging: PagingResponse;
 }
-

@@ -1,5 +1,5 @@
-import { SingleResponse } from '@/types/response.type';
-import { apiFetch } from '../api';
+import { SingleResponse, ListResponse } from '@/types/response.type';
+import { apiFetch } from '../api2';
 import {
   ChartData,
   ChartDto,
@@ -48,8 +48,8 @@ export const ReportService = {
 
   getAllCustomerPotential: async (
     params?: CustomerPotentialParams,
-  ): Promise<SingleResponse<PageResponse<CustomerPotential>>> => {
-    const res = await apiFetch<SingleResponse<PageResponse<CustomerPotential>>>(
+  ): Promise<ListResponse<CustomerPotential>> => {
+    const res = await apiFetch<ListResponse<CustomerPotential>>(
       '/statistic-report/all-customer-potential',
       {
         method: 'GET',
@@ -76,8 +76,6 @@ export const ReportService = {
     );
     return res;
   },
-
-  // ==================== SEER PERFORMANCE ====================
 
   getSeerPerformance: async (
     seerId: string,
@@ -110,17 +108,38 @@ export const ReportService = {
 
   getAllSeerPerformance: async (
     params?: SeerPerformanceParams,
-  ): Promise<SingleResponse<PageResponse<SeerPerformance>>> => {
-    // <-- SỬA Ở ĐÂY
-    const res = await apiFetch<SingleResponse<PageResponse<SeerPerformance>>>( // <-- VÀ SỬA Ở ĐÂY
+  ): Promise<ListResponse<SeerPerformance>> => {
+    const res = await apiFetch<ListResponse<SeerPerformance>>(
       '/statistic-report/all-seer-performance',
       {
         method: 'GET',
         params: {
-          // ... (giữ nguyên các params)
           page: params?.page ?? 1,
           limit: params?.limit ?? 15,
-          // ...
+          sortBy: params?.sortBy ?? 'createdAt',
+          sortType: params?.sortType ?? 'desc',
+          month: params?.month,
+          year: params?.year,
+          minPerformancePoint: params?.minPerformancePoint,
+          maxPerformancePoint: params?.maxPerformancePoint,
+          performanceTier: params?.performanceTier,
+          minRanking: params?.minRanking,
+          maxRanking: params?.maxRanking,
+          minTotalPackages: params?.minTotalPackages,
+          maxTotalPackages: params?.maxTotalPackages,
+          minTotalRates: params?.minTotalRates,
+          maxTotalRates: params?.maxTotalRates,
+          minAvgRating: params?.minAvgRating,
+          maxAvgRating: params?.maxAvgRating,
+          minTotalBookings: params?.minTotalBookings,
+          maxTotalBookings: params?.maxTotalBookings,
+          minCompletedBookings: params?.minCompletedBookings,
+          maxCompletedBookings: params?.maxCompletedBookings,
+          minCancelledBySeer: params?.minCancelledBySeer,
+          maxCancelledBySeer: params?.maxCancelledBySeer,
+          minTotalRevenue: params?.minTotalRevenue,
+          maxTotalRevenue: params?.maxTotalRevenue,
+          minBonus: params?.minBonus,
           maxBonus: params?.maxBonus,
         },
       },
@@ -218,20 +237,17 @@ export const ReportService = {
     amount: number,
     reason: string,
   ): Promise<SingleResponse<PaymentResponse>> => {
-    const res = await apiFetch<SingleResponse<PaymentResponse>>(
-      '/bonus',
-      {
-        method: 'POST',
-        data: {
-          seerId,
-          amount,
-          reason,
-        },
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    const res = await apiFetch<SingleResponse<PaymentResponse>>('/bonus', {
+      method: 'POST',
+      data: {
+        seerId,
+        amount,
+        reason,
       },
-    );
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     return res;
   },
 
@@ -251,8 +267,7 @@ export const ReportService = {
     chartType: ChartType,
     month?: number,
     year?: number,
-  ): Promise<SingleResponse<ChartData[]>> => { 
-    
+  ): Promise<SingleResponse<ChartData[]>> => {
     // 2. Gọi API và dùng kiểu Backend (ChartDto)
     const res = await apiFetch<SingleResponse<ChartDto>>('/statistic-report/chart', {
       method: 'GET',
@@ -264,18 +279,16 @@ export const ReportService = {
     });
 
     // 3. Chuyển đổi dữ liệu từ Map { "T1": 100 } thành Array [{ label: "T1", value: 100 }]
-    const transformedData: ChartData[] = Object.entries(res.data.data).map(
-      ([key, value]) => ({
-        label: key,
-        value: value,
-      }),
-    );
+    const transformedData: ChartData[] = Object.entries(res.data.data).map(([key, value]) => ({
+      label: key,
+      value: value,
+    }));
 
     // 4. Trả về dữ liệu đã chuyển đổi cho UI
     return {
       data: transformedData,
-      message: res.message,
-      statusCode: res.statusCode
+      message: res.message,
+      statusCode: res.statusCode,
     };
   },
 };

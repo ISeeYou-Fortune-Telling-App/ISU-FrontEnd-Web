@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react'; // Thêm useRef
 import { Search } from 'lucide-react';
 import { MessagesService } from '@/services/messages/messages.service';
 import type { ConversationSession, ConversationParams } from '@/types/messages/messages.type';
@@ -21,12 +21,22 @@ export const MessageTable: React.FC = () => {
   const debouncedSearch = useDebounce(searchTerm, 400);
   const [page, setPage] = useState(1);
 
+  // 1. Thêm Ref để theo dõi container cuộn của danh sách hội thoại
+  const conversationListRef = useRef<HTMLDivElement | null>(null);
+  // Ref để lưu vị trí cuộn trước đó
+  const scrollPositionRef = useRef(0);
+
   useEffect(() => {
     if (messageMode === 'group') setSelectedConvId(null);
     else setSelectedConversations(new Set());
   }, [messageMode]);
 
   const fetchConversations = async () => {
+    // LƯU vị trí cuộn trước khi tải (để tránh nhấp nháy khi fetch)
+    if (conversationListRef.current) {
+      scrollPositionRef.current = conversationListRef.current.scrollTop;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -54,9 +64,25 @@ export const MessageTable: React.FC = () => {
     fetchConversations();
   }, [page, debouncedSearch]);
 
+  // 2. useEffect để khôi phục vị trí cuộn sau khi conversations được cập nhật
+  useEffect(() => {
+    if (conversationListRef.current && !loading) {
+      // Chỉ khôi phục vị trí cuộn khi KHÔNG ở trang đầu và KHÔNG đang tìm kiếm
+      // Hoặc khi có tin nhắn mới đẩy conversation lên đầu
+      if (page > 1 || debouncedSearch || scrollPositionRef.current > 0) {
+        conversationListRef.current.scrollTop = scrollPositionRef.current;
+      }
+    }
+  }, [conversations, loading]);
+
   const { socketConnected, getMessages, joinConversation, sendMessage, clearMessages } =
     useAdminChat({
       onNewMessage: (msg) => {
+        // 3. Khi nhận tin nhắn mới, lưu vị trí cuộn hiện tại trước khi cập nhật state
+        if (conversationListRef.current) {
+          scrollPositionRef.current = conversationListRef.current.scrollTop;
+        }
+
         setConversations((prev) => {
           const idx = prev.findIndex(
             (c) => c.conversationId === msg.conversationId || c.id === msg.conversationId,
@@ -80,11 +106,15 @@ export const MessageTable: React.FC = () => {
             };
             const newList = [...prev];
             newList.splice(idx, 1);
-            newList.unshift(updated);
+            newList.unshift(updated); // Conversation được đẩy lên đầu
             return newList;
           }
           return prev;
         });
+
+        // **LƯU Ý:** Do tin nhắn mới đẩy conversation lên đầu, nếu nó không nằm trong view
+        // thì việc khôi phục scrollPositionRef.current sẽ không chính xác.
+        // Tuy nhiên, việc lưu scroll trước khi setState là bước quan trọng nhất.
       },
     });
 
@@ -97,6 +127,12 @@ export const MessageTable: React.FC = () => {
     } else {
       setSelectedConvId(convId);
       MessagesService.markAsRead(convId);
+
+      // Lưu vị trí cuộn trước khi setState để tránh bị giật khi component re-render
+      if (conversationListRef.current) {
+        scrollPositionRef.current = conversationListRef.current.scrollTop;
+      }
+
       setConversations((prev) =>
         prev.map((c) =>
           c.id === convId ? { ...c, unreadForAdmin: false, adminUnreadCount: 0 } : c,
@@ -107,7 +143,7 @@ export const MessageTable: React.FC = () => {
 
   return (
     <div className="flex flex-col">
-      {/* Thanh chế độ */}
+      {/* Thanh chế độ (Không thay đổi) */}
       <div className="w-full bg-gray-200 dark:bg-gray-800 p-1 rounded-xl flex mb-4 border border-gray-400 dark:border-gray-700">
         <button
           onClick={() => setMessageMode('group')}
@@ -132,7 +168,7 @@ export const MessageTable: React.FC = () => {
       </div>
 
       {/* Khung chính */}
-      <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-400 dark:border-gray-700 h-[750px] flex shadow-sm">
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-400 dark:border-gray-700 h-[600px] flex shadow-sm overflow-hidden will-change-transform">
         {/* Sidebar */}
         <div className="w-1/3 border-r border-gray-400 dark:border-gray-700 flex flex-col p-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
@@ -144,7 +180,7 @@ export const MessageTable: React.FC = () => {
               : 'Tra cứu và quản lý các cuộc hội thoại'}
           </p>
 
-          {/* Tìm kiếm */}
+          {/* Tìm kiếm (Không thay đổi) */}
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -165,7 +201,11 @@ export const MessageTable: React.FC = () => {
           ) : error ? (
             <p className="text-center text-red-500">{error}</p>
           ) : (
-            <div className="flex-grow overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
+            // 4. Gán Ref vào div cuộn
+            <div
+              ref={conversationListRef}
+              className="flex-grow overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600"
+            >
               {conversations.length === 0 ? (
                 <p className="text-center text-gray-500">Không có hội thoại nào.</p>
               ) : (
@@ -231,7 +271,7 @@ export const MessageTable: React.FC = () => {
           )}
         </div>
 
-        {/* Chat panel */}
+        {/* Chat panel (Không thay đổi) */}
         <MessageDetailPanel
           conversationId={selectedConvId}
           messageMode={messageMode}
