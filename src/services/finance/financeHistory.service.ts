@@ -213,6 +213,28 @@ export const ReportService = {
     return res.data;
   },
 
+  payBonus: async (
+    seerId: string,
+    amount: number,
+    reason: string,
+  ): Promise<SingleResponse<PaymentResponse>> => {
+    const res = await apiFetch<SingleResponse<PaymentResponse>>(
+      '/bonus',
+      {
+        method: 'POST',
+        data: {
+          seerId,
+          amount,
+          reason,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+    return res;
+  },
+
   // ==================== FINANCE & CHARTS ====================
 
   getFinanceStatistic: async (): Promise<SingleResponse<FinanceStatistic>> => {
