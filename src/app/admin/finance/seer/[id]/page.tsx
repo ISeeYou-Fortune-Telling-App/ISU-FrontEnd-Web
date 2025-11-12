@@ -3,7 +3,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, DollarSign, Award, TrendingUp, Users, Star, Package, Calendar, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  DollarSign,
+  Award,
+  TrendingUp,
+  Users,
+  Star,
+  Package,
+  Calendar,
+  X,
+} from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
 
 const formatCurrency = (value: number) => {
@@ -20,9 +30,9 @@ const getTierColor = (tier: string) => {
   return colors[tier] || 'bg-gray-300';
 };
 
-const PayBonusModal: React.FC<{ 
-  seer: any; 
-  onClose: () => void; 
+const PayBonusModal: React.FC<{
+  seer: any;
+  onClose: () => void;
   onSuccess: () => void;
 }> = ({ seer, onClose, onSuccess }) => {
   const [amount, setAmount] = useState<string>('');
@@ -63,33 +73,45 @@ const PayBonusModal: React.FC<{
             <DollarSign className="w-5 h-5 text-green-500" />
             <span>Thanh toán Bonus</span>
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          >
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Seer: <span className="font-semibold text-gray-900 dark:text-white">{seer.fullName || 'N/A'}</span></p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              Seer:{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {seer.fullName || 'N/A'}
+              </span>
+            </p>
           </div>
 
           <div>
-            <label className="text-sm text-gray-600 dark:text-gray-400 block mb-2">Số tiền (VND) <span className="text-red-500">*</span></label>
-            <input 
-              type="number" 
+            <label className="text-sm text-gray-600 dark:text-gray-400 block mb-2">
+              Số tiền (VND) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="Nhập số tiền..." 
+              placeholder="Nhập số tiền..."
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
 
           <div>
-            <label className="text-sm text-gray-600 dark:text-gray-400 block mb-2">Lý do thưởng <span className="text-red-500">*</span></label>
-            <textarea 
+            <label className="text-sm text-gray-600 dark:text-gray-400 block mb-2">
+              Lý do thưởng <span className="text-red-500">*</span>
+            </label>
+            <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Nhập lý do thưởng..." 
+              placeholder="Nhập lý do thưởng..."
               rows={4}
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
@@ -102,14 +124,14 @@ const PayBonusModal: React.FC<{
           )}
 
           <div className="flex space-x-3 mt-6">
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               disabled={loading}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
             >
               Hủy
             </button>
-            <button 
+            <button
               onClick={handleSubmit}
               disabled={loading}
               className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg disabled:opacity-50 flex items-center justify-center space-x-2"
@@ -146,7 +168,7 @@ const SeerDetailPage: React.FC = () => {
         const response = await ReportService.getSeerPerformance(
           seerId,
           currentDate.getMonth() + 1,
-          currentDate.getFullYear()
+          currentDate.getFullYear(),
         );
         setSeerData(response.data);
       } catch (error) {
@@ -164,31 +186,21 @@ const SeerDetailPage: React.FC = () => {
   const handleRefresh = () => {
     setLoading(true);
     const currentDate = new Date();
-    ReportService.getSeerPerformance(
-      seerId,
-      currentDate.getMonth() + 1,
-      currentDate.getFullYear()
-    ).then(response => {
-      setSeerData(response.data);
-      setLoading(false);
-    }).catch(error => {
-      console.error('Error refreshing seer detail:', error);
-      setLoading(false);
-    });
+    ReportService.getSeerPerformance(seerId, currentDate.getMonth() + 1, currentDate.getFullYear())
+      .then((response) => {
+        setSeerData(response.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error refreshing seer detail:', error);
+        setLoading(false);
+      });
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <p className="text-gray-500 dark:text-gray-400">Đang tải...</p>
-      </div>
-    );
-  }
-
-  if (!seerData) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">Không tìm thấy dữ liệu</p>
       </div>
     );
   }
@@ -228,8 +240,14 @@ const SeerDetailPage: React.FC = () => {
                 {seerData.fullName || 'N/A'}
               </h1>
               <div className="flex items-center space-x-3 mt-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Ranking: #{seerData.ranking}</span>
-                <span className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(seerData.performanceTier)}`}>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Ranking: #{seerData.ranking}
+                </span>
+                <span
+                  className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(
+                    seerData.performanceTier,
+                  )}`}
+                >
                   {seerData.performanceTier}
                 </span>
               </div>
@@ -241,10 +259,14 @@ const SeerDetailPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Performance Point</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Performance Point
+              </p>
               <Award className="w-5 h-5 text-indigo-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{seerData.performancePoint}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+              {seerData.performancePoint}
+            </p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -252,7 +274,9 @@ const SeerDetailPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng doanh thu</p>
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{formatCurrency(seerData.totalRevenue)}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+              {formatCurrency(seerData.totalRevenue)}
+            </p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -260,19 +284,25 @@ const SeerDetailPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Đánh giá TB</p>
               <Star className="w-5 h-5 text-yellow-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{seerData.avgRating.toFixed(1)}/5 ⭐</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+              {seerData.avgRating.toFixed(1)}/5 ⭐
+            </p>
           </div>
         </div>
 
         {/* Detailed Info */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Thông tin chi tiết</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Thông tin chi tiết
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <Package className="w-5 h-5 text-indigo-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Packages</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{seerData.totalPackages}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {seerData.totalPackages}
+                </p>
               </div>
             </div>
 
@@ -280,7 +310,9 @@ const SeerDetailPage: React.FC = () => {
               <Calendar className="w-5 h-5 text-purple-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Bookings</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{seerData.totalBookings}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {seerData.totalBookings}
+                </p>
               </div>
             </div>
 
@@ -288,7 +320,9 @@ const SeerDetailPage: React.FC = () => {
               <TrendingUp className="w-5 h-5 text-green-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Hoàn thành</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{seerData.completedBookings}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {seerData.completedBookings}
+                </p>
               </div>
             </div>
 
@@ -296,7 +330,9 @@ const SeerDetailPage: React.FC = () => {
               <Users className="w-5 h-5 text-blue-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng đánh giá</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{seerData.totalRates}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {seerData.totalRates}
+                </p>
               </div>
             </div>
 
@@ -304,7 +340,9 @@ const SeerDetailPage: React.FC = () => {
               <X className="w-5 h-5 text-red-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Đã hủy</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{seerData.cancelledBySeer}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {seerData.cancelledBySeer}
+                </p>
               </div>
             </div>
 
@@ -312,7 +350,9 @@ const SeerDetailPage: React.FC = () => {
               <DollarSign className="w-5 h-5 text-yellow-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Bonus</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatCurrency(seerData.bonus)}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {formatCurrency(seerData.bonus)}
+                </p>
               </div>
             </div>
           </div>
@@ -324,15 +364,21 @@ const SeerDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-gray-500 dark:text-gray-400">Tháng</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{seerData.month}/{seerData.year}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">
+                {seerData.month}/{seerData.year}
+              </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Ngày tạo</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{new Date(seerData.createdAt).toLocaleDateString('vi-VN')}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">
+                {new Date(seerData.createdAt).toLocaleDateString('vi-VN')}
+              </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Cập nhật</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{new Date(seerData.updatedAt).toLocaleDateString('vi-VN')}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">
+                {new Date(seerData.updatedAt).toLocaleDateString('vi-VN')}
+              </p>
             </div>
           </div>
         </div>

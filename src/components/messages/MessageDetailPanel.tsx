@@ -10,6 +10,7 @@ interface Props {
   messageMode: 'group' | 'individual';
   selectedConversations: Set<string>;
   joinConversation: (id: string) => void;
+  // ⭐ clearMessages() cần được gọi thủ công để kiểm soát thời điểm
   sendMessage: (text: string, conversationIds?: string[]) => void;
   clearMessages: () => void;
   messages: Message[];
@@ -37,54 +38,79 @@ export const MessageDetailPanel: React.FC<Props> = ({
   const [adminId, setAdminId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null); // Giữ ref này nếu cần kiểm tra trạng thái scroll container
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setAdminId(localStorage.getItem('userId'));
   }, []);
 
+  // ⭐ THAY ĐỔI LỚN Ở ĐÂY:
+  // 1. Bỏ clearMessages() ra khỏi useEffect.
+  // 2. Dùng cleanup function để hủy fetch (tránh lỗi race condition)
   useEffect(() => {
     if (!conversationId || messageMode === 'group') return;
-    clearMessages();
-    joinConversation(conversationId);
 
-    const fetchMessages = async () => {
-      setLoading(true);
+    // Đảm bảo kết nối socket cho conversation mới
+    joinConversation(conversationId);
+    setLoading(true);
+
+    let isCancelled = false;
+
+    // ⭐ Xóa tin nhắn realtime CŨng chỉ xảy ra sau khi fetch thành công
+    // Nếu bạn muốn hiển thị tin nhắn ngay, bỏ clearMessages() ra khỏi đây.
+
+    const fetchMessages = async (convId: string) => {
       try {
-        const res = await MessagesService.getMessagesByConversation(conversationId);
-        setDbMessages(res.data.reverse());
+        const res = await MessagesService.getMessagesByConversation(convId);
+        if (!isCancelled && convId === conversationId) {
+          // ⭐ Khi tin nhắn DB mới về:
+          setDbMessages(res.data.reverse()); // Cập nhật tin nhắn DB mới
+          clearMessages(); // ⭐ Xóa tin nhắn realtime (messages) CŨ của hội thoại trước.
+        }
       } catch (err) {
         console.error('Lỗi tải tin nhắn:', err);
+        if (!isCancelled && convId === conversationId) {
+          setDbMessages([]);
+          clearMessages();
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled && convId === conversationId) {
+          setLoading(false);
+        }
       }
     };
-    fetchMessages();
+
+    // Gọi fetch với ID hiện tại
+    fetchMessages(conversationId);
+
+    // Dùng cleanup function để handle Race Condition
+    return () => {
+      isCancelled = true;
+      // Không clearMessages() ở đây, vì có thể xóa messages của conversation mới
+      // nếu nó đến ngay sau khi click
+    };
   }, [conversationId, messageMode]);
 
+  // ⭐ combined BÂY GIỜ CHỨA:
+  // - Khi chuyển đổi: dbMessages A + messages A (cho đến khi fetch B xong)
+  // - Khi tải xong: dbMessages B + messages B (messages B lúc này đã được reset)
   const combined = [...dbMessages, ...messages];
 
-  // **LOGIC CUỘN MỚI:** Đảm bảo cuộn xuống cuối cùng
+  // 1️⃣ Khi load xong tin nhắn (vừa fetch từ DB xong) → cuộn ngay xuống cuối, không animation
+  // Chỉ cuộn auto khi loading hoàn tất
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || loading) return;
+    bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+  }, [conversationId, loading]);
 
-    const scroll = () => {
-      // Cuộn đến phần tử cuối cùng (bottomRef)
-      bottomRef.current?.scrollIntoView({
-        // Dùng 'auto' khi tải xong (loading chuyển từ true sang false)
-        // Dùng 'smooth' khi có tin nhắn mới (combined.length thay đổi sau khi gửi/nhận)
-        behavior: loading ? 'auto' : 'smooth',
-        block: 'end',
-      });
-    };
+  // 2️⃣ Khi có tin nhắn mới (messages thêm) → cuộn mượt xuống cuối
+  useEffect(() => {
+    // Chỉ cuộn smooth khi tin nhắn mới được thêm vào (combined.length tăng)
+    if (!conversationId || loading) return;
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [combined.length]);
 
-    // Dùng setTimeout để đảm bảo hành động cuộn xảy ra sau khi DOM đã được cập nhật
-    const timeoutId = setTimeout(scroll, 50);
-
-    return () => clearTimeout(timeoutId);
-  }, [conversationId, combined.length, loading]);
-  // -----------------------------------------------------
-
+  // ... (Các hàm handleSend, handleFileSelect không đổi)
   const handleSend = async () => {
     if (!input.trim() && (!file || messageMode === 'group')) return;
     const text = input.trim();
@@ -112,7 +138,6 @@ export const MessageDetailPanel: React.FC<Props> = ({
 
       if (conversationId) {
         sendMessage(text || imagePath || videoPath);
-        // Bỏ setTimeout cuộn thủ công ở đây, vì useEffect đã handle việc cuộn
       }
     } catch (err) {
       console.error('❌ Upload lỗi:', err);
@@ -126,6 +151,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
   };
+  // ... (Kết thúc các hàm handleSend, handleFileSelect)
 
   if (messageMode === 'group') {
     return (
@@ -171,86 +197,97 @@ export const MessageDetailPanel: React.FC<Props> = ({
         className="flex-1 overflow-y-auto p-3 dark:bg-gray-800 space-y-3"
         ref={scrollContainerRef}
       >
-        {loading ? (
+        {/* ⭐ LOGIC RENDER: Đảm bảo luôn hiển thị data nếu có, chỉ hiện loading khi không có data */}
+        {loading && combined.length === 0 ? (
+          // Trường hợp 1: Đang tải VÀ CHƯA CÓ DATA NÀO (Lần đầu tiên tải hoặc tải thất bại)
           <p className="text-center text-gray-500 mt-10">Đang tải tin nhắn...</p>
-        ) : combined.length === 0 ? (
-          <p className="text-center text-gray-500 mt-10">Chưa có tin nhắn nào</p>
         ) : (
-          combined.map((msg) => {
-            const isAdmin = msg.senderId === adminId;
-            const isImage = msg.textContent?.match(/\.(jpg|jpeg|png|gif)$/i);
-            const isVideo = msg.textContent?.match(/\.(mp4|mov|webm)$/i);
+          <>
+            {combined.length === 0 ? (
+              // Trường hợp 2: Đã tải xong VÀ KHÔNG CÓ DATA
+              <p className="text-center text-gray-500 mt-10">Chưa có tin nhắn nào</p>
+            ) : (
+              // Trường hợp 3: Có data (data cũ khi đang tải mới hoặc data mới tải xong)
+              combined.map((msg) => {
+                const isAdmin = msg.senderId === adminId;
+                const isImage = msg.textContent?.match(/\.(jpg|jpeg|png|gif)$/i);
+                const isVideo = msg.textContent?.match(/\.(mp4|mov|webm)$/i);
+                return (
+                  <div
+                    key={msg.id || msg.createdAt}
+                    className={`flex items-end gap-2 ${isAdmin ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {!isAdmin && (
+                      <img
+                        src={msg.customerAvatar || '/default_avatar.jpg'}
+                        alt={msg.customerName}
+                        className="w-8 h-8 rounded-full object-cover border border-gray-400"
+                      />
+                    )}
 
-            return (
-              <div
-                key={msg.id || msg.createdAt}
-                className={`flex items-end gap-2 ${isAdmin ? 'justify-end' : 'justify-start'}`}
-              >
-                {!isAdmin && (
-                  <img
-                    src={msg.customerAvatar || '/default_avatar.jpg'}
-                    alt={msg.customerName}
-                    className="w-8 h-8 rounded-full object-cover border border-gray-400"
-                  />
-                )}
+                    <div
+                      className={`max-w-[70%] px-3 py-2 rounded-2xl ${
+                        isAdmin
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-br-none'
+                          : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none shadow'
+                      }`}
+                    >
+                      {isImage ? (
+                        <img
+                          src={msg.textContent}
+                          alt="media"
+                          className="max-w-[250px] max-h-[180px] rounded-lg cursor-pointer border border-gray-400 dark:border-gray-600"
+                          onClick={() => {
+                            setPreview(msg.textContent);
+                            setFile(null);
+                          }}
+                        />
+                      ) : isVideo ? (
+                        <video
+                          controls
+                          className="max-w-[250px] max-h-[180px] rounded-lg border border-gray-400 dark:border-gray-600"
+                          src={msg.textContent}
+                        />
+                      ) : (
+                        <p className="text-sm">{msg.textContent}</p>
+                      )}
 
-                <div
-                  className={`max-w-[70%] px-3 py-2 rounded-2xl ${
-                    isAdmin
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-br-none'
-                      : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none shadow'
-                  }`}
-                >
-                  {isImage ? (
-                    <img
-                      src={msg.textContent}
-                      alt="media"
-                      className="max-w-[250px] max-h-[180px] rounded-lg cursor-pointer border border-gray-400 dark:border-gray-600"
-                      onClick={() => {
-                        setPreview(msg.textContent);
-                        setFile(null);
-                      }}
-                    />
-                  ) : isVideo ? (
-                    <video
-                      controls
-                      className="max-w-[250px] max-h-[180px] rounded-lg border border-gray-400 dark:border-gray-600"
-                      src={msg.textContent}
-                    />
-                  ) : (
-                    <p className="text-sm">{msg.textContent}</p>
-                  )}
+                      <div className="text-[10px] mt-1 opacity-80 text-right space-x-1">
+                        <span>
+                          {msg.createdAt
+                            ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : ''}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div className="text-[10px] mt-1 opacity-80 text-right space-x-1">
-                    <span>
-                      {msg.createdAt
-                        ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : ''}
-                    </span>
+                    {isAdmin && (
+                      <img
+                        src={msg.seerAvatar || '/default_avatar.jpg'}
+                        alt={msg.seerName}
+                        className="w-8 h-8 rounded-full object-cover border border-gray-400"
+                      />
+                    )}
                   </div>
-                </div>
+                );
+              })
+            )}
 
-                {isAdmin && (
-                  <img
-                    src={msg.seerAvatar || '/default_avatar.jpg'}
-                    alt={msg.seerName}
-                    className="w-8 h-8 rounded-full object-cover border border-gray-400"
-                  />
-                )}
+            {sendingMedia && (
+              <div className="flex justify-end pr-3">
+                <div className="animate-spin h-5 w-5 border-2 border-indigo-400 border-t-transparent rounded-full mt-1"></div>
               </div>
-            );
-          })
+            )}
+            {/* Indicator Loading nhỏ khi đang tải nhưng đã có tin nhắn hiển thị */}
+            {loading && combined.length > 0 && (
+              <p className="text-center text-gray-500 text-sm italic">Đang tải tin nhắn...</p>
+            )}
+            <div ref={bottomRef} />
+          </>
         )}
-
-        {sendingMedia && (
-          <div className="flex justify-end pr-3">
-            <div className="animate-spin h-5 w-5 border-2 border-indigo-400 border-t-transparent rounded-full mt-1"></div>
-          </div>
-        )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Preview ảnh/video trước khi gửi */}
@@ -304,7 +341,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* Modal xem ảnh full */}
+      {/* Modal xem ảnh full (khi click vào ảnh trong chat) */}
       {preview && !file && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"

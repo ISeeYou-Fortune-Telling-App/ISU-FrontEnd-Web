@@ -35,7 +35,7 @@ const CustomerDetailPage: React.FC = () => {
         const response = await ReportService.getCustomerPotential(
           customerId,
           currentDate.getMonth() + 1,
-          currentDate.getFullYear()
+          currentDate.getFullYear(),
         );
         setCustomerData(response.data);
       } catch (error) {
@@ -54,14 +54,6 @@ const CustomerDetailPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <p className="text-gray-500 dark:text-gray-400">Đang tải...</p>
-      </div>
-    );
-  }
-
-  if (!customerData) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">Không tìm thấy dữ liệu</p>
       </div>
     );
   }
@@ -93,8 +85,14 @@ const CustomerDetailPage: React.FC = () => {
                 {customerData.fullName || 'N/A'}
               </h1>
               <div className="flex items-center space-x-3 mt-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Ranking: #{customerData.ranking}</span>
-                <span className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(customerData.potentialTier)}`}>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Ranking: #{customerData.ranking}
+                </span>
+                <span
+                  className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(
+                    customerData.potentialTier,
+                  )}`}
+                >
                   {customerData.potentialTier}
                 </span>
               </div>
@@ -106,10 +104,14 @@ const CustomerDetailPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Potential Point</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Potential Point
+              </p>
               <Award className="w-5 h-5 text-purple-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{customerData.potentialPoint}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+              {customerData.potentialPoint}
+            </p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -117,7 +119,9 @@ const CustomerDetailPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng chi tiêu</p>
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{formatCurrency(customerData.totalSpending)}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+              {formatCurrency(customerData.totalSpending)}
+            </p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -125,19 +129,25 @@ const CustomerDetailPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng Bookings</p>
               <Calendar className="w-5 h-5 text-blue-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{customerData.totalBookingRequests}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+              {customerData.totalBookingRequests}
+            </p>
           </div>
         </div>
 
         {/* Detailed Info */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Thông tin chi tiết</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Thông tin chi tiết
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <Award className="w-5 h-5 text-purple-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Điểm tiềm năng</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{customerData.potentialPoint}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {customerData.potentialPoint}
+                </p>
               </div>
             </div>
 
@@ -145,7 +155,9 @@ const CustomerDetailPage: React.FC = () => {
               <TrendingUp className="w-5 h-5 text-indigo-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Xếp hạng</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">#{customerData.ranking}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  #{customerData.ranking}
+                </p>
               </div>
             </div>
 
@@ -153,7 +165,9 @@ const CustomerDetailPage: React.FC = () => {
               <DollarSign className="w-5 h-5 text-green-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Chi tiêu</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatCurrency(customerData.totalSpending)}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {formatCurrency(customerData.totalSpending)}
+                </p>
               </div>
             </div>
 
@@ -161,7 +175,9 @@ const CustomerDetailPage: React.FC = () => {
               <Calendar className="w-5 h-5 text-blue-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Booking requests</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{customerData.totalBookingRequests}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {customerData.totalBookingRequests}
+                </p>
               </div>
             </div>
 
@@ -169,7 +185,9 @@ const CustomerDetailPage: React.FC = () => {
               <X className="w-5 h-5 text-red-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Đã hủy</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{customerData.cancelledByCustomer}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {customerData.cancelledByCustomer}
+                </p>
               </div>
             </div>
 
@@ -177,7 +195,9 @@ const CustomerDetailPage: React.FC = () => {
               <Award className="w-5 h-5 text-yellow-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tier hiện tại</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{customerData.potentialTier}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {customerData.potentialTier}
+                </p>
               </div>
             </div>
           </div>
@@ -189,15 +209,21 @@ const CustomerDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-gray-500 dark:text-gray-400">Tháng</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{customerData.month}/{customerData.year}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">
+                {customerData.month}/{customerData.year}
+              </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Ngày tạo</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{new Date(customerData.createdAt).toLocaleDateString('vi-VN')}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">
+                {new Date(customerData.createdAt).toLocaleDateString('vi-VN')}
+              </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Cập nhật</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{new Date(customerData.updatedAt).toLocaleDateString('vi-VN')}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">
+                {new Date(customerData.updatedAt).toLocaleDateString('vi-VN')}
+              </p>
             </div>
           </div>
         </div>

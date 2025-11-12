@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react'; // Thêm useRef
+import React, { useEffect, useState, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { MessagesService } from '@/services/messages/messages.service';
 import type { ConversationSession, ConversationParams } from '@/types/messages/messages.type';
@@ -21,7 +21,7 @@ export const MessageTable: React.FC = () => {
   const debouncedSearch = useDebounce(searchTerm, 400);
   const [page, setPage] = useState(1);
 
-  // 1. Thêm Ref để theo dõi container cuộn của danh sách hội thoại
+  // 1. Ref để theo dõi container cuộn của danh sách hội thoại
   const conversationListRef = useRef<HTMLDivElement | null>(null);
   // Ref để lưu vị trí cuộn trước đó
   const scrollPositionRef = useRef(0);
@@ -68,7 +68,6 @@ export const MessageTable: React.FC = () => {
   useEffect(() => {
     if (conversationListRef.current && !loading) {
       // Chỉ khôi phục vị trí cuộn khi KHÔNG ở trang đầu và KHÔNG đang tìm kiếm
-      // Hoặc khi có tin nhắn mới đẩy conversation lên đầu
       if (page > 1 || debouncedSearch || scrollPositionRef.current > 0) {
         conversationListRef.current.scrollTop = scrollPositionRef.current;
       }
@@ -78,6 +77,10 @@ export const MessageTable: React.FC = () => {
   const { socketConnected, getMessages, joinConversation, sendMessage, clearMessages } =
     useAdminChat({
       onNewMessage: (msg) => {
+        // ⭐ BẮT ĐẦU PHẦN CHỈNH SỬA LOGIC DỊCH CHUYỂN SCROLL
+        const currentUserId = localStorage.getItem('userId');
+        const isMyMessage = msg.senderId === currentUserId;
+
         // 3. Khi nhận tin nhắn mới, lưu vị trí cuộn hiện tại trước khi cập nhật state
         if (conversationListRef.current) {
           scrollPositionRef.current = conversationListRef.current.scrollTop;
@@ -87,34 +90,39 @@ export const MessageTable: React.FC = () => {
           const idx = prev.findIndex(
             (c) => c.conversationId === msg.conversationId || c.id === msg.conversationId,
           );
+
           if (idx !== -1) {
             const isActive = selectedConvId === msg.conversationId || selectedConvId === msg.id;
             const updated = {
               ...prev[idx],
               lastMessageContent: msg.textContent,
               lastMessageTime: msg.createdAt,
+              // Cập nhật unread count dựa trên người gửi
               adminUnreadCount: isActive
                 ? 0
-                : msg.senderId !== localStorage.getItem('userId')
-                ? (prev[idx].adminUnreadCount || 0) + 1
-                : prev[idx].adminUnreadCount,
-              unreadForAdmin: isActive
-                ? false
-                : msg.senderId !== localStorage.getItem('userId')
-                ? true
-                : prev[idx].unreadForAdmin,
+                : isMyMessage
+                ? prev[idx].adminUnreadCount
+                : (prev[idx].adminUnreadCount || 0) + 1,
+              unreadForAdmin: isActive ? false : isMyMessage ? prev[idx].unreadForAdmin : true,
             };
+
             const newList = [...prev];
-            newList.splice(idx, 1);
-            newList.unshift(updated); // Conversation được đẩy lên đầu
+
+            // ⭐ LOGIC QUYẾT ĐỊNH VỊ TRÍ:
+            if (!isMyMessage) {
+              // Tin nhắn từ Khách hàng: Cập nhật và ĐẨY lên đầu
+              newList.splice(idx, 1);
+              newList.unshift(updated);
+            } else {
+              // Tin nhắn từ Admin (bản thân): Cập nhật tại chỗ (GIỮ nguyên vị trí)
+              newList[idx] = updated;
+            }
+
             return newList;
           }
           return prev;
         });
-
-        // **LƯU Ý:** Do tin nhắn mới đẩy conversation lên đầu, nếu nó không nằm trong view
-        // thì việc khôi phục scrollPositionRef.current sẽ không chính xác.
-        // Tuy nhiên, việc lưu scroll trước khi setState là bước quan trọng nhất.
+        // ⭐ KẾT THÚC PHẦN CHỈNH SỬA
       },
     });
 
@@ -168,7 +176,7 @@ export const MessageTable: React.FC = () => {
       </div>
 
       {/* Khung chính */}
-      <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-400 dark:border-gray-700 h-[600px] flex shadow-sm overflow-hidden will-change-transform">
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-400 dark:border-gray-700 h-[550px] flex shadow-sm overflow-hidden will-change-transform">
         {/* Sidebar */}
         <div className="w-1/3 border-r border-gray-400 dark:border-gray-700 flex flex-col p-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
@@ -201,10 +209,10 @@ export const MessageTable: React.FC = () => {
           ) : error ? (
             <p className="text-center text-red-500">{error}</p>
           ) : (
-            // 4. Gán Ref vào div cuộn
+            // Gán Ref vào div cuộn
             <div
               ref={conversationListRef}
-              className="flex-grow overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600"
+              className="flex-grow overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-500 dark:scrollbar-track-gray-800"
             >
               {conversations.length === 0 ? (
                 <p className="text-center text-gray-500">Không có hội thoại nào.</p>
@@ -271,7 +279,7 @@ export const MessageTable: React.FC = () => {
           )}
         </div>
 
-        {/* Chat panel (Không thay đổi) */}
+        {/* Chat panel (Truyền prop) */}
         <MessageDetailPanel
           conversationId={selectedConvId}
           messageMode={messageMode}
