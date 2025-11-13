@@ -1,5 +1,7 @@
 import { SingleResponse, ListResponse } from '@/types/response.type';
 import { apiFetch } from '../api2';
+import { apiFetch as apiFetchCore } from '../api';
+
 import {
   ChartData,
   ChartDto,
@@ -12,6 +14,7 @@ import {
   SeerAction,
   SeerPerformance,
   SeerPerformanceParams,
+  PaymentResponse,
 } from '@/types/finance.types';
 
 export const ReportService = {
@@ -48,8 +51,8 @@ export const ReportService = {
 
   getAllCustomerPotential: async (
     params?: CustomerPotentialParams,
-  ): Promise<ListResponse<CustomerPotential>> => {
-    const res = await apiFetch<ListResponse<CustomerPotential>>(
+  ): Promise<PageResponse<CustomerPotential>> => {
+    const res = await apiFetch<PageResponse<CustomerPotential>>(
       '/statistic-report/all-customer-potential',
       {
         method: 'GET',
@@ -108,8 +111,8 @@ export const ReportService = {
 
   getAllSeerPerformance: async (
     params?: SeerPerformanceParams,
-  ): Promise<ListResponse<SeerPerformance>> => {
-    const res = await apiFetch<ListResponse<SeerPerformance>>(
+  ): Promise<PageResponse<SeerPerformance>> => {
+    const res = await apiFetch<PageResponse<SeerPerformance>>(
       '/statistic-report/all-seer-performance',
       {
         method: 'GET',
@@ -237,7 +240,7 @@ export const ReportService = {
     amount: number,
     reason: string,
   ): Promise<SingleResponse<PaymentResponse>> => {
-    const res = await apiFetch<SingleResponse<PaymentResponse>>('/bonus', {
+    const res = await apiFetchCore<SingleResponse<PaymentResponse>>('/bonus', {
       method: 'POST',
       data: {
         seerId,
