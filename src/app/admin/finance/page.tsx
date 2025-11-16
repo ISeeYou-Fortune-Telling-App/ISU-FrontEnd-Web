@@ -25,7 +25,7 @@ const AdvancedFilterModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Bộ lọc nâng cao</h3>
           <button
@@ -284,6 +284,16 @@ const RevenueChart: React.FC<{ data: any[]; year: string; title?: string }> = ({
 
 const PieChart: React.FC<{ data: Record<string, number>; title: string }> = ({ data, title }) => {
   const total = Object.values(data).reduce((sum, val) => sum + val, 0);
+  
+  // 🔧 FIX: Nếu không có data, hiển thị thông báo
+  if (total === 0 || Object.keys(data).length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500 dark:text-gray-400">Chưa có dữ liệu</p>
+      </div>
+    );
+  }
+
   let currentAngle = 0;
 
   const colors: Record<string, string> = {
@@ -410,10 +420,13 @@ const FinanceDashboard: React.FC = () => {
             ...seerFilters,
           });
 
-          const mappedSeers = response.data.map((seer: any) => ({
+          // 🔧 FIX: Backend trả về PageResponse có cấu trúc khác
+          const seersData = response.data || [];
+          
+          const mappedSeers = seersData.map((seer: any) => ({
             id: seer.seerId,
             name: seer.fullName || 'N/A',
-            avatar: `https://i.pravatar.cc/150?u=${seer.seerId}`,
+            avatar: seer.avatarUrl || `https://i.pravatar.cc/150?u=${seer.seerId}`,
             performance: seer.performancePoint,
             ranking: seer.ranking,
             tier: seer.performanceTier,
@@ -458,10 +471,13 @@ const FinanceDashboard: React.FC = () => {
             ...customerFilters,
           });
 
-          const mappedCustomers = response.data.map((customer: any) => ({
+          // 🔧 FIX: Backend trả về PageResponse có cấu trúc khác
+          const customersData = response.data || [];
+
+          const mappedCustomers = customersData.map((customer: any) => ({
             id: customer.customerId,
-            name: customer.fullname || 'N/A',
-            avatar: `https://i.pravatar.cc/150?u=${customer.customerId}`,
+            name: customer.fullName || 'N/A',
+            avatar: customer.avatarUrl || `https://i.pravatar.cc/150?u=${customer.customerId}`,
             potential: customer.potentialPoint,
             ranking: customer.ranking,
             tier: customer.potentialTier,
@@ -525,14 +541,9 @@ const FinanceDashboard: React.FC = () => {
             }
           />
           <StatCard
-            title="Phần trăm thuế"
+            title="Doanh thu ròng"
             value={financeStats ? formatCurrency(financeStats.totalNet) : '...'}
             icon={TrendingUp}
-          />
-          <StatCard
-            title="Net profit"
-            value={financeStats ? formatCurrency(financeStats.totalNet) : '...'}
-            icon={Award}
             trend={
               financeStats
                 ? `${
@@ -542,9 +553,9 @@ const FinanceDashboard: React.FC = () => {
             }
           />
           <StatCard
-            title="Tổng thuế"
+            title="Tổng thuế (7%)"
             value={financeStats ? formatCurrency(financeStats.totalTax) : '...'}
-            icon={Users}
+            icon={Award}
             trend={
               financeStats
                 ? `${
@@ -552,6 +563,11 @@ const FinanceDashboard: React.FC = () => {
                   }${financeStats.percentChangeTotalTax.toFixed(1)}%`
                 : undefined
             }
+          />
+          <StatCard
+            title="Người dùng hoạt động"
+            value={financeStats ? `${financeStats.activeUsers || 0}` : '...'}
+            icon={Users}
           />
         </div>
 
@@ -638,56 +654,6 @@ const FinanceDashboard: React.FC = () => {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                  Doanh thu trung bình mỗi seer
-                </h2>
-                <div className="flex justify-end space-x-2 mb-3">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="p-2 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-                  >
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                  </select>
-                </div>
-                <RevenueChart data={revenueChartData} year={String(selectedYear)} />
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                  Rating trung bình mỗi seer
-                </h2>
-                <div className="flex justify-end space-x-2 mb-3">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="p-2 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-                  >
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                  </select>
-                </div>
-                <RevenueChart
-                  data={[
-                    { label: 'T1', value: 4.5 },
-                    { label: 'T2', value: 4.6 },
-                    { label: 'T3', value: 4.7 },
-                    { label: 'T4', value: 4.65 },
-                    { label: 'T5', value: 4.8 },
-                    { label: 'T6', value: 4.85 },
-                    { label: 'T7', value: 4.9 },
-                    { label: 'T8', value: 4.88 },
-                    { label: 'T9', value: 0 },
-                    { label: 'T10', value: 0 },
-                    { label: 'T11', value: 0 },
-                    { label: 'T12', value: 0 },
-                  ]}
-                  year={String(selectedYear)}
-                />
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                   Phân phối tier giữa các seer
                 </h2>
@@ -696,35 +662,38 @@ const FinanceDashboard: React.FC = () => {
 
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                  Performance point trung bình mỗi seer
+                  Thống kê tổng quan
                 </h2>
-                <div className="flex justify-end space-x-2 mb-3">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="p-2 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-                  >
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                  </select>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Tổng seer</span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {seerRankings.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Đánh giá TB</span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {seerRankings.length > 0
+                        ? (
+                            seerRankings.reduce((sum, s) => sum + (s.avgRating || 0), 0) /
+                            seerRankings.length
+                          ).toFixed(1)
+                        : '0.0'}{' '}
+                      ⭐
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Tổng doanh thu
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(
+                        seerRankings.reduce((sum, s) => sum + (s.totalRevenue || 0), 0),
+                      )}
+                    </span>
+                  </div>
                 </div>
-                <RevenueChart
-                  data={[
-                    { label: 'T1', value: 3800 },
-                    { label: 'T2', value: 3900 },
-                    { label: 'T3', value: 4000 },
-                    { label: 'T4', value: 3950 },
-                    { label: 'T5', value: 4100 },
-                    { label: 'T6', value: 4200 },
-                    { label: 'T7', value: 4300 },
-                    { label: 'T8', value: 4400 },
-                    { label: 'T9', value: 0 },
-                    { label: 'T10', value: 0 },
-                    { label: 'T11', value: 0 },
-                    { label: 'T12', value: 0 },
-                  ]}
-                  year={String(selectedYear)}
-                />
               </div>
             </div>
 
@@ -760,9 +729,15 @@ const FinanceDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-1">
-                {filteredSeerRankings.map((seer) => (
-                  <RankingItem key={seer.id} item={seer} type="seer" />
-                ))}
+                {filteredSeerRankings.length > 0 ? (
+                  filteredSeerRankings.map((seer) => (
+                    <RankingItem key={seer.id} item={seer} type="seer" />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">Không có dữ liệu</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -772,93 +747,47 @@ const FinanceDashboard: React.FC = () => {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                  Tổng chi tiêu của khách hàng
-                </h2>
-                <div className="flex justify-end space-x-2 mb-3">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="p-2 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-                  >
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                  </select>
-                </div>
-                <RevenueChart data={revenueChartData} year={String(selectedYear)} />
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                  Chi tiêu trung bình mỗi khách hàng
-                </h2>
-                <div className="flex justify-end space-x-2 mb-3">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="p-2 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-                  >
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                  </select>
-                </div>
-                <RevenueChart
-                  data={[
-                    { label: 'T1', value: 5000000 },
-                    { label: 'T2', value: 5200000 },
-                    { label: 'T3', value: 5400000 },
-                    { label: 'T4', value: 5300000 },
-                    { label: 'T5', value: 5600000 },
-                    { label: 'T6', value: 5800000 },
-                    { label: 'T7', value: 6000000 },
-                    { label: 'T8', value: 6200000 },
-                    { label: 'T9', value: 0 },
-                    { label: 'T10', value: 0 },
-                    { label: 'T11', value: 0 },
-                    { label: 'T12', value: 0 },
-                  ]}
-                  year={String(selectedYear)}
-                />
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                  Potential point trung bình
-                </h2>
-                <div className="flex justify-end space-x-2 mb-3">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="p-2 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-                  >
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                  </select>
-                </div>
-                <RevenueChart
-                  data={[
-                    { label: 'T1', value: 2800 },
-                    { label: 'T2', value: 2900 },
-                    { label: 'T3', value: 3000 },
-                    { label: 'T4', value: 2950 },
-                    { label: 'T5', value: 3100 },
-                    { label: 'T6', value: 3200 },
-                    { label: 'T7', value: 3300 },
-                    { label: 'T8', value: 3400 },
-                    { label: 'T9', value: 0 },
-                    { label: 'T10', value: 0 },
-                    { label: 'T11', value: 0 },
-                    { label: 'T12', value: 0 },
-                  ]}
-                  year={String(selectedYear)}
-                />
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                  Tier Contribution
+                  Phân phối tier giữa các khách hàng
                 </h2>
                 <PieChart data={tierDistribution.customer} title="Customer Tier" />
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                  Thống kê tổng quan
+                </h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Tổng khách hàng
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {customerRankings.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Tổng chi tiêu
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(
+                        customerRankings.reduce((sum, c) => sum + (c.totalSpending || 0), 0),
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Tổng bookings
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {customerRankings.reduce(
+                        (sum, c) => sum + (c.totalBookingRequests || 0),
+                        0,
+                      )}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -894,9 +823,15 @@ const FinanceDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-1">
-                {filteredCustomerRankings.map((customer) => (
-                  <RankingItem key={customer.id} item={customer} type="customer" />
-                ))}
+                {filteredCustomerRankings.length > 0 ? (
+                  filteredCustomerRankings.map((customer) => (
+                    <RankingItem key={customer.id} item={customer} type="customer" />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">Không có dữ liệu</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { SingleResponse, ListResponse } from '@/types/response.type';
+import { SingleResponse } from '@/types/response.type';
 import { apiFetch } from '../api2';
 import { apiFetch as apiFetchCore } from '../api';
 
@@ -80,6 +80,8 @@ export const ReportService = {
     return res;
   },
 
+  // ==================== SEER PERFORMANCE ====================
+
   getSeerPerformance: async (
     seerId: string,
     month: number,
@@ -157,7 +159,6 @@ export const ReportService = {
     month: number,
     year: number,
   ): Promise<SingleResponse<SeerPerformance>> => {
-    // <-- SỬA Ở ĐÂY
     const res = await apiFetch<SingleResponse<SeerPerformance>>(
       '/internal/statistic-report/seer-simple-rating',
       {
@@ -212,7 +213,7 @@ export const ReportService = {
     action: CustomerAction,
     amount?: number,
   ): Promise<boolean> => {
-    const res = await apiFetch<SingleResponse<boolean>>('/statistic-report/customer-action', {
+    const res = await apiFetch<boolean>('/statistic-report/customer-action', {
       method: 'POST',
       params: {
         customerId,
@@ -220,11 +221,11 @@ export const ReportService = {
         amount,
       },
     });
-    return res.data;
+    return res;
   },
 
   seerAction: async (seerId: string, action: SeerAction, amount?: number): Promise<boolean> => {
-    const res = await apiFetch<SingleResponse<boolean>>('/statistic-report/seer-action', {
+    const res = await apiFetch<boolean>('/statistic-report/seer-action', {
       method: 'POST',
       params: {
         seerId,
@@ -232,7 +233,7 @@ export const ReportService = {
         amount,
       },
     });
-    return res.data;
+    return res;
   },
 
   payBonus: async (
@@ -271,7 +272,6 @@ export const ReportService = {
     month?: number,
     year?: number,
   ): Promise<SingleResponse<ChartData[]>> => {
-    // 2. Gọi API và dùng kiểu Backend (ChartDto)
     const res = await apiFetch<SingleResponse<ChartDto>>('/statistic-report/chart', {
       method: 'GET',
       params: {
@@ -281,13 +281,11 @@ export const ReportService = {
       },
     });
 
-    // 3. Chuyển đổi dữ liệu từ Map { "T1": 100 } thành Array [{ label: "T1", value: 100 }]
     const transformedData: ChartData[] = Object.entries(res.data.data).map(([key, value]) => ({
       label: key,
       value: value,
     }));
 
-    // 4. Trả về dữ liệu đã chuyển đổi cho UI
     return {
       data: transformedData,
       message: res.message,

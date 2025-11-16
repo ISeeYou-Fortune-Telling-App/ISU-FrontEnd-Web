@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { SeerPerformance } from '@/types/finance/finance.types';
 import {
   ArrowLeft,
   DollarSign,
@@ -31,7 +32,7 @@ const getTierColor = (tier: string) => {
 };
 
 const PayBonusModal: React.FC<{
-  seer: any;
+  seer: SeerPerformance;
   onClose: () => void;
   onSuccess: () => void;
 }> = ({ seer, onClose, onSuccess }) => {
@@ -231,8 +232,8 @@ const SeerDetailPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-start space-x-4">
             <img
-              src={`https://i.pravatar.cc/150?u=${seerId}`}
-              alt="Seer Avatar"
+              src={seerData?.avatarUrl || `https://i.pravatar.cc/150?u=${seerId}`} // Dùng avatarUrl, nếu không có mới dùng placeholder
+              alt={seerData?.fullName || 'Seer Avatar'}
               className="w-20 h-20 rounded-full object-cover"
             />
             <div className="flex-1">

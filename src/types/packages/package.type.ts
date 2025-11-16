@@ -35,6 +35,12 @@ export interface UserInfo {
   avatarUrl: string;
 }
 
+export interface CategoryInfo {
+  id: string; 
+  name: string;
+  description: string;
+}
+
 // Service Package
 export interface ServicePackage {
   id: string;
@@ -44,10 +50,15 @@ export interface ServicePackage {
   imageUrl: string;
   durationMinutes: number;
   price: number;
-  category?: ServiceCategoryEnum | null;
+  categories: CategoryInfo[]; 
   status: string;
+  rejectionReason: string | null; 
   likeCount: number;
   dislikeCount: number;
+  isLike: boolean;
+  isDislike: boolean;
+  avgRating: number;
+  totalReviews: number;
   createdAt: string;
   updatedAt: string;
 }
