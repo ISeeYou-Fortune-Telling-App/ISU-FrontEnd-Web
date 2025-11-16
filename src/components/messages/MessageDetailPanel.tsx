@@ -99,15 +99,31 @@ export const MessageDetailPanel: React.FC<Props> = ({
   // 1️⃣ Khi load xong tin nhắn (vừa fetch từ DB xong) → cuộn ngay xuống cuối, không animation
   // Chỉ cuộn auto khi loading hoàn tất
   useEffect(() => {
+    if (!conversationId) return;
+    // Scroll ngay lập tức khi chuyển conversation, không chờ loading
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [conversationId]);
+
+  // Scroll lại sau khi loading xong để đảm bảo xuống cuối
+  useEffect(() => {
     if (!conversationId || loading) return;
-    bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
-  }, [conversationId, loading]);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [loading]);
 
   // 2️⃣ Khi có tin nhắn mới (messages thêm) → cuộn mượt xuống cuối
   useEffect(() => {
     // Chỉ cuộn smooth khi tin nhắn mới được thêm vào (combined.length tăng)
     if (!conversationId || loading) return;
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, [combined.length]);
 
   // ... (Các hàm handleSend, handleFileSelect không đổi)
@@ -237,6 +253,13 @@ export const MessageDetailPanel: React.FC<Props> = ({
                           src={msg.textContent}
                           alt="media"
                           className="max-w-[250px] max-h-[180px] rounded-lg cursor-pointer border border-gray-400 dark:border-gray-600"
+                          onLoad={() => {
+                            // Scroll xuống khi ảnh load xong
+                            if (scrollContainerRef.current) {
+                              scrollContainerRef.current.scrollTop =
+                                scrollContainerRef.current.scrollHeight;
+                            }
+                          }}
                           onClick={() => {
                             setPreview(msg.textContent);
                             setFile(null);
@@ -247,6 +270,13 @@ export const MessageDetailPanel: React.FC<Props> = ({
                           controls
                           className="max-w-[250px] max-h-[180px] rounded-lg border border-gray-400 dark:border-gray-600"
                           src={msg.textContent}
+                          onLoadedMetadata={() => {
+                            // Scroll xuống khi video metadata load xong
+                            if (scrollContainerRef.current) {
+                              scrollContainerRef.current.scrollTop =
+                                scrollContainerRef.current.scrollHeight;
+                            }
+                          }}
                         />
                       ) : (
                         <p className="text-sm">{msg.textContent}</p>

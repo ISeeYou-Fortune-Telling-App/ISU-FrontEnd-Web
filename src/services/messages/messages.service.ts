@@ -106,6 +106,17 @@ export const MessagesService = {
       console.error('❌ Lỗi khi đánh dấu đã đọc:', err);
     }
   },
+
+  endChatSession: async (conversationId: string): Promise<void> => {
+    const response = await apiFetch<{ statusCode: number; message: string }>(
+      `/chat/conversations/${conversationId}/end`,
+      { method: 'POST' },
+    );
+
+    if (response.statusCode !== 1073741824) {
+      throw new Error(response.message || 'Không thể kết thúc phiên chat');
+    }
+  },
 };
 
 export const getSimpleUserList = async (): Promise<SimpleUserInfo[]> => {

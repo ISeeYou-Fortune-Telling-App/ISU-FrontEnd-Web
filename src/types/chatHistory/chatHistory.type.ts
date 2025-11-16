@@ -45,9 +45,10 @@ export interface Conversation {
 }
 
 export interface GetConversationsParams extends PagingParams {
-  sortBy?: 'sessionStartTime';
+  sortBy?: 'sessionStartTime' | 'sessionEndTime' | 'sessionDurationMinutes' | 'lastMessageTime';
   participantName?: string;
   status?: ConversationStatus;
+  type?: 'BOOKING_SESSION' | 'SUPPORT_SESSION' | 'ADMIN_SESSION';
 }
 
 export type GetConversationsResponse = ListResponse<Conversation> | SimpleResponse;

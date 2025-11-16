@@ -34,12 +34,12 @@ export default function AdminProfilePage() {
       const data = await AccountService.getCurrentUser();
       setUser(data);
       setFormData({
-        fullName: data.fullName ?? '',
-        phone: data.phone ?? '',
-        gender: data.gender ?? '',
-        birthDate: data.birthDate ?? '',
-        profileDescription: data.profileDescription ?? '',
-        status: data.status ?? '',
+        fullName: data.data.fullName ?? '',
+        phone: data.data.phone ?? '',
+        gender: data.data.gender ?? '',
+        birthDate: data.data.birthDate ?? '',
+        profileDescription: data.data.profileDescription ?? '',
+        status: data.data.status ?? '',
       });
     };
     loadProfile();

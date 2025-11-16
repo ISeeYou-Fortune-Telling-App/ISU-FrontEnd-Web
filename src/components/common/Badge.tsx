@@ -84,6 +84,8 @@ const getStatusStyle = (status: BadgeAccountStatus) => {
       Icon = ShieldCheck;
       break;
     case 'Chờ duyệt':
+    case 'Chờ xử lý':
+    case 'Chờ xác nhận':
       classes = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
       Icon = Clock;
       break;
@@ -94,6 +96,14 @@ const getStatusStyle = (status: BadgeAccountStatus) => {
     case 'Đã hoàn tiền':
       classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
       Icon = RefreshCcw;
+      break;
+    case 'Bị hủy':
+      classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+      Icon = CircleX;
+      break;
+    case 'Đã kết thúc':
+      classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
+      Icon = ShieldCheck;
       break;
     default:
       classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';

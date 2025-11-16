@@ -5,19 +5,12 @@ import { MessagesStats } from '../../../components/messages/MessagesStats';
 import { MessageTable } from '../../../components/messages/MessageTable';
 
 export default function ChatHistoryPage() {
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
-
   return (
-    <div className="space-y-6 h-[calc(100vh-80px)] overflow-hidden">
+    <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Gửi tin nhắn</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Gữi tin nhắn</h1>
         <p className="text-base font-light text-gray-500 dark:text-gray-400">
-          Gửi tin nhắn tới các nhà tiên tri và khách hàng
+          Gữi tin nhắn tới các nhà tiên tri và khách hàng
         </p>
       </div>
 
@@ -25,7 +18,7 @@ export default function ChatHistoryPage() {
         <MessagesStats />
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div>
         <MessageTable />
       </div>
     </div>

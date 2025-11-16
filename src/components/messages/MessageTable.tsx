@@ -48,7 +48,24 @@ export const MessageTable: React.FC = () => {
         type: 'ADMIN_CHAT',
       };
       const res = await MessagesService.getSearchConversations(params);
-      const formatted = res.map((c: any) => ({
+
+      // Lấy adminId từ localStorage
+      const adminId = localStorage.getItem('userId');
+
+      // Lọc bỏ hội thoại của admin với chính mình
+      const filtered = res.filter((c: any) => {
+        // Nếu cả seerId và customerId đều tồn tại và bằng adminId thì bỏ qua
+        const isSelfConversation =
+          adminId &&
+          c.seerId &&
+          c.customerId &&
+          c.seerId.toString() === adminId.toString() &&
+          c.customerId.toString() === adminId.toString();
+
+        return !isSelfConversation;
+      });
+
+      const formatted = filtered.map((c: any) => ({
         ...c,
         unreadForAdmin: c.adminUnreadCount > 0,
       }));
@@ -176,7 +193,7 @@ export const MessageTable: React.FC = () => {
       </div>
 
       {/* Khung chính */}
-      <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-400 dark:border-gray-700 h-[550px] flex shadow-sm overflow-hidden will-change-transform">
+      <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-400 dark:border-gray-700 h-[600px] flex shadow-sm overflow-hidden will-change-transform">
         {/* Sidebar */}
         <div className="w-1/3 border-r border-gray-400 dark:border-gray-700 flex flex-col p-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
