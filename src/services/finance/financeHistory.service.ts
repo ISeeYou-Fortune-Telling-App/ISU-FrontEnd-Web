@@ -12,7 +12,7 @@ import {
   SeerAction,
   SeerPerformance,
   SeerPerformanceParams,
-} from '@/types/finance.types';
+} from '@/types/finance/finance.types';
 
 export const ReportService = {
   // ==================== CUSTOMER POTENTIAL ====================

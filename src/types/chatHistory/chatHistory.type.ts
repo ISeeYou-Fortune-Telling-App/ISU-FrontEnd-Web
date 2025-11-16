@@ -1,7 +1,6 @@
 import { SingleResponse, ListResponse, SimpleResponse } from '../response.type';
 import { PagingParams } from '../paging.type';
 
-export type ConversationType = 'BOOKING_SESSION' | 'SUPPORT' | 'ADMIN_CHAT';
 export type ConversationStatus = 'WAITING' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
 
 export interface ChatHistoryStats {
@@ -18,7 +17,7 @@ export interface Conversation {
   updatedAt: string;
 
   conversationId: string;
-  conversationType: ConversationType;
+  conversationType: 'BOOKING_SESSION';
 
   seerId: string | null;
   seerName: string | null;
@@ -48,7 +47,6 @@ export interface Conversation {
 export interface GetConversationsParams extends PagingParams {
   sortBy?: 'sessionStartTime';
   participantName?: string;
-  type?: ConversationType;
   status?: ConversationStatus;
 }
 

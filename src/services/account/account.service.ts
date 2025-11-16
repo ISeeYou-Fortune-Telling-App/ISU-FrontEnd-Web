@@ -6,6 +6,7 @@ import {
   AccountStats,
   UpdateProfileRequest,
   UpdateUserRoleRequest,
+  ApproveSeerRequest,
 } from '../../types/account/account.type';
 
 export const AccountService = {
@@ -22,6 +23,9 @@ export const AccountService = {
         status: params.status ?? undefined,
       },
     });
+  },
+  async approveSeer(id: string): Promise<SingleResponse<UserAccount>> {
+    return await apiFetch(`/account/${id}/approve-seer`, { method: 'PATCH' });
   },
 
   async getCurrentUser(): Promise<SingleResponse<UserAccount>> {

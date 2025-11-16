@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AccountService } from '@/services/account/account.service';
 import { ROLE_LABELS, STATUS_LABELS } from '@/constants/account.constant';
 import { UserAccount, Role, Status, GetAccountsParams } from '@/types/account/account.type';
@@ -250,9 +251,12 @@ export const AccountTable: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              users.map((user) => (
-                <tr
+              users.map((user, index) => (
+                <motion.tr
                   key={user.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, delay: index * 0.02 }}
                   className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 ${
                     isRefreshing ? 'opacity-50 pointer-events-none' : ''
                   }`}
@@ -289,13 +293,10 @@ export const AccountTable: React.FC = () => {
                       title="Xem chi tiết"
                       onClick={async () => {
                         try {
-                          setIsRefreshing(true);
                           const detail = await AccountService.getAccountById(user.id);
                           setSelectedUser(detail.data);
                         } catch (error) {
                           console.error('Lỗi khi tải chi tiết người dùng:', error);
-                        } finally {
-                          setIsRefreshing(false);
                         }
                       }}
                       className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
@@ -303,7 +304,7 @@ export const AccountTable: React.FC = () => {
                       <Eye className="w-5 h-5 inline-block" />
                     </button>
                   </td>
-                </tr>
+                </motion.tr>
               ))
             )}
           </tbody>

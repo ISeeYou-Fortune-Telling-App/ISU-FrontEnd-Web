@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import ThemeSwitchToggle from '../../components/ui/ThemeSwitchToggle';
 import { usePathname } from 'next/navigation';
 import { Eye, Menu, Search, Bell } from 'lucide-react';
 import AdminSidebarNav from './AdminSidebarNav';
 
-const AdminHeader = ({ notificationCount }: { notificationCount: number }) => (
+const AdminHeader = memo(({ notificationCount }: { notificationCount: number }) => (
   <header
     className="fixed top-0 right-0 z-20 h-16 
       bg-white dark:bg-gray-800 
@@ -40,7 +40,9 @@ const AdminHeader = ({ notificationCount }: { notificationCount: number }) => (
       <ThemeSwitchToggle />
     </div>
   </header>
-);
+));
+
+AdminHeader.displayName = 'AdminHeader';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const notificationsCount = 9;
@@ -48,17 +50,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isProfilePage = pathname === '/admin/profile';
   const isAiAnalysisPage = pathname === '/admin/ai-analysis';
 
-  let mainClassName = 'p-6 pt-20';
-  if (isProfilePage) {
-    mainClassName = 'pt-16';
-  } else if (isAiAnalysisPage) {
-    // Chiều cao cố định và Flexbox cho trang AI Chatbot
-    // w-full h-[calc(100vh-64px)]
-    // 100vh: Chiều cao toàn màn hình
-    // 64px: Chiều cao của AdminHeader (h-16)
-    // p-6: Giữ padding bên trong
-    mainClassName = 'p-6 **pt-20 w-full h-[calc(100vh-0px)] flex flex-col**'; // pt-20 để bù cho header (16px * 4 = 64px + 6px*2)
-  }
+  // Tối ưu: Tránh tính toán lại className mỗi lần render
+  const mainClassName = React.useMemo(() => {
+    if (isProfilePage) return 'pt-16';
+    if (isAiAnalysisPage) return 'p-6 pt-20 w-full h-[calc(100vh-0px)] flex flex-col';
+    return 'p-6 pt-20';
+  }, [isProfilePage, isAiAnalysisPage]);
 
   return (
     <div className="flex min-h-screen bg-white dark:bg-gray-900">
@@ -84,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="flex-1 ml-64">
         <AdminHeader notificationCount={notificationsCount} />
-        <main className={isProfilePage ? 'pt-16' : 'p-6 pt-20'}>{children}</main>
+        <main className={mainClassName}>{children}</main>
       </div>
     </div>
   );

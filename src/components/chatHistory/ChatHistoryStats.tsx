@@ -14,7 +14,7 @@ const StatCard: React.FC<StatCardProps> = ({ value, label, colorClass }) => {
   const displayValue: string = value.toLocaleString('vi-VN');
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700 w-full h-full text-center">
+    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700 w-full h-full text-left">
       <p className={`text-2xl font-semibold ${colorClass}`}>{displayValue}</p>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{label}</p>
     </div>
@@ -31,27 +31,27 @@ interface StatItem {
 const mapStatsToCards = (stats: ChatHistoryStatsInterface): StatItem[] => {
   return [
     {
-      label: 'Tổng Cuộc trò chuyện Booking',
+      label: 'Nhà tiên tri - Khách hàng',
       value: stats.bookingConversations,
       colorClass: 'text-blue-600',
     },
     {
-      label: 'Tổng Cuộc trò chuyện Hỗ trợ',
+      label: 'AI hỗ trợ - Khách hàng',
       value: stats.supportConversations,
       colorClass: 'text-green-600',
     },
     {
-      label: 'Tổng Cuộc trò chuyện Admin',
+      label: 'Cuộc trò chuyện Admin',
       value: stats.adminConversations,
       colorClass: 'text-yellow-600',
     },
     {
-      label: 'Tổng người dùng hoạt động',
+      label: 'Đang hoạt động',
       value: stats.totalActives,
       colorClass: 'text-purple-600',
     },
     {
-      label: 'Tổng tin nhắn đã gửi',
+      label: 'Tổng số tin nhắn',
       value: stats.totalMessages,
       colorClass: 'text-red-600',
     },
@@ -84,13 +84,13 @@ export const ChatHistoryStats: React.FC = () => {
   // --- LOADING ---
   if (isLoading) {
     return (
-      <div className="flex gap-4 justify-between">
+      <div className="grid grid-cols-5 gap-4">
         {Array(5)
           .fill(0)
           .map((_, index) => (
             <div
               key={index}
-              className="bg-gray-100 dark:bg-gray-700 h-24 rounded-xl flex-1 animate-pulse"
+              className="bg-gray-100 dark:bg-gray-700 h-24 rounded-xl animate-pulse"
             ></div>
           ))}
       </div>
@@ -108,11 +108,9 @@ export const ChatHistoryStats: React.FC = () => {
 
   // --- HIỂN THỊ 5 Ô CÙNG 1 HÀNG ---
   return (
-    <div className="flex gap-4 justify-between">
+    <div className="grid grid-cols-5 gap-4">
       {stats.map((stat, index) => (
-        <div key={index} className="flex-1">
-          <StatCard value={stat.value} label={stat.label} colorClass={stat.colorClass} />
-        </div>
+        <StatCard key={index} value={stat.value} label={stat.label} colorClass={stat.colorClass} />
       ))}
     </div>
   );
