@@ -19,14 +19,17 @@ export const ChatHistoryService = {
     throw new Error('Không nhận được dữ liệu thống kê hợp lệ.');
   },
 
-  getConversations: async (params: GetConversationsParams): Promise<Conversation[]> => {
+  getConversations: async (params: GetConversationsParams) => {
     const response = await apiFetch<GetConversationsResponse>('/admin/conversations/search', {
       method: 'GET',
       params,
     });
 
     if (isListResponse<Conversation>(response)) {
-      return response.data;
+      return {
+        data: response.data,
+        paging: response.paging,
+      };
     }
 
     throw new Error('Không nhận được dữ liệu hội thoại hợp lệ.');

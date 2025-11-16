@@ -2,7 +2,7 @@
 import React from 'react';
 
 import { ChatHistoryStats } from '../../../components/chatHistory/ChatHistoryStats';
-import { ConversationTable } from '../../../components/chatHistory/ChatHistoryTable';
+import ChatHistoryTable from '../../../components/chatHistory/ChatHistoryTable';
 
 const paymentStats = [
   { label: 'Nhà tiên tri - Khách hàng', value: 20, colorClass: 'text-yellow-500' },
@@ -21,7 +21,7 @@ export default function ChatHistoryPage() {
         </p>
       </div>
       <ChatHistoryStats />
-      <ConversationTable />
+      <ChatHistoryTable />
     </div>
   );
 }

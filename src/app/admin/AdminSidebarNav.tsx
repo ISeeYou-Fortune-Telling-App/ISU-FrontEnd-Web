@@ -17,6 +17,7 @@ import {
   Settings,
   BotMessageSquare,
   CircleDollarSign,
+  Ban,
 } from 'lucide-react';
 import { AuthService } from '@/services/auth/auth.service';
 
@@ -36,7 +37,7 @@ const SidebarItem = memo(
     <Link
       href={href}
       prefetch={true}
-      className={`flex items-center px-3 py-2 rounded-lg transition duration-150 text-lg ${
+      className={`flex items-center px-3 py-2 rounded-lg transition duration-150 text-md ${
         isActive
           ? 'bg-blue-100 dark:bg-blue-600 font-medium text-blue-800 dark:text-white hover:bg-blue-200 dark:hover:bg-blue-700'
           : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -118,16 +119,22 @@ export default function AdminSidebarNav() {
           isActive={currentPath === '/admin/packages'}
         />
         <SidebarItem
-          href="/admin/payments"
-          icon={CreditCard}
-          label="Lịch sử giao dịch"
-          isActive={currentPath === '/admin/payments'}
-        />
-        <SidebarItem
           href="/admin/knowledge"
           icon={BookOpen}
           label="Kho tri thức"
           isActive={currentPath === '/admin/knowledge'}
+        />
+        <SidebarItem
+          href="/admin/reports"
+          icon={Ban}
+          label="Quản lý vi phạm"
+          isActive={currentPath === '/admin/reports'}
+        />
+        <SidebarItem
+          href="/admin/payments"
+          icon={CreditCard}
+          label="Lịch sử giao dịch"
+          isActive={currentPath === '/admin/payments'}
         />
         <SidebarItem
           href="/admin/chat"
