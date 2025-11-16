@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -15,36 +15,44 @@ import {
   Bell,
   LogOut,
   Settings,
+  BotMessageSquare,
+  CircleDollarSign,
 } from 'lucide-react';
 import { AuthService } from '@/services/auth/auth.service';
 
-const SidebarItem = ({
-  href,
-  icon: IconComponent,
-  label,
-  isActive,
-}: {
-  href: string;
-  icon: React.ElementType;
-  label: string;
-  isActive: boolean;
-}) => (
-  <Link
-    href={href}
-    className={`flex items-center px-4 py-2 rounded-lg transition duration-150 text-md ${
-      isActive
-        ? 'bg-blue-100 dark:bg-blue-600 font-medium text-blue-800 dark:text-white hover:bg-blue-200 dark:hover:bg-blue-700'
-        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
-    }`}
-  >
-    <IconComponent
-      className={`w-4 h-4 mr-2 ${
-        isActive ? 'text-blue-600 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+// Memo SidebarItem để tránh re-render không cần thiết
+const SidebarItem = memo(
+  ({
+    href,
+    icon: IconComponent,
+    label,
+    isActive,
+  }: {
+    href: string;
+    icon: React.ElementType;
+    label: string;
+    isActive: boolean;
+  }) => (
+    <Link
+      href={href}
+      prefetch={true}
+      className={`flex items-center px-3 py-2 rounded-lg transition duration-150 text-lg ${
+        isActive
+          ? 'bg-blue-100 dark:bg-blue-600 font-medium text-blue-800 dark:text-white hover:bg-blue-200 dark:hover:bg-blue-700'
+          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
       }`}
-    />
-    <span>{label}</span>
-  </Link>
+    >
+      <IconComponent
+        className={`w-4 h-4 mr-2 ${
+          isActive ? 'text-blue-600 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+        }`}
+      />
+      <span>{label}</span>
+    </Link>
+  ),
 );
+
+SidebarItem.displayName = 'SidebarItem';
 
 export default function AdminSidebarNav() {
   const currentPath = usePathname();
@@ -56,10 +64,23 @@ export default function AdminSidebarNav() {
     setIsAdmin(role === 'ADMIN');
   }, []);
 
+  // Tối ưu: Memoize logout handler
+  const handleLogout = useCallback(() => {
+    AuthService.logout();
+  }, []);
+
+  const handleSettings = useCallback(() => {
+    router.push('/admin/settings');
+  }, [router]);
+
+  const handleProfile = useCallback(() => {
+    router.push('/admin/profile');
+  }, [router]);
+
   return (
     <div className="flex flex-col h-full justify-between">
       {/* Sidebar list scrollable */}
-      <nav className="flex-1 pt-2 px-3 overflow-y-auto space-y-2">
+      <nav className="flex-1 pt-2 px-3 overflow-y-auto space-y-0.5">
         <SidebarItem
           href="/admin/dashboard"
           icon={LayoutDashboard}
@@ -68,8 +89,8 @@ export default function AdminSidebarNav() {
         />
         <SidebarItem
           href="/admin/finance"
-          icon={Bell}
-          label="Tài chính"
+          icon={CircleDollarSign}
+          label="Quản lý tài chính"
           isActive={currentPath === '/admin/finance'}
         />
         <SidebarItem
@@ -103,16 +124,16 @@ export default function AdminSidebarNav() {
           isActive={currentPath === '/admin/payments'}
         />
         <SidebarItem
-          href="/admin/chat"
-          icon={MessageSquare}
-          label="Lịch sử chat"
-          isActive={currentPath === '/admin/chat'}
-        />
-        <SidebarItem
           href="/admin/knowledge"
           icon={BookOpen}
           label="Kho tri thức"
           isActive={currentPath === '/admin/knowledge'}
+        />
+        <SidebarItem
+          href="/admin/chat"
+          icon={MessageSquare}
+          label="Lịch sử hội thoại"
+          isActive={currentPath === '/admin/chat'}
         />
         <SidebarItem
           href="/admin/messages"
@@ -121,27 +142,24 @@ export default function AdminSidebarNav() {
           isActive={currentPath === '/admin/messages'}
         />
         <SidebarItem
+          href="/admin/ai-analysis"
+          icon={BotMessageSquare}
+          label="AI phân tích"
+          isActive={currentPath === '/admin/ai-analysis'}
+        />
+        <SidebarItem
           href="/admin/notifications"
           icon={Bell}
           label="Thông báo"
           isActive={currentPath === '/admin/notifications'}
         />
-        <SidebarItem
-          href="/admin/ai-analysis"
-          icon={Bell}
-          label="AI phân tích"
-          isActive={currentPath === '/admin/ai-analysis'}
-        />
       </nav>
 
       {/* Profile — fixed bottom */}
       {isAdmin && (
-        <div className="absolute bottom-0 left-0 w-full bg-white dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700 p-3">
+        <div className="border-t border-gray-400 dark:border-gray-700 p-3">
           <div className="flex items-center justify-between">
-            <button
-              onClick={() => router.push('/admin/profile')}
-              className="flex items-center space-x-2 group"
-            >
+            <button onClick={handleProfile} className="flex items-center space-x-2 group">
               <img
                 src="/default_avatar.jpg"
                 alt="Admin Avatar"
@@ -158,14 +176,14 @@ export default function AdminSidebarNav() {
             <div className="flex items-center space-x-2">
               <button
                 title="Đăng xuất"
-                onClick={AuthService.logout}
+                onClick={handleLogout}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
               >
                 <LogOut className="w-5 h-5" />
               </button>
               <button
                 title="Cài đặt"
-                onClick={() => router.push('/admin/settings')}
+                onClick={handleSettings}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
               >
                 <Settings className="w-5 h-5" />

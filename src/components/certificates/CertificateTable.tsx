@@ -11,11 +11,15 @@ import {
   ChevronDown,
   Trash2,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 
 import { Badge } from '../common/Badge';
 import { CertificateDetailModal } from './CertificateDetailModal';
 import { CertificateService } from '@/services/certificates/certificates.service';
 import { Certificate } from '@/types/certificates/certificates.type';
+import { KnowledgeService } from '@/services/knowledge/knowledge.service';
+import { KnowledgeCategory } from '@/types/knowledge/knowledge.type';
 
 type StatusFilterType = 'Tất cả' | 'Chờ duyệt' | 'Đã duyệt' | 'Đã từ chối';
 const ITEMS_PER_PAGE = 10;
@@ -28,11 +32,24 @@ export const CertificateTable: React.FC = () => {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const fetchCertificates = async () => {
     try {
       setLoading(true);
-      const response = await CertificateService.getCertificates();
+      let response;
+      if (selectedCategory) {
+        response = await CertificateService.getCertificatesByCategoryId(selectedCategory, {
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+        });
+      } else {
+        response = await CertificateService.getCertificates({
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+        });
+      }
       setCertificates(response.data);
     } catch (err) {
       console.error('Lỗi khi tải danh sách chứng chỉ:', err);
@@ -41,9 +58,22 @@ export const CertificateTable: React.FC = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await KnowledgeService.getCategories({ page: 1, limit: 100 });
+      setCategories(response.data);
+    } catch (err) {
+      console.error('Lỗi khi tải danh mục:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   useEffect(() => {
     fetchCertificates();
-  }, []);
+  }, [selectedCategory, currentPage]);
 
   const filteredCertificates = useMemo(() => {
     return certificates.filter((cert) => {
@@ -74,14 +104,36 @@ export const CertificateTable: React.FC = () => {
   const goToPrevPage = () => setCurrentPage((p) => (p > 1 ? p - 1 : p));
 
   const handleDelete = async (cert: Certificate) => {
-    if (!confirm(`Bạn có chắc muốn xóa chứng chỉ "${cert.certificateName}"?`)) return;
+    const result = await Swal.fire({
+      title: 'Xóa chứng chỉ?',
+      text: `Bạn có chắc muốn xóa chứng chỉ "${cert.certificateName}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       await CertificateService.deleteCertificate(cert.id);
-      alert('Xóa chứng chỉ thành công!');
+      await Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Xóa chứng chỉ thành công!',
+        confirmButtonColor: '#3b82f6',
+      });
       await fetchCertificates();
     } catch (err) {
       console.error('Lỗi khi xóa chứng chỉ:', err);
-      alert('Không thể xóa chứng chỉ. Vui lòng thử lại.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: 'Không thể xóa chứng chỉ. Vui lòng thử lại.',
+        confirmButtonColor: '#3b82f6',
+      });
     }
   };
 
@@ -91,18 +143,33 @@ export const CertificateTable: React.FC = () => {
         action: 'APPROVED',
         decision_reason: note || undefined,
       });
-      alert('Đã phê duyệt chứng chỉ thành công!');
+      await Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Đã phê duyệt chứng chỉ thành công!',
+        confirmButtonColor: '#3b82f6',
+      });
       setSelectedCertificate(null);
       await fetchCertificates();
     } catch (err) {
       console.error('Lỗi khi phê duyệt chứng chỉ:', err);
-      alert('Không thể phê duyệt chứng chỉ. Vui lòng thử lại.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: 'Không thể phê duyệt chứng chỉ. Vui lòng thử lại.',
+        confirmButtonColor: '#3b82f6',
+      });
     }
   };
 
   const handleReject = async (id: string, note: string) => {
     if (!note.trim()) {
-      alert('Vui lòng nhập lý do từ chối!');
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Thiếu thông tin!',
+        text: 'Vui lòng nhập lý do từ chối!',
+        confirmButtonColor: '#3b82f6',
+      });
       return;
     }
     try {
@@ -110,12 +177,22 @@ export const CertificateTable: React.FC = () => {
         action: 'REJECTED',
         decision_reason: note,
       });
-      alert('Đã từ chối chứng chỉ.');
+      await Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Đã từ chối chứng chỉ.',
+        confirmButtonColor: '#3b82f6',
+      });
       setSelectedCertificate(null);
       await fetchCertificates();
     } catch (err) {
       console.error('Lỗi khi từ chối chứng chỉ:', err);
-      alert('Không thể từ chối chứng chỉ. Vui lòng thử lại.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: 'Không thể từ chối chứng chỉ. Vui lòng thử lại.',
+        confirmButtonColor: '#3b82f6',
+      });
     }
   };
 
@@ -125,7 +202,7 @@ export const CertificateTable: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
       {/* Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
         <div className="relative flex-grow mr-4">
@@ -133,8 +210,7 @@ export const CertificateTable: React.FC = () => {
           <input
             type="text"
             placeholder="Tìm kiếm theo tên Nhà tiên tri hoặc Tên Chứng chỉ..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
-                       focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -146,24 +222,51 @@ export const CertificateTable: React.FC = () => {
         <div className="relative flex-shrink-0">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 rounded-lg 
-                       hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700
+                       dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
+                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
           >
-            <span>Trạng thái Mẫu</span>
+            <span>
+              {selectedCategory
+                ? categories.find((c) => c.id === selectedCategory)?.name
+                : 'Tất cả danh mục'}
+            </span>
             <ChevronDown
               className={`w-4 h-4 ml-1 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
             />
           </button>
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10">
+            <div className="z-50 absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10 max-h-60 overflow-y-auto">
               <div className="py-1">
-                {['Tùy chọn Mẫu 1', 'Tùy chọn Mẫu 2'].map((option) => (
+                <button
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setIsDropdownOpen(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${
+                    !selectedCategory
+                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-semibold'
+                      : 'text-gray-700 dark:text-gray-200'
+                  }`}
+                >
+                  Tất cả danh mục
+                </button>
+                {categories.map((category) => (
                   <button
-                    key={option}
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    key={category.id}
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      setIsDropdownOpen(false);
+                      setCurrentPage(1);
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${
+                      selectedCategory === category.id
+                        ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-semibold'
+                        : 'text-gray-700 dark:text-gray-200'
+                    }`}
                   >
-                    {option}
+                    {category.name}
                   </button>
                 ))}
               </div>
@@ -173,8 +276,8 @@ export const CertificateTable: React.FC = () => {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex space-x-2 mb-4 overflow-x-auto pb-1">
-        <div className="inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
+      <div className="flex space-x-2 mb-4">
+        <div className="flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
           {['Tất cả', 'Chờ duyệt', 'Đã duyệt', 'Đã từ chối'].map((status) => (
             <button
               key={status}
@@ -195,25 +298,34 @@ export const CertificateTable: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-700">
+      <div className="rounded-lg border border-gray-400 dark:border-gray-700 relative overflow-hidden">
+        <table
+          className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed"
+          style={{ tableLayout: 'fixed', width: '100%' }}
+        >
+          <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
             <tr>
-              {['Chứng chỉ', 'Nhà tiên tri', 'Danh mục', 'Ngày cấp', 'Trạng thái', 'Thao tác'].map(
-                (header, i) => (
-                  <th
-                    key={i}
-                    className={`${
-                      i === 5 ? 'text-right' : 'text-left'
-                    } px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase`}
-                  >
-                    {header}
-                  </th>
-                ),
-              )}
+              <th className="w-[250px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                Chứng chỉ
+              </th>
+              <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                Nhà tiên tri
+              </th>
+              <th className="w-[160px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                Danh mục
+              </th>
+              <th className="w-[70px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                Ngày cấp
+              </th>
+              <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                Trạng thái
+              </th>
+              <th className="w-[150px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                Thao tác
+              </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
             {loading ? (
               <tr>
                 <td colSpan={6} className="text-center py-6 text-gray-500 dark:text-gray-400">
@@ -227,43 +339,85 @@ export const CertificateTable: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              currentCertificates.map((cert) => (
-                <tr key={cert.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                  <td className="px-6 py-3 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Download className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              currentCertificates.map((cert, index) => (
+                <motion.tr
+                  key={cert.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, delay: index * 0.02 }}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                >
+                  <td className="px-6 py-4 w-[280px]">
+                    <div className="flex items-start space-x-3">
+                      {cert.certificateUrl ? (
+                        <img
+                          src={cert.certificateUrl}
+                          alt={cert.certificateName}
+                          className="w-10 h-10 rounded object-cover flex-shrink-0 border border-gray-300 dark:border-gray-600"
+                          onError={(e) => {
+                            e.currentTarget.src = '';
+                            e.currentTarget.className =
+                              'w-10 h-10 rounded bg-gray-200 dark:bg-gray-600 flex-shrink-0 border border-gray-300 dark:border-gray-600';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-gray-200 dark:bg-gray-600 flex-shrink-0 border border-gray-300 dark:border-gray-600" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate"
+                          title={cert.certificateName}
+                        >
                           {cert.certificateName}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {cert.issuedBy}
+                        <div
+                          className="text-xs text-gray-500 dark:text-gray-400 truncate"
+                          title={cert.certificateDescription}
+                        >
+                          {cert.certificateDescription || 'Không có mô tả'}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-3 text-sm text-gray-900 dark:text-gray-100">
+                  <td
+                    className="px-6 py-4 w-[140px] text-sm text-gray-900 dark:text-gray-100 truncate text-center"
+                    title={cert.seerName}
+                  >
                     {cert.seerName}
                   </td>
-                  <td className="px-6 py-3 text-sm">
-                    <Badge type="expertise" value={cert.categories?.[0] || 'Khác'} />
+                  <td className="px-6 py-4 w-[140px]">
+                    <div className="flex justify-center">
+                      <Badge type="expertise" value={cert.categories?.[0] || 'Khác'} />
+                    </div>
                   </td>
-                  <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {new Date(cert.issuedAt).toLocaleDateString('vi-VN')}
+                  <td className="px-6 py-4 w-[120px] text-sm text-gray-600 dark:text-gray-300">
+                    <div className="flex flex-col items-center">
+                      <span className="font-medium">
+                        {new Date(cert.issuedAt).toLocaleDateString('vi-VN')}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(cert.issuedAt).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-3">
-                    <Badge
-                      type="status"
-                      value={
-                        cert.status === 'PENDING'
-                          ? 'Chờ duyệt'
-                          : cert.status === 'APPROVED'
-                          ? 'Đã duyệt'
-                          : 'Đã từ chối'
-                      }
-                    />
+                  <td className="px-6 py-4 w-[140px]">
+                    <div className="flex justify-center">
+                      <Badge
+                        type="AccountStatus"
+                        value={
+                          cert.status === 'PENDING'
+                            ? 'Chờ duyệt'
+                            : cert.status === 'APPROVED'
+                            ? 'Đã duyệt'
+                            : 'Đã từ chối'
+                        }
+                      />
+                    </div>
                   </td>
-                  <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-6 py-3 w-[150px] whitespace-nowrap text-center text-sm font-medium">
                     <div className="flex justify-end space-x-2">
                       <button
                         title="Xem chi tiết chứng chỉ"
@@ -306,7 +460,7 @@ export const CertificateTable: React.FC = () => {
                       </button>
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
               ))
             )}
           </tbody>
@@ -314,21 +468,18 @@ export const CertificateTable: React.FC = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+      <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          {startIndex + 1}-{Math.min(endIndex, totalItems)} / {totalItems}
+          Trang {currentPage}/{totalPages} • {totalItems} chứng chỉ
         </span>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-700 dark:text-gray-300">
-            {currentPage}/{totalPages}
-          </span>
           <button
             onClick={goToPrevPage}
             disabled={currentPage === 1}
-            className={`p-1 border rounded-lg ${
+            className={`p-2 rounded-md transition ${
               currentPage === 1
-                ? 'text-gray-400 border-gray-300 dark:border-gray-600 cursor-not-allowed'
-                : 'text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronLeft className="w-4 h-4" />
@@ -336,10 +487,10 @@ export const CertificateTable: React.FC = () => {
           <button
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className={`p-1 border rounded-lg ${
+            className={`p-2 rounded-md transition ${
               currentPage === totalPages
-                ? 'text-gray-400 border-gray-300 dark:border-gray-600 cursor-not-allowed'
-                : 'text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronRight className="w-4 h-4" />

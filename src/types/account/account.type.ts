@@ -28,6 +28,11 @@ export interface UserAccount {
   profile: UserDetailProfile;
 }
 
+export interface ApproveSeerRequest {
+  action: string;
+  rejectReason?: string;
+}
+
 export interface UpdateProfileRequest {
   email?: string;
   phone?: string;

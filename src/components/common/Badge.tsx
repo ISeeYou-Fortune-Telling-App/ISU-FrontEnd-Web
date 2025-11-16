@@ -209,6 +209,30 @@ export const Badge: React.FC<{ type: BadgeType; value: string }> = ({ type, valu
     }
   }
 
+  if (type === 'expertise') {
+    // Màu sắc cho các danh mục chứng chỉ/kiến thức
+    const normalizedValue = value.toLowerCase().trim();
+
+    if (normalizedValue.includes('cung hoàng đạo')) {
+      classes = 'bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-100';
+    } else if (normalizedValue.includes('ngũ hành') || normalizedValue.includes('ngu hanh')) {
+      classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
+    } else if (normalizedValue.includes('chỉ tay') || normalizedValue.includes('chi tay')) {
+      classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+    } else if (
+      normalizedValue.includes('nhân tướng học') ||
+      normalizedValue.includes('nhân tướng học')
+    ) {
+      classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
+    } else if (normalizedValue.includes('tarot') || normalizedValue.includes('tarot')) {
+      classes = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
+    } else if (normalizedValue.includes('khác') || normalizedValue.includes('khac')) {
+      classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
+    } else {
+      classes = 'bg-pink-100 text-pink-700 dark:bg-pink-800 dark:text-pink-100';
+    }
+  }
+
   return (
     <span className={`${base} ${classes}`}>
       {Icon && <Icon className="w-3.5 h-3.5 mr-1" />}

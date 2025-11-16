@@ -1,4 +1,4 @@
-import { PagingParams } from './paging.type';
+import { PagingParams } from '../paging.type';
 
 export interface PagingResponse {
   page: number;

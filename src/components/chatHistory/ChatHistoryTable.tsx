@@ -44,6 +44,8 @@ export const ConversationTable: React.FC = () => {
           limit: ITEMS_PER_PAGE,
           participantName: searchTerm || undefined,
         });
+        console.log('🔍 Conversations received:', res);
+        console.log('🔍 First conversation:', res[0]);
         setConversations(res);
       } catch (err) {
         console.error('Lỗi khi tải hội thoại:', err);
@@ -114,7 +116,6 @@ export const ConversationTable: React.FC = () => {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 {[
-                  'Loại',
                   'Người tham gia',
                   'Tin nhắn gần nhất',
                   'Thời lượng',
@@ -134,18 +135,32 @@ export const ConversationTable: React.FC = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filtered.map((conv) => (
                 <tr key={conv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    <span className="flex items-center">
-                      <MessageSquare className="w-4 h-4 mr-1 text-blue-500" />
-                      {conv.conversationType === 'BOOKING_SESSION' ? 'Nhà tiên tri' : 'AI Hỗ trợ'}
-                    </span>
-                  </td>
                   <td className="px-4 py-3 text-sm">
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {conv.customerName || 'Ẩn danh'}
+                    <div className="flex items-center space-x-2 mb-2">
+                      <img
+                        src={conv.seerAvatarUrl || '/default_avatar.jpg'}
+                        alt={conv.seerName || 'Seer'}
+                        className="w-8 h-8 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                      />
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {conv.seerName || 'Không rõ'}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Nhà tiên tri</div>
+                      </div>
                     </div>
-                    <div className="text-gray-500 dark:text-gray-400 text-xs italic">
-                      {conv.seerName || 'Không rõ'}
+                    <div className="flex items-center space-x-2">
+                      <img
+                        src={conv.customerAvatarUrl || '/default_avatar.jpg'}
+                        alt={conv.customerName || 'Customer'}
+                        className="w-8 h-8 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                      />
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {conv.customerName || 'Ẩn danh'}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Khách hàng</div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm">
