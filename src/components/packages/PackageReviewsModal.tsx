@@ -62,20 +62,33 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
 
   const handleReviewClick = (review: ServiceReview) => {
     setSelectedReview(review);
-    loadReplies(review.id);
+    loadReplies(review.reviewId);
   };
 
   const handleSendReply = async () => {
-    if (!replyText.trim() || !selectedReview) return;
+    if (!replyText.trim() || !selectedReview) {
+      console.warn('Gửi phản hồi bị chặn: không có nội dung hoặc bình luận gốc.');
+      return;
+    } // Lấy ID an toàn TRƯỚC KHI await (Điều này vẫn rất quan trọng)
+
+    const parentId = selectedReview.reviewId; // Thêm kiểm tra phòng trường hợp ID không tồn tại
+
+    if (!parentId) {
+      console.error('Không thể phản hồi: Bình luận gốc không có ID.', selectedReview);
+      alert('Lỗi: Không tìm thấy ID của bình luận gốc.');
+      return;
+    }
 
     try {
+      // Gọi API để tạo reply
       await PackageService.createReview(packageId, {
         comment: replyText,
-        parentReviewId: selectedReview.id,
+        parentReviewId: parentId, // Dùng ID đã lưu
       });
-      setReplyText('');
-      // Reload replies
-      loadReplies(selectedReview.id);
+
+      setReplyText(''); // Tải lại danh sách replies 
+
+      loadReplies(parentId);
     } catch (err) {
       console.error('Error sending reply:', err);
       alert('Không thể gửi phản hồi');
@@ -93,7 +106,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
       setEditText('');
       // Reload
       if (selectedReview) {
-        loadReplies(selectedReview.id);
+        loadReplies(selectedReview.reviewId);
       } else {
         loadReviews();
       }
@@ -108,12 +121,19 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
 
     try {
       await PackageService.deleteReview(reviewId);
-      // Reload
-      if (selectedReview) {
+
+      if (selectedReview && selectedReview.reviewId === reviewId) {
         setSelectedReview(null);
         setReplies([]);
+        loadReviews(); // Tải lại danh sách bình luận chính
+      } else if (selectedReview) {
+        // Case 2: Bạn vừa xóa một PHẢN HỒI
+        // Chỉ cần tải lại danh sách replies cho bình luận gốc hiện tại
+        loadReplies(selectedReview.reviewId);
+      } else {
+        // Trường hợp dự phòng: tải lại danh sách chính
+        loadReviews();
       }
-      loadReviews();
     } catch (err) {
       console.error('Error deleting review:', err);
       alert('Không thể xóa bình luận');
@@ -157,10 +177,10 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
               ) : (
                 reviews.map((review) => (
                   <div
-                    key={review.id}
+                    key={review.reviewId}
                     onClick={() => handleReviewClick(review)}
                     className={`p-3 rounded-lg border cursor-pointer transition ${
-                      selectedReview?.id === review.id
+                      selectedReview?.reviewId === review.reviewId
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
@@ -217,7 +237,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                         <div className="flex space-x-1">
                           <button
                             onClick={() => {
-                              setEditingReviewId(selectedReview.id);
+                              setEditingReviewId(selectedReview.reviewId);
                               setEditText(selectedReview.comment);
                             }}
                             className="p-1 text-gray-400 hover:text-blue-600"
@@ -226,7 +246,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteReview(selectedReview.id)}
+                            onClick={() => handleDeleteReview(selectedReview.reviewId)}
                             className="p-1 text-gray-400 hover:text-red-600"
                             title="Xóa"
                           >
@@ -234,7 +254,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                           </button>
                         </div>
                       </div>
-                      {editingReviewId === selectedReview.id ? (
+                      {editingReviewId === selectedReview.reviewId ? (
                         <div className="mt-2">
                           <textarea
                             value={editText}
@@ -244,7 +264,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                           />
                           <div className="flex space-x-2 mt-2">
                             <button
-                              onClick={() => handleEditReview(selectedReview.id)}
+                              onClick={() => handleEditReview(selectedReview.reviewId)}
                               className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
                             >
                               Lưu
@@ -273,7 +293,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                   ) : (
                     replies.map((reply) => (
                       <div
-                        key={reply.id}
+                        key={reply.reviewId}
                         className="pl-4 border-l-2 border-gray-200 dark:border-gray-700"
                       >
                         <div className="flex items-start space-x-2">
@@ -293,7 +313,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                                 </p>
                               </div>
                               <button
-                                onClick={() => handleDeleteReview(reply.id)}
+                                onClick={() => handleDeleteReview(reply.reviewId)}
                                 className="p-1 text-gray-400 hover:text-red-600"
                                 title="Xóa"
                               >

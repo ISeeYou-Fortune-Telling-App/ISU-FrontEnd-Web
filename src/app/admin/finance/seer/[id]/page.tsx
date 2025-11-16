@@ -86,7 +86,7 @@ const PayBonusModal: React.FC<{
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
               Seer:{' '}
               <span className="font-semibold text-gray-900 dark:text-white">
-                {seer.fullName || 'N/A'}
+                {seer?.fullName || 'N/A'}
               </span>
             </p>
           </div>
@@ -237,18 +237,18 @@ const SeerDetailPage: React.FC = () => {
             />
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {seerData.fullName || 'N/A'}
+                {seerData?.fullName || 'N/A'}
               </h1>
               <div className="flex items-center space-x-3 mt-2">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Ranking: #{seerData.ranking}
+                  Ranking: #{seerData?.ranking}
                 </span>
                 <span
                   className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(
-                    seerData.performanceTier,
+                    seerData?.performanceTier,
                   )}`}
                 >
-                  {seerData.performanceTier}
+                  {seerData?.performanceTier}
                 </span>
               </div>
             </div>
@@ -265,7 +265,7 @@ const SeerDetailPage: React.FC = () => {
               <Award className="w-5 h-5 text-indigo-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {seerData.performancePoint}
+              {seerData?.performancePoint}
             </p>
           </div>
 
@@ -275,7 +275,7 @@ const SeerDetailPage: React.FC = () => {
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {formatCurrency(seerData.totalRevenue)}
+              {formatCurrency(seerData?.totalRevenue)}
             </p>
           </div>
 
@@ -285,7 +285,7 @@ const SeerDetailPage: React.FC = () => {
               <Star className="w-5 h-5 text-yellow-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {seerData.avgRating.toFixed(1)}/5 ⭐
+              {seerData?.avgRating.toFixed(1)}/5 ⭐
             </p>
           </div>
         </div>
@@ -301,7 +301,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Packages</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData.totalPackages}
+                  {seerData?.totalPackages}
                 </p>
               </div>
             </div>
@@ -311,7 +311,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Bookings</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData.totalBookings}
+                  {seerData?.totalBookings}
                 </p>
               </div>
             </div>
@@ -321,7 +321,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Hoàn thành</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData.completedBookings}
+                  {seerData?.completedBookings}
                 </p>
               </div>
             </div>
@@ -331,7 +331,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng đánh giá</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData.totalRates}
+                  {seerData?.totalRates}
                 </p>
               </div>
             </div>
@@ -341,7 +341,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Đã hủy</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData.cancelledBySeer}
+                  {seerData?.cancelledBySeer}
                 </p>
               </div>
             </div>
@@ -351,7 +351,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Bonus</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {formatCurrency(seerData.bonus)}
+                  {formatCurrency(seerData?.bonus)}
                 </p>
               </div>
             </div>
@@ -365,19 +365,19 @@ const SeerDetailPage: React.FC = () => {
             <div>
               <p className="text-gray-500 dark:text-gray-400">Tháng</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {seerData.month}/{seerData.year}
+                {seerData?.month}/{seerData?.year}
               </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Ngày tạo</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {new Date(seerData.createdAt).toLocaleDateString('vi-VN')}
+                {new Date(seerData?.createdAt).toLocaleDateString('vi-VN')}
               </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Cập nhật</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {new Date(seerData.updatedAt).toLocaleDateString('vi-VN')}
+                {new Date(seerData?.updatedAt).toLocaleDateString('vi-VN')}
               </p>
             </div>
           </div>

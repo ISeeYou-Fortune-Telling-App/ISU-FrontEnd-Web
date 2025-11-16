@@ -164,7 +164,11 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Danh mục</p>
-                <div className={`inline-block px-2 py-1 rounded-md text-xs ${getCategoryColorClass(pkg.category)}`}>
+                <div
+                  className={`inline-block px-2 py-1 rounded-md text-xs ${getCategoryColorClass(
+                    pkg.category,
+                  )}`}
+                >
                   {getCategoryDisplay(pkg.category)}
                 </div>
               </div>
@@ -240,7 +244,9 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
           {/* NHẬP LÝ DO ẨN (khi chưa ẩn) */}
           {isAvailable && (
             <div className="space-y-2 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Lý do ẩn bài viết (tùy chọn)</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Lý do ẩn bài viết (tùy chọn)
+              </p>
               <textarea
                 value={hideReason}
                 onChange={(e) => setHideReason(e.target.value)}
@@ -296,10 +302,8 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                disabled
-                className="flex-1 py-2 bg-red-400 text-white rounded-lg font-medium 
-                           cursor-not-allowed opacity-50 flex items-center justify-center space-x-2"
-                title="Backend chưa có endpoint DELETE"
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium 
+               hover:bg-red-700 flex items-center justify-center space-x-2"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Xóa</span>

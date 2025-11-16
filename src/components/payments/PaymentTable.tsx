@@ -32,6 +32,12 @@ export const PaymentTable: React.FC = () => {
           paymentStatus: selectedStatus === 'ALL' ? undefined : selectedStatus,
         });
         setPayments(res.data);
+        if (res.paging && typeof res.paging.total === 'number') {
+          setTotalItems(res.paging.total);
+        } else {
+          // Fallback nếu API không trả về paging
+          setTotalItems(res.data.length); 
+        }
       } catch (err) {
         console.error('Lỗi khi tải danh sách thanh toán:', err);
       } finally {
@@ -52,7 +58,7 @@ export const PaymentTable: React.FC = () => {
     });
   }, [payments, searchTerm]);
 
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
   const goToNextPage = () => setCurrentPage((p) => (p < totalPages ? p + 1 : p));
   const goToPrevPage = () => setCurrentPage((p) => (p > 1 ? p - 1 : p));
 

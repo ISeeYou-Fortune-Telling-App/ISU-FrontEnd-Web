@@ -82,7 +82,7 @@ const CustomerDetailPage: React.FC = () => {
             />
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {customerData.fullName || 'N/A'}
+                {customerData?.fullName || 'N/A'}
               </h1>
               <div className="flex items-center space-x-3 mt-2">
                 <span className="text-sm text-gray-500 dark:text-gray-400">

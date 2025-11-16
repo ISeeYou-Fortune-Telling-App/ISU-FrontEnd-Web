@@ -158,6 +158,19 @@ export type SeerAction =
   | 'EARNING';
 
 export interface PageResponse<T> {
-  item: T[];
+  statusCode: number; 
+  message: string;
+  data: T[];
   paging: PagingResponse;
+}
+
+export interface PaymentResponse {
+  id: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  status: string;
+  transactionId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
