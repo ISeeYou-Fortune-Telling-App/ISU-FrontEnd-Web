@@ -460,7 +460,7 @@ const FinanceDashboard: React.FC = () => {
 
           const mappedCustomers = response.data.map((customer: any) => ({
             id: customer.customerId,
-            name: customer.customerName || 'N/A',
+            name: customer.fullname || 'N/A',
             avatar: `https://i.pravatar.cc/150?u=${customer.customerId}`,
             potential: customer.potentialPoint,
             ranking: customer.ranking,

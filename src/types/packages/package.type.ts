@@ -54,7 +54,7 @@ export interface ServicePackage {
 
 // REVIEWS 
 export interface ServiceReview {
-  id: string;
+  reviewId: string;
   user: UserInfo;
   packageId: string;
   comment: string;
@@ -134,4 +134,20 @@ export interface GetPackagesParams extends PagingParams {
   category?: ServiceCategoryEnum;
   status?: PackageStatusEnum;
   seerId?: string;
+}
+
+
+// Dữ liệu thống kê
+export interface PackageStats {
+  totalPackages: number;
+  reportedPackages: number;
+  hiddenPackages: number;
+  totalInteractions: number;
+}
+
+// Response từ stat
+export interface PackageStatsResponse {
+  statusCode: number;
+  message: string;
+  data: PackageStats;
 }

@@ -11,6 +11,8 @@ import {
   User,
   UserCheck,
   UserMinus,
+  CheckCircle2,
+  Play,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -31,6 +33,8 @@ export type BadgeAccountStatus =
   | 'Bị hủy'
   | 'Đã xác nhận'
   | 'Chờ xác nhận'
+  | 'Hoàn thành'
+  | 'Đang diễn ra'
   | string;
 
 export type BadgeAccountRole =
@@ -47,6 +51,26 @@ const getStatusStyle = (status: BadgeAccountStatus) => {
   let classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
 
   switch (status) {
+    case 'Hoàn thành':
+      classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
+      Icon = CheckCircle2;
+      break;
+    case 'Chờ xác nhận':
+      classes = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
+      Icon = Clock;
+      break;
+    case 'Đang diễn ra':
+      classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
+      Icon = Play;
+      break;
+    case 'Bị hủy':
+      classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+      Icon = CircleX;
+      break;
+    case 'Đã xác nhận':
+      classes = 'bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-100';
+      Icon = ShieldCheck;
+      break;
     case 'Đang hoạt động':
       classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
       Icon = ShieldCheck;
@@ -144,12 +168,12 @@ export const Badge: React.FC<{ type: BadgeType; value: string }> = ({ type, valu
     switch (value) {
       case 'COMPLETED':
         classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
-        Icon = ShieldCheck;
+        Icon = CheckCircle2;
         value = 'Hoàn thành';
         break;
       case 'CONFIRMED':
-        classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
-        Icon = Clock;
+        classes = 'bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-100';
+        Icon = ShieldCheck;
         value = 'Đã xác nhận';
         break;
       case 'PENDING':
@@ -163,7 +187,7 @@ export const Badge: React.FC<{ type: BadgeType; value: string }> = ({ type, valu
         value = 'Thất bại';
         break;
       case 'CANCELLED':
-        classes = 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
+        classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
         Icon = CircleX;
         value = 'Đã hủy';
         break;

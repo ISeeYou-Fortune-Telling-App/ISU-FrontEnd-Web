@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 
 interface StatCardAccountProps {
-    value: number;
+    value: any;
     label: string;
     colorClass: string;
     moneyType?: 'vnđ' | '₫';

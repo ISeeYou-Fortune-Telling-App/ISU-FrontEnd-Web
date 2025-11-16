@@ -1,125 +1,74 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { sendVannaMessageV2 } from '@/services/ai/ai.service';
-import ReactMarkdown from 'react-markdown';
-import { Send } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { BookingTable } from '@/components/booking/AppointmentTable';
+import { BookingService } from '@/services/booking/booking.service';
+import { BookingStats } from '@/types/booking/booking.type';
+import { StatCardAccount } from '../../../components/common/StatCardAccount';
 
-export default function ChatNotebookPage() {
-  const [events, setEvents] = useState<any[]>([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    setLoading(true);
-    setEvents((prev) => [...prev, { type: 'user', data: { content: input } }]);
-    const userInput = input;
-    setInput('');
-
-    await sendVannaMessageV2(userInput, (rich) => {
-      setEvents((prev) => [...prev, rich]);
-    });
-
-    setLoading(false);
-  };
+export default function BookingsPage() {
+  const [stats, setStats] = useState<BookingStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [events]);
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const apiStats = await BookingService.getStats();
+        setStats(apiStats);
+      } catch (error) {
+        console.error('Lỗi khi tải thống kê:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const renderEvent = (event: any, i: number) => {
-    const { type, data } = event;
+    fetchStats();
+  }, []);
 
-    if (type === 'user')
-      return (
-        <div key={i} className="flex justify-end">
-          <div className="max-w-[75%] bg-blue-500 text-white p-3 rounded-2xl rounded-br-none shadow">
-            {data.content}
-          </div>
-        </div>
-      );
-
-    if (type === 'text')
-      return (
-        <div key={i} className="flex justify-start">
-          <div className="max-w-[75%] bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 p-3 rounded-2xl rounded-bl-none shadow">
-            <ReactMarkdown>{data.content}</ReactMarkdown>
-          </div>
-        </div>
-      );
-
-    if (type === 'status_bar_update')
-      return (
-        <div key={i} className="text-xs text-gray-400 text-center italic">
-          {data.message}
-        </div>
-      );
-
-    if (type === 'dataframe')
-      return (
-        <div
-          key={i}
-          className="overflow-auto border rounded p-2 bg-gray-50 dark:bg-gray-900 text-sm"
-        >
-          <table className="w-full border-collapse text-gray-800 dark:text-gray-100">
-            <thead>
-              <tr>
-                {data.columns.map((col: string) => (
-                  <th key={col} className="border px-2 py-1 bg-gray-100 dark:bg-gray-800">
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.data.map((row: any, j: number) => (
-                <tr key={j}>
-                  {data.columns.map((col: string) => (
-                    <td key={col} className="border px-2 py-1">
-                      {String(row[col])}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-
-    return (
-      <div key={i} className="text-gray-400 italic text-center">
-        Unhandled type: {type}
-      </div>
-    );
-  };
+  const bookingStats = [
+    {
+      label: 'Tổng lịch hẹn',
+      value: loading ? '...' : stats?.totalBookings.toLocaleString() ?? 0,
+      colorClass: 'text-blue-600',
+    },
+    {
+      label: 'Hoàn thành',
+      value: loading ? '...' : stats?.completedBookings.toLocaleString() ?? 0,
+      colorClass: 'text-green-500',
+    },
+    {
+      label: 'Chờ xác nhận',
+      value: loading ? '...' : stats?.pendingBookings.toLocaleString() ?? 0,
+      colorClass: 'text-yellow-500',
+    },
+    {
+      label: 'Bị hủy',
+      value: loading ? '...' : stats?.canceledBookings.toLocaleString() ?? 0,
+      colorClass: 'text-red-500',
+    },
+  ];
 
   return (
-    <div className="flex flex-col h-[85vh] w-full bg-white dark:bg-gray-950 rounded-2xl shadow border border-gray-200 dark:border-gray-800">
-      {/* Khu chat */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
-        {events.map((ev, i) => renderEvent(ev, i))}
-        <div ref={chatEndRef} />
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">Quản lý lịch hẹn</h1>
+        <p className="text-base font-light text-gray-500 dark:text-gray-400">
+          Theo dõi và quản lý tất cả lịch hẹn giữa khách hàng và Seer
+        </p>
       </div>
 
-      {/* Ô nhập chat */}
-      <div className="flex items-center gap-2 p-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Nhập tin nhắn..."
-          className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading}
-          className="bg-blue-500 p-2 rounded-full hover:bg-blue-400 transition disabled:opacity-50"
-        >
-          <Send size={18} className="text-white" />
-        </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+         {bookingStats.map((stat, index) => (
+          <StatCardAccount
+            key={index}
+            value={stat.value}
+            label={stat.label}
+            colorClass={stat.colorClass}
+          />
+        ))}
       </div>
+
+      <BookingTable />
     </div>
   );
 }
