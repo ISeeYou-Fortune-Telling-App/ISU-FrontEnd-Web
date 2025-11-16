@@ -6,6 +6,7 @@ import {
   GetReviewsResponse,
   PackageInteractionRequest,
   PackageInteractionResponse,
+  PackageStatsResponse,
   ServiceCategoryEnum,
   ServicePackageResponse,
   ServiceReviewRequest,
@@ -13,15 +14,20 @@ import {
 } from '../../types/packages/package.type';
 import { PagingParams } from '@/types/paging.type';
 
+const defaultParams = {
+  page: 1,
+  limit: 10,
+  sortType: 'desc',
+  sortBy: 'createdAt',
+};
+
 export const PackageService = {
   getAll: async (params?: GetPackagesParams): Promise<GetPackagesResponse> => {
     const res = await apiFetch<GetPackagesResponse>('/service-packages/admin', {
       method: 'GET',
       params: {
-        page: params?.page ?? 1,
-        limit: params?.limit ?? 15,
-        sortType: params?.sortType ?? 'desc',
-        sortBy: params?.sortBy ?? 'createdAt',
+        ...defaultParams,
+        ...params,
       },
     });
     return res;
@@ -34,12 +40,8 @@ export const PackageService = {
     const res = await apiFetch<GetPackagesResponse>(`/service-packages/by-category/${category}`, {
       method: 'GET',
       params: {
-        page: params?.page ?? 1,
-        limit: params?.limit ?? 15,
-        sortType: params?.sortType ?? 'desc',
-        sortBy: params?.sortBy ?? 'createdAt',
-        minPrice: params?.minPrice,
-        maxPrice: params?.maxPrice,
+        ...defaultParams,
+        ...params,
       },
     });
     return res;
@@ -135,6 +137,13 @@ export const PackageService = {
     return res;
   },
 
+  getStats: async (): Promise<PackageStatsResponse> => {
+    const res = await apiFetch<PackageStatsResponse>('/service-packages/stat', {
+      method: 'GET',
+    });
+    return res;
+  },
+
   createReview: async (
     packageId: string,
     data: ServiceReviewRequest,
@@ -170,3 +179,5 @@ export const PackageService = {
     return res;
   },
 };
+
+

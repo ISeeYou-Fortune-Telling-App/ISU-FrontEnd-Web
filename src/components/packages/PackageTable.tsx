@@ -40,6 +40,7 @@ export const PackageTable: React.FC = () => {
   const [showReviewsModal, setShowReviewsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [packageToDelete, setPackageToDelete] = useState<ServicePackage | null>(null);
+  const [totalItems, setTotalItems] = useState(0);
 
   // 🧠 Gọi API
   useEffect(() => {
@@ -47,6 +48,14 @@ export const PackageTable: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+
+        const params: any = {
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          sortType: 'desc',
+          sortBy: 'createdAt',
+          searchText: searchTerm || undefined, 
+        };
 
         if (selectedCategory !== 'ALL') {
           const res = await PackageService.getByCategory(selectedCategory, {
@@ -69,6 +78,7 @@ export const PackageTable: React.FC = () => {
             status: selectedFilter !== 'Tất cả' ? (selectedFilter as any) : undefined,
           });
           setPackages(res.data);
+          setTotalItems(res.paging?.total || 0);
         }
       } catch (err) {
         console.error('❌ Lỗi khi tải danh sách gói:', err);
@@ -78,30 +88,10 @@ export const PackageTable: React.FC = () => {
       }
     };
     fetchData();
-  }, [currentPage, selectedCategory, selectedFilter]);
+  }, [currentPage, selectedCategory, selectedFilter, searchTerm]);
 
-  // 🔍 Filter + Search
-  const filteredPackages = useMemo(() => {
-    return packages.filter((pkg) => {
-      const matchesSearch =
-        pkg.packageTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pkg.packageContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pkg.seer.fullName.toLowerCase().includes(searchTerm.toLowerCase());
 
-      return matchesSearch;
-    });
-  }, [packages, searchTerm]);
-
-  // PAGINATION
-  const { totalPages, currentPackages } = useMemo(() => {
-    const totalItems = filteredPackages.length;
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const currentPackages = filteredPackages.slice(startIndex, endIndex);
-
-    return { totalPages, currentPackages };
-  }, [filteredPackages, currentPage]);
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
 
   const goToNextPage = () => setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
   const goToPrevPage = () => setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
@@ -207,7 +197,7 @@ export const PackageTable: React.FC = () => {
       {/* Filter Tabs */}
       <div className="flex space-x-2 mb-4">
         <div className="inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
-          {['Tất cả', 'AVAILABLE', 'DISABLED', 'HIDDEN'].map((status) => (
+          {['Tất cả', 'AVAILABLE', 'REJECTED', 'HAVE_REPORT', 'HIDDEN'].map((status) => (
             <button
               key={status}
               onClick={() => {
@@ -225,9 +215,13 @@ export const PackageTable: React.FC = () => {
                 ? 'Tất cả'
                 : status === 'AVAILABLE'
                 ? 'Đang hoạt động'
-                : status === 'DISABLED'
-                ? 'Ngưng hoạt động'
-                : 'Đã ẩn'}
+                : status === 'REJECTED'
+                ? 'Bị từ chối'
+                : status === 'HAVE_REPORT'
+                ? 'Có báo cáo'
+                : status === 'HIDDEN'
+                ? 'Đã ẩn'
+                : status}
             </button>
           ))}
         </div>
@@ -246,7 +240,7 @@ export const PackageTable: React.FC = () => {
           <div className="p-6 text-center text-gray-500 dark:text-gray-400">
             ⏳ Đang tải dữ liệu...
           </div>
-        ) : filteredPackages.length === 0 ? (
+        ) : packages.length === 0 ? (
           <div className="p-6 text-center text-gray-500 dark:text-gray-400">
             Không có gói dịch vụ nào
           </div>
@@ -279,7 +273,7 @@ export const PackageTable: React.FC = () => {
             </thead>
 
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {currentPackages.map((pkg) => (
+              {packages.map((pkg) => (
                 <tr
                   key={pkg.id}
                   onClick={() => handleViewDetail(pkg)}

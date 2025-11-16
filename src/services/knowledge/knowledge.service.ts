@@ -1,9 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiFetch } from '@/services/api';
-import { ListResponse, SingleResponse } from '@/types/response.type';
+import { ListResponse, SimpleResponse, SingleResponse } from '@/types/response.type';
 import {
   KnowledgeCategory,
   KnowledgeItem,
   KnowledgeItemSearchParams,
+  KnowledgeItemStats,
+  KnowledgeStatus,
+  CreateKnowledgeItemRequest,
+  UpdateKnowledgeItemRequest,
 } from '@/types/knowledge/knowledge.type';
 import { PagingParams } from '@/types/paging.type';
 
@@ -32,6 +37,14 @@ export const KnowledgeService = {
       },
     }),
 
+  // Lấy thống kê tri thức
+  getKnowledgeStats: async (): Promise<KnowledgeItemStats> => {
+    const res = await apiFetch<SingleResponse<KnowledgeItemStats>>('/knowledge-items/stat', {
+      method: 'GET',
+    });
+    return res.data;
+  },
+
   // Lấy chi tiết tri thức
   getKnowledgeById: async (id: string): Promise<KnowledgeItem> => {
     const res = await apiFetch<SingleResponse<KnowledgeItem>>(`/knowledge-items/${id}`, {
@@ -56,6 +69,55 @@ export const KnowledgeService = {
     return apiFetch<ListResponse<KnowledgeItem>>('/knowledge-items/search', {
       method: 'GET',
       params: query,
+    });
+  },
+
+  // Lấy tri thức theo trạng thái
+  getKnowledgesByStatus: (status: KnowledgeStatus, params: PagingParams) =>
+    apiFetch<ListResponse<KnowledgeItem>>(`/knowledge-items/by-status/${status}`, {
+      method: 'GET',
+      params: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+        sortType: params.sortType ?? 'desc',
+        sortBy: params.sortBy ?? 'createdAt',
+      },
+    }),
+
+  // Lấy danh mục theo tên
+  getCategoryByName: async (name: string): Promise<KnowledgeCategory> => {
+    const res = await apiFetch<SingleResponse<KnowledgeCategory>>('/knowledge-categories/by-name', {
+      method: 'GET',
+      params: { name },
+    });
+    return res.data;
+  },
+
+  // Tạo danh mục mới (Admin only)
+  createCategory: async (data: CreateKnowledgeItemRequest): Promise<KnowledgeCategory> => {
+    const res = await apiFetch<SingleResponse<KnowledgeCategory>>('/knowledge-categories', {
+      method: 'POST',
+      data: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  // Cập nhật danh mục (Admin only)
+  updateCategory: async (
+    id: string,
+    data: UpdateKnowledgeItemRequest,
+  ): Promise<KnowledgeCategory> => {
+    const res = await apiFetch<SingleResponse<KnowledgeCategory>>(`/knowledge-categories/${id}`, {
+      method: 'PATCH',
+      data: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  // Xóa danh mục (Admin only)
+  deleteCategory: async (id: string): Promise<void> => {
+    await apiFetch<SimpleResponse>(`/knowledge-categories/${id}`, {
+      method: 'DELETE',
     });
   },
 };

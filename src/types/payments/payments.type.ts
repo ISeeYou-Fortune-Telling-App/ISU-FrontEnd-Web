@@ -5,6 +5,7 @@ export type PaymentMethod = 'VNPAY' | 'MOMO' | 'PAYPAL' | 'CASH';
 
 export interface BookingPayment {
   id: string;
+  status: PaymentStatus;
   createdAt: string;
   updatedAt: string;
   bookingId: string;

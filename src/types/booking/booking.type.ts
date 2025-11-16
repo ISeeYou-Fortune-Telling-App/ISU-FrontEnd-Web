@@ -50,3 +50,10 @@ export interface BookingPaymentInfo {
 export interface BookingParams extends PagingParams {
   status?: BookingStatus;
 }
+
+export interface BookingStats {
+  totalBookings: number;
+  completedBookings: number;
+  pendingBookings: number;
+  canceledBookings: number;
+}
