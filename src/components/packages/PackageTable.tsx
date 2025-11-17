@@ -54,7 +54,7 @@ export const PackageTable: React.FC = () => {
           limit: ITEMS_PER_PAGE,
           sortType: 'desc',
           sortBy: 'createdAt',
-          searchText: searchTerm || undefined, 
+          searchText: searchTerm || undefined,
         };
 
         if (selectedCategory !== 'ALL') {
@@ -67,6 +67,7 @@ export const PackageTable: React.FC = () => {
             maxPrice: 10000000,
           });
           setPackages(res.data);
+          setTotalItems(res.paging?.total || 0);
         } else {
           const res = await PackageService.getAll({
             page: currentPage,
@@ -89,7 +90,6 @@ export const PackageTable: React.FC = () => {
     };
     fetchData();
   }, [currentPage, selectedCategory, selectedFilter, searchTerm]);
-
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
 
@@ -235,7 +235,7 @@ export const PackageTable: React.FC = () => {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
         {loading ? (
           <div className="p-6 text-center text-gray-500 dark:text-gray-400">
             ⏳ Đang tải dữ liệu...
@@ -245,156 +245,171 @@ export const PackageTable: React.FC = () => {
             Không có gói dịch vụ nào
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="w-[150px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Tác giả
-                </th>
-                <th className="w-[260px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Nội dung
-                </th>
-                <th className="w-[140px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Danh mục
-                </th>
-                <th className="w-[130px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Trạng thái
-                </th>
-                <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Tương tác
-                </th>
-                <th className="w-[160px] px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Ngày đăng
-                </th>
-                <th className="w-[180px] px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {packages.map((pkg) => (
-                <tr
-                  key={pkg.id}
-                  onClick={() => handleViewDetail(pkg)}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 cursor-pointer"
-                >
-                  {/* 🧙‍♂️ Tác giả */}
-                  <td className="px-6 py-3 w-[180px] whitespace-nowrap">
-                    <div className="flex items-center">
-                      <img
-                        src={pkg.seer.avatarUrl}
-                        alt={pkg.seer.fullName}
-                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-200 dark:border-gray-700"
-                      />
-                      <span
-                        className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[130px]"
-                        title={pkg.seer.fullName}
-                      >
-                        {pkg.seer.fullName}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* 📘 Nội dung */}
-                  <td className="px-6 py-3 w-[260px] text-sm text-gray-800 dark:text-gray-200">
-                    <div className="flex items-center space-x-2 overflow-hidden">
-                      <img
-                        src={pkg.imageUrl}
-                        alt={pkg.packageTitle}
-                        className="w-10 h-10 rounded-md object-cover flex-shrink-0"
-                      />
-                      <span
-                        className="truncate block max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis"
-                        title={pkg.packageTitle}
-                      >
-                        {pkg.packageTitle}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* 🏷️ Danh mục */}
-                  <td className="px-6 py-3 w-[140px] whitespace-nowrap text-sm text-center">
-                    <div
-                      className={`flex flex-col justify-center items-center gap-[10px] p-[2px] rounded-[5px] ${getCategoryColorClass(
-                        pkg.category,
-                      )}`}
-                    >
-                      <span className="font-[Inter] text-[12px] font-normal leading-normal text-center">
-                        {getCategoryDisplay(pkg.category)}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* ⚙️ Trạng thái */}
-                  <td className="px-6 py-3 w-[130px] whitespace-nowrap text-sm">
-                    <Badge type={'status' as any} value={pkg.status} />
-                  </td>
-
-                  {/* 💬 Tương tác */}
-                  <td className="px-6 py-3 w-[140px] whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 align-middle">
-                    <div className="flex items-center justify-center gap-3">
-                      <span className="inline-flex items-center justify-center gap-1 w-[56px]">
-                        <ThumbsUp className="w-4 h-4" />
-                        <span className="text-sm leading-none">{pkg.likeCount}</span>
-                      </span>
-
-                      <span className="inline-flex items-center justify-center gap-1 w-[56px]">
-                        <ThumbsDown className="w-4 h-4" />
-                        <span className="text-sm leading-none">{pkg.dislikeCount}</span>
-                      </span>
-
-                      <span className="inline-flex items-center justify-center gap-1 w-[56px]">
-                        <MessageCircle className="w-4 h-4" />
-                        <span className="text-sm leading-none">0</span>
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* ⏰ Ngày đăng */}
-                  <td className="px-6 py-3 w-[160px] whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {new Date(pkg.createdAt).toLocaleString('vi-VN')}
-                  </td>
-
-                  {/* 🧩 Thao tác */}
-                  <td className="px-6 py-3 w-[120px] whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewDetail(pkg);
-                        }}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors"
-                        title="Xem chi tiết"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewReviews(pkg);
-                        }}
-                        className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
-                        title="Xem bình luận"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(pkg);
-                        }}
-                        className="text-red-500 hover:text-red-700 p-1 transition-colors"
-                        title="Xóa gói"
-                      >
-                        <XIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                    Tác giả
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                    Nội dung
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                    Danh mục
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                    Trạng thái
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                    Tương tác
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                    Ngày đăng
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+                    Thao tác
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {packages.map((pkg) => (
+                  <tr
+                    key={pkg.id}
+                    onClick={() => handleViewDetail(pkg)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 cursor-pointer"
+                  >
+                    {/* 🧙‍♂️ Tác giả */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center min-w-[150px]">
+                        <img
+                          src={pkg.seer.avatarUrl}
+                          alt={pkg.seer.fullName}
+                          className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-200 dark:border-gray-700"
+                        />
+                        <span
+                          className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[100px]"
+                          title={pkg.seer.fullName}
+                        >
+                          {pkg.seer.fullName}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* 📘 Nội dung */}
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                      <div className="flex items-center space-x-2 min-w-[200px] max-w-[300px]">
+                        <img
+                          src={pkg.imageUrl}
+                          alt={pkg.packageTitle}
+                          className="w-10 h-10 rounded-md object-cover flex-shrink-0"
+                        />
+                        <span className="truncate" title={pkg.packageTitle}>
+                          {pkg.packageTitle}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* 🏷️ Danh mục */}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      {pkg.categories && pkg.categories.length > 0 ? (
+                        <div
+                          className={`inline-flex ... ${getCategoryColorClass(
+                            // Lấy 'name' của category ĐẦU TIÊN
+                            pkg.categories[0].name as ServiceCategoryEnum,
+                          )}`}
+                        >
+                          <span className="...">
+                            {getCategoryDisplay(pkg.categories[0].name as ServiceCategoryEnum)}
+
+                            {/* Bonus: Hiển thị '...' nếu có nhiều hơn 1 category */}
+                            {pkg.categories.length > 1 && (
+                              <span
+                                className="ml-1"
+                                title={pkg.categories.map((c) => c.name).join(', ')}
+                              >
+                                ...
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ) : (
+                        // Hiển thị 'N/A' nếu không có category
+                        <span className="text-sm text-gray-500">N/A</span>
+                      )}
+                    </td>
+
+                    {/* ⚙️ Trạng thái */}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      <Badge type={'status' as any} value={pkg.status} />
+                    </td>
+
+                    {/* 💬 Tương tác */}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center justify-center gap-2 min-w-[140px]">
+                        <span className="inline-flex items-center gap-1">
+                          <ThumbsUp className="w-4 h-4" />
+                          <span className="text-sm">{pkg.likeCount}</span>
+                        </span>
+
+                        <span className="inline-flex items-center gap-1">
+                          <ThumbsDown className="w-4 h-4" />
+                          <span className="text-sm">{pkg.dislikeCount}</span>
+                        </span>
+
+                        <span className="inline-flex items-center gap-1">
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="text-sm">{pkg.totalReviews}</span>
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* ⏰ Ngày đăng */}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(pkg.createdAt).toLocaleString('vi-VN')}
+                    </td>
+
+                    {/* 🧩 Thao tác */}
+                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-1 min-w-[120px]">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetail(pkg);
+                          }}
+                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors"
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewReviews(pkg);
+                          }}
+                          className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
+                          title="Xem bình luận"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(pkg);
+                          }}
+                          className="text-red-500 hover:text-red-700 p-1 transition-colors"
+                          title="Xóa gói"
+                        >
+                          <XIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

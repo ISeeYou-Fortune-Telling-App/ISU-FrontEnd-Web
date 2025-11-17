@@ -86,11 +86,12 @@ export interface SeerPerformanceParams extends PagingParams {
 export interface CustomerPotential {
   id: string;
   customerId: string;
-  fullName?: string;
+  fullName: string; 
+  avatarUrl: string; 
   month: number;
   year: number;
   potentialPoint: number;
-  potentialTier: 'CASUAL' | 'STANDARD' | 'PREMIUM' | 'VIP';
+  potentialTier: 'CASUAL' | 'STANDARD' | 'PREMIUM' | 'VIP'; 
   ranking: number;
   totalBookingRequests: number;
   totalSpending: number;
@@ -102,11 +103,10 @@ export interface CustomerPotential {
 export interface SeerPerformance {
   id: string;
   seerId: string;
-  fullName?: string;
   month: number;
   year: number;
+  performanceTier: string;
   performancePoint: number;
-  performanceTier: 'APPRENTICE' | 'PROFESSIONAL' | 'EXPERT' | 'MASTER';
   ranking: number;
   totalPackages: number;
   totalRates: number;
@@ -118,6 +118,8 @@ export interface SeerPerformance {
   bonus: number;
   createdAt: string;
   updatedAt: string;
+  fullName: string;
+  avatarUrl: string;
 }
 
 export interface FinanceStatistic {
@@ -158,7 +160,7 @@ export type SeerAction =
   | 'EARNING';
 
 export interface PageResponse<T> {
-  statusCode: number; 
+  statusCode: number;
   message: string;
   data: T[];
   paging: PagingResponse;

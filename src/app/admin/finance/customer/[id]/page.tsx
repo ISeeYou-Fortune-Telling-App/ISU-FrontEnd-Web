@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, DollarSign, Award, TrendingUp, Calendar, X } from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
+import { CustomerPotential } from '@/types/finance/finance.types';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -25,7 +26,7 @@ const CustomerDetailPage: React.FC = () => {
   const params = useParams();
   const customerId = params?.id as string;
 
-  const [customerData, setCustomerData] = useState<any>(null);
+  const [customerData, setCustomerData] = useState<CustomerPotential | null >(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,6 +59,28 @@ const CustomerDetailPage: React.FC = () => {
     );
   }
 
+  if (!customerData) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">
+            Không tìm thấy dữ liệu
+          </p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            Đã có lỗi xảy ra hoặc khách hàng không tồn tại.
+          </p>
+          <button
+            onClick={() => router.back()}
+            className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mx-auto"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Quay lại</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-5xl mx-auto space-y-6">
@@ -76,8 +99,8 @@ const CustomerDetailPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-start space-x-4">
             <img
-              src={`https://i.pravatar.cc/150?u=${customerId}`}
-              alt="Customer Avatar"
+              src={customerData?.avatarUrl || `https://i.pravatar.cc/150?u=${customerId}`} // Dùng avatarUrl, nếu không có mới dùng placeholder
+              alt={customerData?.fullName || 'Customer Avatar'}
               className="w-20 h-20 rounded-full object-cover"
             />
             <div className="flex-1">
@@ -86,14 +109,14 @@ const CustomerDetailPage: React.FC = () => {
               </h1>
               <div className="flex items-center space-x-3 mt-2">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Ranking: #{customerData.ranking}
+                  Ranking: #{customerData?.ranking}
                 </span>
                 <span
                   className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(
-                    customerData.potentialTier,
+                    customerData?.potentialTier,
                   )}`}
                 >
-                  {customerData.potentialTier}
+                  {customerData?.potentialTier}
                 </span>
               </div>
             </div>
@@ -110,7 +133,7 @@ const CustomerDetailPage: React.FC = () => {
               <Award className="w-5 h-5 text-purple-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {customerData.potentialPoint}
+              {customerData?.potentialPoint}
             </p>
           </div>
 
@@ -120,7 +143,7 @@ const CustomerDetailPage: React.FC = () => {
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {formatCurrency(customerData.totalSpending)}
+              {formatCurrency(customerData?.totalSpending)}
             </p>
           </div>
 
@@ -130,7 +153,7 @@ const CustomerDetailPage: React.FC = () => {
               <Calendar className="w-5 h-5 text-blue-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {customerData.totalBookingRequests}
+              {customerData?.totalBookingRequests}
             </p>
           </div>
         </div>
@@ -146,7 +169,7 @@ const CustomerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Điểm tiềm năng</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {customerData.potentialPoint}
+                  {customerData?.potentialPoint}
                 </p>
               </div>
             </div>
@@ -156,7 +179,7 @@ const CustomerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Xếp hạng</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  #{customerData.ranking}
+                  #{customerData?.ranking}
                 </p>
               </div>
             </div>
@@ -166,7 +189,7 @@ const CustomerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Chi tiêu</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {formatCurrency(customerData.totalSpending)}
+                  {formatCurrency(customerData?.totalSpending)}
                 </p>
               </div>
             </div>
@@ -176,7 +199,7 @@ const CustomerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Booking requests</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {customerData.totalBookingRequests}
+                  {customerData?.totalBookingRequests}
                 </p>
               </div>
             </div>
@@ -186,7 +209,7 @@ const CustomerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Đã hủy</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {customerData.cancelledByCustomer}
+                  {customerData?.cancelledByCustomer}
                 </p>
               </div>
             </div>
@@ -196,7 +219,7 @@ const CustomerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tier hiện tại</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {customerData.potentialTier}
+                  {customerData?.potentialTier}
                 </p>
               </div>
             </div>
@@ -210,19 +233,19 @@ const CustomerDetailPage: React.FC = () => {
             <div>
               <p className="text-gray-500 dark:text-gray-400">Tháng</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {customerData.month}/{customerData.year}
+                {customerData?.month}/{customerData?.year}
               </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Ngày tạo</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {new Date(customerData.createdAt).toLocaleDateString('vi-VN')}
+                {new Date(customerData?.createdAt).toLocaleDateString('vi-VN')}
               </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Cập nhật</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {new Date(customerData.updatedAt).toLocaleDateString('vi-VN')}
+                {new Date(customerData?.updatedAt).toLocaleDateString('vi-VN')}
               </p>
             </div>
           </div>
