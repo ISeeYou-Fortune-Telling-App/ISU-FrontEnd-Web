@@ -120,7 +120,7 @@ export const ReportService = {
         method: 'GET',
         params: {
           page: params?.page ?? 1,
-          limit: params?.limit ?? 15,
+          limit: params?.limit ?? 10,
           sortBy: params?.sortBy ?? 'createdAt',
           sortType: params?.sortType ?? 'desc',
           month: params?.month,
@@ -241,7 +241,7 @@ export const ReportService = {
     amount: number,
     reason: string,
   ): Promise<SingleResponse<PaymentResponse>> => {
-    const res = await apiFetchCore<SingleResponse<PaymentResponse>>('/bonus', {
+    const res = await apiFetchCore<SingleResponse<PaymentResponse>>('/admin/bonus', {
       method: 'POST',
       data: {
         seerId,
