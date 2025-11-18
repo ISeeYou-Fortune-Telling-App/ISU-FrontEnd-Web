@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Image as ImageIcon, X } from 'lucide-react';
+import { Send, Image as ImageIcon, X, Video } from 'lucide-react';
 import { MessagesService } from '@/services/messages/messages.service';
 import type { Message, ConversationSession } from '@/types/messages/messages.type';
+import { VideoCall } from './VideoCall';
 
 interface Props {
   conversationId: string | null;
@@ -16,6 +17,8 @@ interface Props {
   messages: Message[];
   socketConnected: boolean;
   convInfo?: ConversationSession | null;
+  showIncomingCall?: boolean;
+  onCloseIncomingCall?: () => void;
 }
 
 export const MessageDetailPanel: React.FC<Props> = ({
@@ -28,6 +31,8 @@ export const MessageDetailPanel: React.FC<Props> = ({
   messages,
   socketConnected,
   convInfo,
+  showIncomingCall = false,
+  onCloseIncomingCall,
 }) => {
   const [dbMessages, setDbMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,6 +41,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
   const [file, setFile] = useState<File | null>(null);
   const [sendingMedia, setSendingMedia] = useState(false);
   const [adminId, setAdminId] = useState<string | null>(null);
+  const [showVideoCall, setShowVideoCall] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -43,6 +49,13 @@ export const MessageDetailPanel: React.FC<Props> = ({
   useEffect(() => {
     setAdminId(localStorage.getItem('userId'));
   }, []);
+
+  // Mở modal khi có incoming call từ parent
+  useEffect(() => {
+    if (showIncomingCall) {
+      setShowVideoCall(true);
+    }
+  }, [showIncomingCall]);
 
   // ⭐ THAY ĐỔI LỚN Ở ĐÂY:
   // 1. Bỏ clearMessages() ra khỏi useEffect.
@@ -209,6 +222,33 @@ export const MessageDetailPanel: React.FC<Props> = ({
 
   return (
     <div className="flex-1 flex flex-col">
+      {/* Header with Video Call button */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-400 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-3">
+          <img
+            src={convInfo?.customerAvatarUrl || convInfo?.seerAvatarUrl || '/default_avatar.jpg'}
+            alt="avatar"
+            className="w-10 h-10 rounded-full object-cover border border-gray-400"
+          />
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              {convInfo?.customerName || convInfo?.seerName || 'Người dùng'}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {socketConnected ? 'Đang kết nối' : 'Ngoại tuyến'}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowVideoCall(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-green-400 
+                     text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all"
+        >
+          <Video className="w-4 h-4" />
+          <span className="text-sm font-medium">Video Call</span>
+        </button>
+      </div>
+
       <div
         className="flex-1 overflow-y-auto p-3 dark:bg-gray-800 space-y-3"
         ref={scrollContainerRef}
@@ -389,6 +429,23 @@ export const MessageDetailPanel: React.FC<Props> = ({
             <X size={28} />
           </button>
         </div>
+      )}
+
+      {/* Video Call Modal */}
+      {showVideoCall && conversationId && adminId && convInfo && (
+        <VideoCall
+          conversationId={conversationId}
+          currentUserId={adminId}
+          currentUserName="Admin"
+          currentUserAvatar="https://res.cloudinary.com/dzpv3mfjt/image/upload/v1755570460/dummy_avatar_3_ycoboh.jpg"
+          targetUserId={convInfo.customerId?.toString() || convInfo.seerId?.toString() || ''}
+          targetUserName={convInfo.customerName || convInfo.seerName || 'User'}
+          targetUserAvatar={convInfo.customerAvatarUrl || convInfo.seerAvatarUrl || undefined}
+          onClose={() => {
+            setShowVideoCall(false);
+            onCloseIncomingCall?.();
+          }}
+        />
       )}
     </div>
   );

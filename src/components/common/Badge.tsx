@@ -13,6 +13,7 @@ import {
   UserMinus,
   CheckCircle2,
   Play,
+  Eye,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -51,6 +52,7 @@ const getStatusStyle = (status: BadgeAccountStatus) => {
   let classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
 
   switch (status) {
+    case 'Đã giải quyết':
     case 'Hoàn thành':
       classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
       Icon = CheckCircle2;
@@ -97,7 +99,12 @@ const getStatusStyle = (status: BadgeAccountStatus) => {
       classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
       Icon = RefreshCcw;
       break;
+    case 'Đã xem':
+      classes = 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100';
+      Icon = Eye;
+      break;
     case 'Bị hủy':
+    case 'Từ chối':
       classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
       Icon = CircleX;
       break;

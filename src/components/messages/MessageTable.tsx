@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Search } from 'lucide-react';
 import { MessagesService } from '@/services/messages/messages.service';
 import type { ConversationSession, ConversationParams } from '@/types/messages/messages.type';
 import { useDebounce } from '@/hooks/useDebounce';
 import { MessageDetailPanel } from './MessageDetailPanel';
 import { useAdminChat } from '@/hooks/useAdminChat';
+import { useCometChatGlobalListener } from '@/hooks/useCometChatGlobalListener';
+import { VideoCall } from './VideoCall';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,11 +22,54 @@ export const MessageTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 400);
   const [page, setPage] = useState(1);
+  const [showIncomingCall, setShowIncomingCall] = useState(false);
+  const [adminId, setAdminId] = useState<string | null>(null);
+  const [incomingCallData, setIncomingCallData] = useState<{
+    targetUserId: string;
+    targetUserName: string;
+    targetUserAvatar?: string;
+    callObject: any;
+  } | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // 1. Ref để theo dõi container cuộn của danh sách hội thoại
   const conversationListRef = useRef<HTMLDivElement | null>(null);
   // Ref để lưu vị trí cuộn trước đó
   const scrollPositionRef = useRef(0);
+  // Ref cho spinner element để detect khi nó hiện ra
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setAdminId(localStorage.getItem('userId'));
+  }, []);
+
+  // Dùng useCallback để tránh re-init listener
+  const handleIncomingCall = useCallback(
+    (callData: {
+      senderId: string;
+      senderName: string;
+      senderAvatar?: string;
+      callObject: any;
+    }) => {
+      console.log('🔔 [MessageTable] Có cuộc gọi đến! - Tự động mở modal', callData);
+      setIncomingCallData({
+        targetUserId: callData.senderId,
+        targetUserName: callData.senderName,
+        targetUserAvatar: callData.senderAvatar,
+        callObject: callData.callObject,
+      });
+      setShowIncomingCall(true);
+    },
+    [],
+  );
+
+  // Setup CometChat global listener ở đây để không bị re-init
+  useCometChatGlobalListener({
+    currentUserId: adminId,
+    currentUserName: 'Admin',
+    onIncomingCall: handleIncomingCall,
+  });
 
   useEffect(() => {
     if (messageMode === 'group') setSelectedConvId(null);
@@ -69,6 +114,9 @@ export const MessageTable: React.FC = () => {
         ...c,
         unreadForAdmin: c.adminUnreadCount > 0,
       }));
+
+      // Check if there are more pages
+      setHasMore(formatted.length === ITEMS_PER_PAGE);
       setConversations(formatted);
     } catch (err: any) {
       setError(err.message || 'Lỗi khi tải danh sách hội thoại.');
@@ -76,6 +124,33 @@ export const MessageTable: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Intersection Observer để detect khi scroll đến cuối
+  useEffect(() => {
+    if (!loadMoreTriggerRef.current || !hasMore || isLoadingMore || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !isLoadingMore && hasMore) {
+          // Khi spinner hiện ra, set loading state và setTimeout 2s
+          setIsLoadingMore(true);
+          setTimeout(() => {
+            setPage((prev) => prev + 1);
+            setIsLoadingMore(false);
+          }, 2000);
+        }
+      },
+      {
+        root: conversationListRef.current,
+        threshold: 0.1,
+      },
+    );
+
+    observer.observe(loadMoreTriggerRef.current);
+
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, loading]);
 
   useEffect(() => {
     fetchConversations();
@@ -168,6 +243,24 @@ export const MessageTable: React.FC = () => {
 
   return (
     <div className="flex flex-col">
+      {/* Video Call Modal */}
+      {showIncomingCall && adminId && incomingCallData && (
+        <VideoCall
+          conversationId={selectedConvId || ''}
+          currentUserId={adminId}
+          currentUserName="Admin"
+          targetUserId={incomingCallData.targetUserId}
+          targetUserName={incomingCallData.targetUserName}
+          targetUserAvatar={incomingCallData.targetUserAvatar}
+          isIncomingCall={true}
+          incomingCallObject={incomingCallData.callObject}
+          onClose={() => {
+            setShowIncomingCall(false);
+            setIncomingCallData(null);
+          }}
+        />
+      )}
+
       {/* Thanh chế độ (Không thay đổi) */}
       <div className="w-full bg-gray-200 dark:bg-gray-800 p-1 rounded-xl flex mb-4 border border-gray-400 dark:border-gray-700">
         <button
@@ -234,63 +327,78 @@ export const MessageTable: React.FC = () => {
               {conversations.length === 0 ? (
                 <p className="text-center text-gray-500">Không có hội thoại nào.</p>
               ) : (
-                conversations.map((conv) => (
-                  <div
-                    key={conv.id}
-                    onClick={() => handleSelectConversation(conv.id)}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition border ${
-                      selectedConvId === conv.id || selectedConversations.has(conv.id)
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400 dark:border-indigo-600'
-                        : conv.unreadForAdmin
-                        ? 'bg-indigo-100 dark:bg-indigo-950/30 border-transparent'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-transparent'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {messageMode === 'group' && (
-                        <input
-                          type="checkbox"
-                          checked={selectedConversations.has(conv.id)}
-                          onChange={() => handleSelectConversation(conv.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                <>
+                  {conversations.map((conv) => (
+                    <div
+                      key={conv.id}
+                      onClick={() => handleSelectConversation(conv.id)}
+                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition border ${
+                        selectedConvId === conv.id || selectedConversations.has(conv.id)
+                          ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400 dark:border-indigo-600'
+                          : conv.unreadForAdmin
+                          ? 'bg-indigo-100 dark:bg-indigo-950/30 border-transparent'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        {messageMode === 'group' && (
+                          <input
+                            type="checkbox"
+                            checked={selectedConversations.has(conv.id)}
+                            onChange={() => handleSelectConversation(conv.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                          />
+                        )}
+                        <img
+                          src={
+                            conv.customerAvatarUrl || conv.seerAvatarUrl || '/default_avatar.jpg'
+                          }
+                          alt="avatar"
+                          className="w-10 h-10 rounded-full object-cover border border-gray-400 dark:border-gray-600"
                         />
+                        <div>
+                          <p
+                            className={`text-sm ${
+                              conv.unreadForAdmin
+                                ? 'font-semibold text-indigo-700 dark:text-indigo-300'
+                                : 'text-gray-900 dark:text-white'
+                            }`}
+                          >
+                            {conv.customerName || conv.seerName || '(Không rõ tên)'}
+                          </p>
+                          <p
+                            className={`text-xs truncate max-w-[150px] ${
+                              conv.unreadForAdmin
+                                ? 'text-indigo-600 dark:text-indigo-400 font-medium'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`}
+                          >
+                            {conv.lastMessageContent?.startsWith('http')
+                              ? '[Ảnh/Video]'
+                              : conv.lastMessageContent || '(Chưa có tin nhắn)'}
+                          </p>
+                        </div>
+                      </div>
+                      {conv.unreadForAdmin && (
+                        <div className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full">
+                          {conv.adminUnreadCount}
+                        </div>
                       )}
-                      <img
-                        src={conv.customerAvatarUrl || conv.seerAvatarUrl || '/default_avatar.jpg'}
-                        alt="avatar"
-                        className="w-10 h-10 rounded-full object-cover border border-gray-400 dark:border-gray-600"
-                      />
-                      <div>
-                        <p
-                          className={`text-sm ${
-                            conv.unreadForAdmin
-                              ? 'font-semibold text-indigo-700 dark:text-indigo-300'
-                              : 'text-gray-900 dark:text-white'
-                          }`}
-                        >
-                          {conv.customerName || conv.seerName || '(Không rõ tên)'}
-                        </p>
-                        <p
-                          className={`text-xs truncate max-w-[150px] ${
-                            conv.unreadForAdmin
-                              ? 'text-indigo-600 dark:text-indigo-400 font-medium'
-                              : 'text-gray-500 dark:text-gray-400'
-                          }`}
-                        >
-                          {conv.lastMessageContent?.startsWith('http')
-                            ? '[Ảnh/Video]'
-                            : conv.lastMessageContent || '(Chưa có tin nhắn)'}
-                        </p>
-                      </div>
                     </div>
-                    {conv.unreadForAdmin && (
-                      <div className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full">
-                        {conv.adminUnreadCount}
-                      </div>
-                    )}
-                  </div>
-                ))
+                  ))}
+
+                  {/* Spinner ở cuối danh sách - trigger infinite scroll */}
+                  {hasMore && (
+                    <div ref={loadMoreTriggerRef} className="flex justify-center items-center py-4">
+                      <div
+                        className={`w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full ${
+                          isLoadingMore ? 'animate-spin' : ''
+                        }`}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

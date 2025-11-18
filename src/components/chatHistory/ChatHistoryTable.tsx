@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, X, ChevronLeft, ChevronRight, ChevronDown, Search } from 'lucide-react';
+import { Eye, X, ChevronLeft, ChevronRight, ChevronDown, Search, Clock } from 'lucide-react';
 import { Conversation, ConversationStatus } from '@/types/chatHistory/chatHistory.type';
 import { ChatHistoryService } from '@/services/chatHistory/chatHistory.service';
 import { MessagesService } from '@/services/messages/messages.service';
@@ -148,6 +148,57 @@ const ChatHistoryTable: React.FC = () => {
     }
   };
 
+  const handleExtendSession = async (conversationId: string) => {
+    const result = await Swal.fire({
+      title: 'Gia hạn phiên chat',
+      text: 'Nhập số phút muốn gia hạn:',
+      input: 'number',
+      inputAttributes: {
+        min: '1',
+        max: '120',
+        step: '1',
+      },
+      inputValue: '15',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Gia hạn',
+      cancelButtonText: 'Hủy',
+      inputValidator: (value) => {
+        const num = parseInt(value);
+        if (!value || num < 1) {
+          return 'Vui lòng nhập số phút hợp lệ (tối thiểu 1 phút)';
+        }
+        if (num > 120) {
+          return 'Số phút không được vượt quá 120 phút';
+        }
+        return null;
+      },
+    });
+
+    if (result.isConfirmed && result.value) {
+      try {
+        const additionalMinutes = parseInt(result.value);
+        await MessagesService.extendChatSession(conversationId, additionalMinutes);
+        await Swal.fire({
+          title: 'Thành công!',
+          text: `Đã gia hạn thêm ${additionalMinutes} phút`,
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        // Refresh data
+        fetchConversations(currentPage, false);
+      } catch (error: any) {
+        await Swal.fire({
+          title: 'Lỗi!',
+          text: error.message || 'Không thể gia hạn phiên chat',
+          icon: 'error',
+        });
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-10">
@@ -285,13 +336,23 @@ const ChatHistoryTable: React.FC = () => {
                   <button
                     onClick={() => setSelectedConversation(conv)}
                     className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1 transition-colors"
+                    title="Xem chi tiết"
                   >
                     <Eye className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleExtendSession(conv.conversationId)}
+                    disabled={conv.status === 'ENDED' || conv.status === 'CANCELLED'}
+                    className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Gia hạn phiên"
+                  >
+                    <Clock className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleEndSession(conv.conversationId)}
                     disabled={conv.status === 'ENDED' || conv.status === 'CANCELLED'}
                     className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Kết thúc phiên"
                   >
                     <X className="w-5 h-5" />
                   </button>

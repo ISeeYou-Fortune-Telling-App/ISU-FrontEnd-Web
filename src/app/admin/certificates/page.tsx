@@ -1,14 +1,7 @@
 import React from 'react';
 
-import { AccountStats } from '../../../components/accounts/AccountStats';
+import { CertificateStats } from '../../../components/certificates/CertificateStats';
 import { CertificateTable } from '../../../components/certificates/CertificateTable';
-
-const userStats = [
-  { label: 'Tổng số chứng chỉ', value: 1983, colorClass: 'text-blue-500' },
-  { label: 'Đã duyệt', value: 24, colorClass: 'text-green-500' },
-  { label: 'Chờ duyệt', value: 12, colorClass: 'text-yellow-500' },
-  { label: 'Đã từ chối', value: 5, colorClass: 'text-red-500' },
-];
 
 export default function CertificatesPage() {
   return (
@@ -22,11 +15,10 @@ export default function CertificatesPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AccountStats />
+        <CertificateStats />
       </div>
 
       {/* 3. User Management Table Section */}
-      {/* UserTable đã được cập nhật Dark Mode trong các div và text class. */}
       <CertificateTable />
     </div>
   );

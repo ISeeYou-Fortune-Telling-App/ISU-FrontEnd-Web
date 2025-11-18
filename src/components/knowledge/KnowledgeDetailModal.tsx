@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Image as ImageIcon,
@@ -46,11 +47,15 @@ export const KnowledgeDetailModal: React.FC<KnowledgeDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center p-4"
+      className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div
-        className="w-full max-w-lg h-5/6 bg-white dark:bg-gray-800 shadow-2xl flex flex-col rounded-xl overflow-hidden"
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="w-full max-w-4xl max-h-[90vh] bg-white dark:bg-gray-800 shadow-2xl flex flex-col rounded-xl overflow-hidden border border-gray-400 dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         {/* --- Header --- */}
@@ -149,7 +154,7 @@ export const KnowledgeDetailModal: React.FC<KnowledgeDetailModalProps> = ({
             <Trash2 className="w-5 h-5 mr-2" /> Xóa
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

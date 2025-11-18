@@ -1,35 +1,68 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Eye, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { ReportsService } from '@/services/reports/reports.service';
-import type { Report, ReportStatus, ReportTypeItem } from '@/types/reports/reports.type';
+import type {
+  Report,
+  ReportStatus,
+  ReportTypeItem,
+  GetReportsParams,
+} from '@/types/reports/reports.type';
 import { Badge } from '@/components/common/Badge';
 import { useDebounce } from '@/hooks/useDebounce';
 
-const STATUS_DISPLAY: Record<ReportStatus, string> = {
+const ITEMS_PER_PAGE = 10;
+
+const STATUS_LABELS: Record<ReportStatus, string> = {
   PENDING: 'Chờ xử lý',
   VIEWED: 'Đã xem',
   RESOLVED: 'Đã giải quyết',
   REJECTED: 'Từ chối',
 };
 
+const ACTION_LABELS: Record<string, string> = {
+  NO_ACTION: 'Chưa xử lý',
+  WARNING_ISSUED: 'Cảnh cáo',
+  CONTENT_REMOVED: 'Gỡ nội dung',
+  USER_BANNED: 'Cấm TK',
+  TEMPORARY_SUSPENSION: 'Tạm khóa',
+};
+
 export function ReportsTable() {
   const [reports, setReports] = useState<Report[]>([]);
   const [reportTypes, setReportTypes] = useState<ReportTypeItem[]>([]);
+  const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
+  const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | ReportStatus>('Tất cả');
+  const [selectedType, setSelectedType] = useState<'Tất cả' | string>('Tất cả');
+
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Filters
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ReportStatus | ''>('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-
-  const debouncedSearch = useDebounce(search, 500);
+  // Close dropdown when click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setIsStatusDropdownOpen(false);
+      }
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
+        setIsTypeDropdownOpen(false);
+      }
+    };
+    if (isStatusDropdownOpen || isTypeDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isStatusDropdownOpen, isTypeDropdownOpen]);
 
   // Fetch report types
   useEffect(() => {
@@ -45,32 +78,54 @@ export function ReportsTable() {
   }, []);
 
   // Fetch reports
+  const fetchReports = async (page = 1, showSkeleton = false) => {
+    try {
+      if (showSkeleton) setLoading(true);
+      else setIsRefreshing(true);
+
+      const params: GetReportsParams = {
+        page,
+        limit: ITEMS_PER_PAGE,
+        sortType: 'desc',
+        sortBy: 'createdAt',
+        status: selectedStatus !== 'Tất cả' ? selectedStatus : undefined,
+        reportType: selectedType !== 'Tất cả' ? selectedType : undefined,
+      };
+
+      const response = await ReportsService.getReports(params);
+
+      setReports(response.data);
+      setPaging({
+        page: (response.paging?.page ?? 0) + 1,
+        totalPages: response.paging?.totalPages ?? 1,
+        total: response.paging?.total ?? response.data.length ?? 0,
+      });
+    } catch (error) {
+      console.error('Failed to fetch reports:', error);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchReports = async () => {
-      setLoading(true);
-      try {
-        const response = await ReportsService.getReports({
-          page: currentPage - 1,
-          limit: 15,
-          status: statusFilter || undefined,
-          reportType: typeFilter || undefined,
-        });
+    fetchReports(1, true);
+  }, []);
 
-        setReports(response.data);
-        setTotalPages(response.paging.totalPages);
-        setTotal(response.paging.total);
-      } catch (error) {
-        console.error('Failed to fetch reports:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    if (!loading) fetchReports(paging.page, false);
+  }, [selectedStatus, selectedType, debouncedSearch]);
 
-    fetchReports();
-  }, [currentPage, statusFilter, typeFilter, debouncedSearch]);
+  const goToNextPage = () => {
+    if (paging.page < paging.totalPages && !isRefreshing) {
+      setPaging((prev) => ({ ...prev, page: prev.page + 1 }));
+    }
+  };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const goToPrevPage = () => {
+    if (paging.page > 1 && !isRefreshing) {
+      setPaging((prev) => ({ ...prev, page: prev.page - 1 }));
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -88,229 +143,288 @@ export function ReportsTable() {
     return type ? type.description : name;
   };
 
+  if (loading) {
+    return (
+      <div className="text-center text-gray-500 dark:text-gray-400 py-10">
+        Đang tải danh sách báo cáo...
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
+      {/* Search + Type Dropdown + Status Dropdown */}
+      <div className="flex gap-4 items-center mb-4">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Tìm kiếm người báo cáo, người bị báo cáo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPaging((prev) => ({ ...prev, page: 1 }));
+            }}
           />
         </div>
 
-        {/* Status Filter */}
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as ReportStatus | '');
-              setCurrentPage(1);
-            }}
-            className="pl-9 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white appearance-none cursor-pointer min-w-[180px]"
+        <div className="relative flex-shrink-0" ref={typeDropdownRef}>
+          <button
+            onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
+                       dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
+                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600 min-w-[180px]"
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ xử lý</option>
-            <option value="VIEWED">Đã xem</option>
-            <option value="RESOLVED">Đã giải quyết</option>
-            <option value="REJECTED">Từ chối</option>
-          </select>
+            <span className="truncate">
+              {selectedType === 'Tất cả' ? 'Tất cả loại vi phạm' : getReportTypeLabel(selectedType)}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 ml-1 transition-transform flex-shrink-0 ${
+                isTypeDropdownOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {isTypeDropdownOpen && (
+            <div
+              className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-700 
+                         ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-20 animate-fadeIn max-h-80 overflow-y-auto"
+            >
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setSelectedType('Tất cả');
+                    setIsTypeDropdownOpen(false);
+                    setPaging((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                    selectedType === 'Tất cả'
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Tất cả loại vi phạm
+                </button>
+                {reportTypes.map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => {
+                      setSelectedType(type.name);
+                      setIsTypeDropdownOpen(false);
+                      setPaging((prev) => ({ ...prev, page: 1 }));
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                      selectedType === type.name
+                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {type.description}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Type Filter */}
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-          <select
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="pl-9 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white appearance-none cursor-pointer min-w-[200px]"
+        <div className="relative flex-shrink-0" ref={statusDropdownRef}>
+          <button
+            onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
+                       dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
+                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
           >
-            <option value="">Tất cả loại vi phạm</option>
-            {reportTypes.map((type) => (
-              <option key={type.id} value={type.name}>
-                {type.description}
-              </option>
-            ))}
-          </select>
+            <span>
+              {selectedStatus === 'Tất cả'
+                ? 'Trạng thái'
+                : STATUS_LABELS[selectedStatus as ReportStatus]}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 ml-1 transition-transform ${
+                isStatusDropdownOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {isStatusDropdownOpen && (
+            <div
+              className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 
+                         ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-20 animate-fadeIn"
+            >
+              <div className="py-1">
+                {[['Tất cả', 'Tất cả'], ...Object.entries(STATUS_LABELS)].map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSelectedStatus(key as any);
+                      setIsStatusDropdownOpen(false);
+                      setPaging((prev) => ({ ...prev, page: 1 }));
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                      selectedStatus === key
+                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+      <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative">
+        {isRefreshing && (
+          <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none z-10">
+            <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
+          </div>
+        )}
+
+        <table
+          className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed"
+          style={{ tableLayout: 'fixed', width: '100%' }}
+        >
+          <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+            <tr>
+              <th className="w-[12%] text-start px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Người báo cáo
+              </th>
+              <th className="w-[12%] text-start px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Người bị báo cáo
+              </th>
+              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Loại vi phạm
+              </th>
+              <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Đối tượng
+              </th>
+              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Trạng thái
+              </th>
+              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Thời gian
+              </th>
+              <th className="w-[6%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Chi tiết
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700 relative">
+            {reports.length === 0 ? (
               <tr>
-                <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Người báo cáo
-                </th>
-                <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Người bị báo cáo
-                </th>
-                <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Loại vi phạm
-                </th>
-                <th className="w-[20%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Nội dung
-                </th>
-                <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Đối tượng
-                </th>
-                <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Hành động
-                </th>
-                <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Thời gian
-                </th>
-                <th className="w-[6%] px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Chi tiết
-                </th>
+                <td
+                  colSpan={9}
+                  className="text-center py-10 text-gray-500 dark:text-gray-400 italic"
+                >
+                  Không có dữ liệu
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={9}
-                    className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
-                  >
-                    Đang tải...
+            ) : (
+              reports.map((report) => (
+                <tr
+                  key={report.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 justify-start">
+                      <img
+                        src={report.reporter.avatarUrl}
+                        alt={report.reporter.username}
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      />
+                      <span className="text-sm text-gray-900 dark:text-white truncate">
+                        {report.reporter.username}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 justify-start">
+                      <img
+                        src={report.reported.avatarUrl}
+                        alt={report.reported.username}
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      />
+                      <span className="text-sm text-gray-900 dark:text-white truncate">
+                        {report.reported.username}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {getReportTypeLabel(report.reportType)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      {report.targetReportType}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center">
+                      <Badge type="AccountStatus" value={STATUS_LABELS[report.reportStatus]} />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatDate(report.createdAt)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition">
+                      <Eye className="w-5 h-5 mx-auto" />
+                    </button>
                   </td>
                 </tr>
-              ) : reports.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={9}
-                    className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
-                  >
-                    Không có báo cáo nào
-                  </td>
-                </tr>
-              ) : (
-                reports.map((report) => (
-                  <tr
-                    key={report.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={report.reporter.avatarUrl}
-                          alt={report.reporter.username}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                        <span className="text-sm text-gray-900 dark:text-white truncate">
-                          {report.reporter.username}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={report.reported.avatarUrl}
-                          alt={report.reported.username}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                        <span className="text-sm text-gray-900 dark:text-white truncate">
-                          {report.reported.username}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {getReportTypeLabel(report.reportType)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-                        {report.reportDescription}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                        {report.targetReportType}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge type="AccountStatus" value={STATUS_DISPLAY[report.reportStatus]} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {report.actionType === 'NO_ACTION' && 'Chưa xử lý'}
-                        {report.actionType === 'WARNING_ISSUED' && 'Cảnh cáo'}
-                        {report.actionType === 'CONTENT_REMOVED' && 'Gỡ nội dung'}
-                        {report.actionType === 'USER_BANNED' && 'Cấm TK'}
-                        {report.actionType === 'TEMPORARY_SUSPENSION' && 'Tạm khóa'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatDate(report.createdAt)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-                        <Eye className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="text-sm text-gray-700 dark:text-gray-300">
-            Hiển thị <span className="font-medium">{reports.length}</span> trong tổng số{' '}
-            <span className="font-medium">{total}</span> báo cáo
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
-            >
-              Trước
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => handlePageChange(page)}
-                className={`px-3 py-1 border rounded ${
-                  currentPage === page
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
-            >
-              Sau
-            </button>
-          </div>
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-gray-700 dark:text-gray-300">
+          Hiển thị{' '}
+          <span className="font-medium">
+            {Math.min((paging.page - 1) * ITEMS_PER_PAGE + 1, paging.total)}
+          </span>{' '}
+          -{' '}
+          <span className="font-medium">
+            {Math.min(paging.page * ITEMS_PER_PAGE, paging.total)}
+          </span>{' '}
+          trong tổng số <span className="font-medium">{paging.total}</span> báo cáo
         </div>
-      )}
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goToPrevPage}
+            disabled={paging.page === 1 || isRefreshing}
+            className="p-2 rounded-lg border border-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-gray-700 dark:text-gray-300"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Trang {paging.page} / {paging.totalPages}
+            </span>
+            {isRefreshing && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
+          </div>
+
+          <button
+            onClick={goToNextPage}
+            disabled={paging.page >= paging.totalPages || isRefreshing}
+            className="p-2 rounded-lg border border-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-gray-700 dark:text-gray-300"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

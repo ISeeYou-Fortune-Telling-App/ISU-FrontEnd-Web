@@ -7,6 +7,7 @@ export interface Certificate {
   id: string;
   createdAt: string;
   updatedAt: string;
+  userId: string;
   seerName: string;
   certificateName: string;
   certificateDescription: string;
@@ -21,6 +22,14 @@ export interface Certificate {
 }
 
 export type GetCertificatesResponse = ListResponse<Certificate>;
+
+// Certificate Statistics
+export interface CertificateStats {
+  totalCertificates: number;
+  approvedCertificates: number;
+  pendingCertificates: number;
+  rejectedCertificates: number;
+}
 
 // Request types for Certificate operations
 export interface CertificateApprovalRequest {
@@ -53,4 +62,6 @@ export interface CertificateQueryParams {
   limit?: number;
   sortType?: 'asc' | 'desc';
   sortBy?: string;
+  status?: CertificateStatus;
+  seerName?: string;
 }

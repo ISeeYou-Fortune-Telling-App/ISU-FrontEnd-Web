@@ -10,12 +10,15 @@ import {
   ChevronRight,
   ChevronDown,
   Trash2,
+  Image,
+  File,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 
 import { Badge } from '../common/Badge';
 import { CertificateDetailModal } from './CertificateDetailModal';
+import { SeerCertificatesModal } from './SeerCertificatesModal';
 import { CertificateService } from '@/services/certificates/certificates.service';
 import { Certificate } from '@/types/certificates/certificates.type';
 import { KnowledgeService } from '@/services/knowledge/knowledge.service';
@@ -23,6 +26,13 @@ import { KnowledgeCategory } from '@/types/knowledge/knowledge.type';
 
 type StatusFilterType = 'Tất cả' | 'Chờ duyệt' | 'Đã duyệt' | 'Đã từ chối';
 const ITEMS_PER_PAGE = 10;
+
+const STATUS_MAP: Record<StatusFilterType, string | undefined> = {
+  'Tất cả': undefined,
+  'Chờ duyệt': 'PENDING',
+  'Đã duyệt': 'APPROVED',
+  'Đã từ chối': 'REJECTED',
+};
 
 export const CertificateTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,23 +44,36 @@ export const CertificateTable: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [seerCertificatesModal, setSeerCertificatesModal] = useState<{
+    isOpen: boolean;
+    seerId: string;
+    seerName: string;
+  } | null>(null);
 
   const fetchCertificates = async () => {
     try {
       setLoading(true);
+      const params = {
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        status: STATUS_MAP[selectedFilter] as any,
+        seerName: searchTerm || undefined,
+      };
+
       let response;
       if (selectedCategory) {
-        response = await CertificateService.getCertificatesByCategoryId(selectedCategory, {
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-        });
+        response = await CertificateService.getCertificatesByCategoryId(selectedCategory, params);
       } else {
-        response = await CertificateService.getCertificates({
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-        });
+        response = await CertificateService.getCertificates(params);
       }
+
       setCertificates(response.data);
+      setPaging({
+        page: (response.paging?.page ?? 0) + 1,
+        totalPages: response.paging?.totalPages ?? 1,
+        total: response.paging?.total ?? response.data.length,
+      });
     } catch (err) {
       console.error('Lỗi khi tải danh sách chứng chỉ:', err);
     } finally {
@@ -73,35 +96,19 @@ export const CertificateTable: React.FC = () => {
 
   useEffect(() => {
     fetchCertificates();
-  }, [selectedCategory, currentPage]);
+  }, [selectedCategory, currentPage, selectedFilter, searchTerm]);
 
-  const filteredCertificates = useMemo(() => {
-    return certificates.filter((cert) => {
-      const matchesSearch =
-        cert.certificateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cert.seerName.toLowerCase().includes(searchTerm.toLowerCase());
+  const goToNextPage = () => {
+    if (currentPage < paging.totalPages && !loading) {
+      setCurrentPage((p) => p + 1);
+    }
+  };
 
-      const matchesStatus =
-        selectedFilter === 'Tất cả' ||
-        (selectedFilter === 'Chờ duyệt' && cert.status === 'PENDING') ||
-        (selectedFilter === 'Đã duyệt' && cert.status === 'APPROVED') ||
-        (selectedFilter === 'Đã từ chối' && cert.status === 'REJECTED');
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchTerm, selectedFilter, certificates]);
-
-  const totalItems = filteredCertificates.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const { startIndex, endIndex, currentCertificates } = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const currentCertificates = filteredCertificates.slice(startIndex, endIndex);
-    return { startIndex, endIndex, currentCertificates };
-  }, [filteredCertificates, currentPage]);
-
-  const goToNextPage = () => setCurrentPage((p) => (p < totalPages ? p + 1 : p));
-  const goToPrevPage = () => setCurrentPage((p) => (p > 1 ? p - 1 : p));
+  const goToPrevPage = () => {
+    if (currentPage > 1 && !loading) {
+      setCurrentPage((p) => p - 1);
+    }
+  };
 
   const handleDelete = async (cert: Certificate) => {
     const result = await Swal.fire({
@@ -201,15 +208,24 @@ export const CertificateTable: React.FC = () => {
     else alert('Không có file để tải xuống.');
   };
 
+  const handleViewAllCertificates = (seerId: string, seerName: string) => {
+    setSeerCertificatesModal({ isOpen: true, seerId, seerName });
+  };
+
+  const handleViewCertificateFromList = (cert: Certificate) => {
+    setSeerCertificatesModal(null);
+    setSelectedCertificate(cert);
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
-      {/* Search + Dropdown */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="relative flex-grow mr-4">
+      {/* Search + Category */}
+      <div className="flex gap-4 items-center mb-4">
+        <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo tên Nhà tiên tri hoặc Tên Chứng chỉ..."
+            placeholder="Tìm kiếm theo tên Nhà tiên tri..."
             className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
             value={searchTerm}
             onChange={(e) => {
@@ -219,20 +235,23 @@ export const CertificateTable: React.FC = () => {
           />
         </div>
 
+        {/* Category Filter */}
         <div className="relative flex-shrink-0">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700
                        dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
-                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
+                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600 min-w-[160px]"
           >
-            <span>
+            <span className="truncate">
               {selectedCategory
                 ? categories.find((c) => c.id === selectedCategory)?.name
                 : 'Tất cả danh mục'}
             </span>
             <ChevronDown
-              className={`w-4 h-4 ml-1 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform ${
+                isDropdownOpen ? 'rotate-180' : ''
+              }`}
             />
           </button>
           {isDropdownOpen && (
@@ -278,22 +297,24 @@ export const CertificateTable: React.FC = () => {
       {/* Filter Tabs */}
       <div className="flex space-x-2 mb-4">
         <div className="flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
-          {['Tất cả', 'Chờ duyệt', 'Đã duyệt', 'Đã từ chối'].map((status) => (
-            <button
-              key={status}
-              onClick={() => {
-                setSelectedFilter(status as StatusFilterType);
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
-                selectedFilter === status
-                  ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 font-semibold'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+          {(['Tất cả', 'Chờ duyệt', 'Đã duyệt', 'Đã từ chối'] as StatusFilterType[]).map(
+            (status) => (
+              <button
+                key={status}
+                onClick={() => {
+                  setSelectedFilter(status);
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+                  selectedFilter === status
+                    ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {status}
+              </button>
+            ),
+          )}
         </div>
       </div>
 
@@ -332,14 +353,14 @@ export const CertificateTable: React.FC = () => {
                   Đang tải dữ liệu...
                 </td>
               </tr>
-            ) : currentCertificates.length === 0 ? (
+            ) : certificates.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-6 text-gray-500 dark:text-gray-400">
                   Không có dữ liệu phù hợp
                 </td>
               </tr>
             ) : (
-              currentCertificates.map((cert, index) => (
+              certificates.map((cert: Certificate, index: number) => (
                 <motion.tr
                   key={cert.id}
                   initial={{ opacity: 0 }}
@@ -349,20 +370,14 @@ export const CertificateTable: React.FC = () => {
                 >
                   <td className="px-6 py-4 w-[280px]">
                     <div className="flex items-start space-x-3">
-                      {cert.certificateUrl ? (
-                        <img
-                          src={cert.certificateUrl}
-                          alt={cert.certificateName}
-                          className="w-10 h-10 rounded object-cover flex-shrink-0 border border-gray-300 dark:border-gray-600"
-                          onError={(e) => {
-                            e.currentTarget.src = '';
-                            e.currentTarget.className =
-                              'w-10 h-10 rounded bg-gray-200 dark:bg-gray-600 flex-shrink-0 border border-gray-300 dark:border-gray-600';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded bg-gray-200 dark:bg-gray-600 flex-shrink-0 border border-gray-300 dark:border-gray-600" />
-                      )}
+                      {/* Icon based on file type */}
+                      <div className="w-10 h-10 flex items-center justify-center rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0 border border-gray-400 dark:border-gray-600">
+                        {cert.certificateUrl?.toLowerCase().endsWith('.pdf') ? (
+                          <File className="w-6 h-6 text-red-500" />
+                        ) : (
+                          <Image className="w-6 h-6 text-blue-500" />
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div
                           className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate"
@@ -470,14 +485,14 @@ export const CertificateTable: React.FC = () => {
       {/* Pagination */}
       <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          Trang {currentPage}/{totalPages} • {totalItems} chứng chỉ
+          Trang {paging.page}/{paging.totalPages} • {paging.total} chứng chỉ
         </span>
         <div className="flex items-center space-x-2">
           <button
             onClick={goToPrevPage}
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || loading}
             className={`p-2 rounded-md transition ${
-              currentPage === 1
+              currentPage === 1 || loading
                 ? 'text-gray-400 cursor-not-allowed'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
@@ -486,9 +501,9 @@ export const CertificateTable: React.FC = () => {
           </button>
           <button
             onClick={goToNextPage}
-            disabled={currentPage === totalPages}
+            disabled={currentPage >= paging.totalPages || loading}
             className={`p-2 rounded-md transition ${
-              currentPage === totalPages
+              currentPage >= paging.totalPages || loading
                 ? 'text-gray-400 cursor-not-allowed'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
@@ -499,35 +514,52 @@ export const CertificateTable: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {selectedCertificate && (
-        <CertificateDetailModal
-          certificate={{
-            id: parseInt(selectedCertificate.id) || 0,
-            title: selectedCertificate.certificateName,
-            seerName: selectedCertificate.seerName,
-            submissionDate: new Date(selectedCertificate.createdAt).toLocaleDateString('vi-VN'),
-            status:
-              selectedCertificate.status === 'PENDING'
-                ? 'Chờ duyệt'
-                : selectedCertificate.status === 'APPROVED'
-                ? 'Đã duyệt'
-                : 'Đã từ chối',
-            category: selectedCertificate.categories?.[0] || 'Khác',
-            issueDate: new Date(selectedCertificate.issuedAt).toLocaleDateString('vi-VN'),
-            expiryDate: selectedCertificate.expirationDate
-              ? new Date(selectedCertificate.expirationDate).toLocaleDateString('vi-VN')
-              : 'Không có',
-            organization: selectedCertificate.issuedBy,
-            description: selectedCertificate.certificateDescription,
-            fileName: selectedCertificate.certificateUrl.split('/').pop() || 'certificate.pdf',
-            approvalTime: selectedCertificate.decisionDate
-              ? new Date(selectedCertificate.decisionDate).toLocaleString('vi-VN')
-              : undefined,
-            reviewerNote: selectedCertificate.decisionReason || undefined,
-          }}
-          onClose={() => setSelectedCertificate(null)}
-          onApprove={(id, note) => handleApprove(selectedCertificate.id, note)}
-          onReject={(id, note) => handleReject(selectedCertificate.id, note)}
+      {selectedCertificate &&
+        (() => {
+          console.log('Selected Certificate:', selectedCertificate);
+          console.log('User ID:', selectedCertificate.userId);
+          return (
+            <CertificateDetailModal
+              certificate={{
+                id: parseInt(selectedCertificate.id) || 0,
+                title: selectedCertificate.certificateName,
+                seerName: selectedCertificate.seerName,
+                submissionDate: new Date(selectedCertificate.createdAt).toLocaleDateString('vi-VN'),
+                status:
+                  selectedCertificate.status === 'PENDING'
+                    ? 'Chờ duyệt'
+                    : selectedCertificate.status === 'APPROVED'
+                    ? 'Đã duyệt'
+                    : 'Đã từ chối',
+                category: selectedCertificate.categories?.[0] || 'Khác',
+                issueDate: new Date(selectedCertificate.issuedAt).toLocaleDateString('vi-VN'),
+                expiryDate: selectedCertificate.expirationDate
+                  ? new Date(selectedCertificate.expirationDate).toLocaleDateString('vi-VN')
+                  : 'Không có',
+                organization: selectedCertificate.issuedBy,
+                description: selectedCertificate.certificateDescription,
+                fileName: selectedCertificate.certificateUrl.split('/').pop() || 'certificate.pdf',
+                approvalTime: selectedCertificate.decisionDate
+                  ? new Date(selectedCertificate.decisionDate).toLocaleString('vi-VN')
+                  : undefined,
+                reviewerNote: selectedCertificate.decisionReason || undefined,
+              }}
+              seerId={selectedCertificate.userId}
+              onClose={() => setSelectedCertificate(null)}
+              onApprove={(id, note) => handleApprove(selectedCertificate.id, note)}
+              onReject={(id, note) => handleReject(selectedCertificate.id, note)}
+              onViewAllCertificates={handleViewAllCertificates}
+            />
+          );
+        })()}
+
+      {/* Seer Certificates Modal */}
+      {seerCertificatesModal?.isOpen && (
+        <SeerCertificatesModal
+          seerId={seerCertificatesModal.seerId}
+          seerName={seerCertificatesModal.seerName}
+          onClose={() => setSeerCertificatesModal(null)}
+          onViewCertificate={handleViewCertificateFromList}
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import {
   CertificateQueryParams,
   CertificateUpdateRequest,
   GetCertificatesResponse,
+  CertificateStats,
 } from '@/types/certificates/certificates.type';
 import { SingleResponse } from '@/types/response.type';
 
@@ -17,6 +18,13 @@ export const CertificateService = {
       sortType: params?.sortType || 'desc',
       sortBy: params?.sortBy || 'createdAt',
     });
+
+    if (params?.status) {
+      queryParams.append('status', params.status);
+    }
+    if (params?.seerName) {
+      queryParams.append('seerName', params.seerName);
+    }
 
     const response = await apiFetch<GetCertificatesResponse>(`/certificates?${queryParams}`);
     return response;
@@ -161,6 +169,11 @@ export const CertificateService = {
       },
       data: JSON.stringify(request),
     });
+    return response;
+  },
+
+  getCertificateStats: async (): Promise<SingleResponse<CertificateStats>> => {
+    const response = await apiFetch<SingleResponse<CertificateStats>>('/certificates/stats');
     return response;
   },
 };

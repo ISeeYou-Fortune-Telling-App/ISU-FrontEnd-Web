@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, User, CreditCard } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import type { BookingPayment } from '@/types/payments/payments.type';
@@ -16,9 +17,16 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
   const isFailed = payment.paymentStatus === 'FAILED';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-end" onClick={onClose}>
-      <div
-        className="w-full max-w-md h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col rounded-l-xl"
+    <div
+      className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-800 shadow-2xl flex flex-col rounded-xl overflow-hidden border border-gray-400 dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -110,7 +118,7 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
             Đóng
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

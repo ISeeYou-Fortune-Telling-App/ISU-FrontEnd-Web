@@ -69,19 +69,19 @@ export const BookingTable: React.FC = () => {
   // =========================================================
   const handleDelete = async (booking: BookingResponse) => {
     const confirmed = window.confirm(
-      `Bạn có chắc chắn muốn xóa lịch hẹn của ${booking.customer.fullName} với ${booking.seer.fullName}?`
+      `Bạn có chắc chắn muốn xóa lịch hẹn của ${booking.customer.fullName} với ${booking.seer.fullName}?`,
     );
-    
+
     if (!confirmed) return;
 
     try {
       setDeletingId(booking.id);
       const message = await BookingService.deleteBooking(booking.id);
       console.log('Xóa thành công:', message);
-      
+
       // Refresh danh sách sau khi xóa
       await fetchBookings();
-      
+
       // Hiển thị thông báo thành công
       alert('Xóa lịch hẹn thành công!');
     } catch (error) {
@@ -105,7 +105,7 @@ export const BookingTable: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
       {/* Search */}
       <div className="mb-4">
         <div className="relative">
@@ -113,7 +113,7 @@ export const BookingTable: React.FC = () => {
           <input
             type="text"
             placeholder="Tìm kiếm theo tên Khách hàng hoặc Nhà tiên tri..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg 
                        focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
                        text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
             value={searchTerm}
@@ -127,7 +127,7 @@ export const BookingTable: React.FC = () => {
 
       {/* Filter Tabs */}
       <div className="flex space-x-2 mb-4 overflow-x-auto pb-1">
-        <div className='inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700'>
+        <div className="inline-flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
           {[
             { label: 'Tất cả', value: 'Tất cả' },
             { label: 'Chờ xác nhận', value: 'PENDING' },
@@ -135,17 +135,18 @@ export const BookingTable: React.FC = () => {
             { label: 'Hoàn thành', value: 'COMPLETED' },
             { label: 'Bị hủy', value: 'CANCELLED' },
             { label: 'Thất bại', value: 'FAILED' },
-          ].map(status => (
-            <button 
+          ].map((status) => (
+            <button
               key={status.value}
               onClick={() => {
                 setSelectedFilter(status.value as StatusFilterType);
                 setCurrentPage(1);
               }}
               className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
-                ${selectedFilter === status.value
-                  ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ${
+                  selectedFilter === status.value
+                    ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
             >
               {status.label}
@@ -155,7 +156,7 @@ export const BookingTable: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="rounded-lg border border-gray-400 dark:border-gray-700 relative overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center items-center py-10 text-gray-500 dark:text-gray-400">
             <Loader2 className="animate-spin w-5 h-5 mr-2" /> Đang tải dữ liệu...
@@ -278,7 +279,9 @@ export const BookingTable: React.FC = () => {
           {startIndex + 1}-{endIndex} of {totalItems}
         </span>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-700 dark:text-gray-300">{currentPage}/{totalPages}</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            {currentPage}/{totalPages}
+          </span>
           <button
             onClick={goToPrevPage}
             disabled={currentPage === 1}
