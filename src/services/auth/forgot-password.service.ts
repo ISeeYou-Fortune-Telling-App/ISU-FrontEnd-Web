@@ -1,4 +1,4 @@
-import { apiFetch } from '../api';
+import { apiFetch } from '../api-core';
 import { SimpleResponse, ValidationErrorResponse } from '../../types/response.type';
 import {
   ForgotPasswordRequest,

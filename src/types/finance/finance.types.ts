@@ -1,11 +1,4 @@
-import { PagingParams } from '../paging.type';
-
-export interface PagingResponse {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+import { Paging, PagingParams } from '../paging.type';
 
 export interface MonthlyData {
   [key: string]: number;
@@ -158,13 +151,6 @@ export type SeerAction =
   | 'COMPLETED_BOOKING'
   | 'CANCELLING'
   | 'EARNING';
-
-export interface PageResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T[];
-  paging: PagingResponse;
-}
 
 export interface PaymentResponse {
   id: string;

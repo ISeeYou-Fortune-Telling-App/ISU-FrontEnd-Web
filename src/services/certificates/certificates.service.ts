@@ -1,4 +1,4 @@
-import { apiFetch } from '@/services/api';
+import { apiFetch } from '@/services/api-core';
 import {
   Certificate,
   CertificateApprovalRequest,
