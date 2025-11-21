@@ -36,7 +36,7 @@ export const PaymentTable: React.FC = () => {
           setTotalItems(res.paging.total);
         } else {
           // Fallback nếu API không trả về paging
-          setTotalItems(res.data.length); 
+          setTotalItems(res.data.length);
         }
       } catch (err) {
         console.error('Lỗi khi tải danh sách thanh toán:', err);
@@ -51,9 +51,9 @@ export const PaymentTable: React.FC = () => {
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
       const matchesSearch =
-        p.customer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.seer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.transactionId.toLowerCase().includes(searchTerm.toLowerCase());
+        p.customer?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.seer?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.transactionId?.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesSearch;
     });
   }, [payments, searchTerm]);
@@ -63,14 +63,14 @@ export const PaymentTable: React.FC = () => {
   const goToPrevPage = () => setCurrentPage((p) => (p > 1 ? p - 1 : p));
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
       {/* Search */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
           type="text"
           placeholder="Tìm kiếm theo tên, nhà tiên tri, hoặc mã giao dịch..."
-          className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+          className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg
                      focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
                      text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
           value={searchTerm}
@@ -83,7 +83,7 @@ export const PaymentTable: React.FC = () => {
 
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <div className="inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
+        <div className="inline-flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
           {['ALL', 'PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'].map((status) => (
             <button
               key={status}
@@ -112,37 +112,40 @@ export const PaymentTable: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="rounded-lg border border-gray-400 dark:border-gray-700 relative overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center items-center py-10 text-gray-500 dark:text-gray-400">
             <Loader2 className="animate-spin w-5 h-5 mr-2" /> Đang tải dữ liệu...
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <table
+            className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed"
+            style={{ tableLayout: 'fixed', width: '100%' }}
+          >
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[15%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Mã giao dịch
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Khách hàng
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Nhà tiên tri
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[15%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Dịch vụ
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Phương thức
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Số tiền
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Trạng thái
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[10%] px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Thao tác
                 </th>
               </tr>
@@ -153,26 +156,51 @@ export const PaymentTable: React.FC = () => {
                   key={p.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
                 >
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                    {p.transactionId}
+                  <td className="px-4 py-3">
+                    <span
+                      className="text-sm font-medium text-gray-900 dark:text-white truncate block"
+                      title={p.transactionId || 'N/A'}
+                    >
+                      {p.transactionId || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="text-sm text-gray-600 dark:text-gray-300 truncate block"
+                      title={p.customer?.fullName || 'N/A'}
+                    >
+                      {p.customer?.fullName || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="text-sm text-gray-600 dark:text-gray-300 truncate block"
+                      title={p.seer?.fullName || 'N/A'}
+                    >
+                      {p.seer?.fullName || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="text-sm text-gray-600 dark:text-gray-300 truncate block"
+                      title={p.packageTitle || 'N/A'}
+                    >
+                      {p.packageTitle || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="text-sm text-gray-600 dark:text-gray-300 truncate block"
+                      title={p.paymentMethod || 'N/A'}
+                    >
+                      {p.paymentMethod || 'N/A'}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {p.customer.fullName}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {p.seer.fullName}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {p.packageTitle}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {p.paymentMethod}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {p.amount.toLocaleString('vi-VN')}₫
+                    {p.amount?.toLocaleString('vi-VN') || '0'}₫
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <Badge type="status" value={p.paymentStatus} />
+                    <Badge type="payment" value={p.paymentStatus} />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <button

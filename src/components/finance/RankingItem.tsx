@@ -38,7 +38,7 @@ const RankingItem: React.FC<RankingItemProps> = ({ item, type }) => {
     <div className="flex items-center justify-between py-3 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
       <div className="flex items-center space-x-4">
         <img
-          src={item.avatar || 'https://i.pravatar.cc/150'}
+          src={item.avatar || '/default_avatar.jpg'}
           alt={item.name}
           className="w-10 h-10 rounded-full object-cover"
         />

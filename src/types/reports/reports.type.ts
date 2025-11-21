@@ -8,16 +8,6 @@ export interface ReportUser {
 // ==================== ENUMS ====================
 export type TargetReportType = 'SEER' | 'CHAT' | 'BOOKING' | 'SERVICE_PACKAGE' | 'POST';
 
-export type ReportType =
-  | 'FRAUD'
-  | 'SPAM'
-  | 'HARASSMENT'
-  | 'INAPPROPRIATE_CONTENT'
-  | 'HATE_SPEECH'
-  | 'COPYRIGHT'
-  | 'IMPERSONATION'
-  | 'OTHER';
-
 export type ReportStatus = 'PENDING' | 'VIEWED' | 'RESOLVED' | 'REJECTED';
 
 export type ActionType =
@@ -36,7 +26,7 @@ export interface Report {
   reported: ReportUser;
   targetReportType: TargetReportType;
   targetId: string;
-  reportType: ReportType;
+  reportType: string; // Tên của report type (SPAM, FRAUD, etc.)
   reportDescription: string;
   reportStatus: ReportStatus;
   actionType: ActionType;
@@ -50,7 +40,7 @@ export interface GetReportsParams {
   sortType?: 'asc' | 'desc';
   sortBy?: 'createdAt';
   status?: ReportStatus;
-  reportType?: string; // tên loại báo cáo trong report_type.name
+  reportType?: string; // name của report type (SPAM, FRAUD, etc.)
 }
 
 // ==================== API RESPONSE ====================

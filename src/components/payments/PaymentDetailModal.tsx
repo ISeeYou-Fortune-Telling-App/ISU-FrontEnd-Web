@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, User, CreditCard } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import type { BookingPayment } from '@/types/payments/payments.type';
@@ -10,15 +11,32 @@ interface Props {
 }
 
 export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
+  // Lock scroll khi modal mở
+  React.useEffect(() => {
+    if (payment) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [payment]);
+
   if (!payment) return null;
 
   const isRefund = payment.paymentStatus === 'REFUNDED';
   const isFailed = payment.paymentStatus === 'FAILED';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-end" onClick={onClose}>
-      <div
-        className="w-full max-w-md h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col rounded-l-xl"
+    <div
+      className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-800 shadow-2xl flex flex-col rounded-xl overflow-hidden border border-gray-400 dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -41,19 +59,19 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
             <div>
               <p className="text-gray-500 text-xs">Khách hàng</p>
               <p className="flex items-center font-medium text-gray-900 dark:text-white">
-                <User className="w-4 h-4 mr-2" /> {payment.customer.fullName}
+                <User className="w-4 h-4 mr-2" /> {payment.customer?.fullName || 'N/A'}
               </p>
             </div>
             <div>
               <p className="text-gray-500 text-xs">Nhà tiên tri</p>
               <p className="flex items-center font-medium text-gray-900 dark:text-white">
-                <User className="w-4 h-4 mr-2" /> {payment.seer.fullName}
+                <User className="w-4 h-4 mr-2" /> {payment.seer?.fullName || 'N/A'}
               </p>
             </div>
             <div className="col-span-2">
               <p className="flex items-center text-gray-600 dark:text-gray-300 text-sm">
                 <Calendar className="w-4 h-4 mr-2" />{' '}
-                {new Date(payment.createdAt).toLocaleString('vi-VN')}
+                {payment.createdAt ? new Date(payment.createdAt).toLocaleString('vi-VN') : 'N/A'}
               </p>
             </div>
           </div>
@@ -61,12 +79,12 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
           {/* Thông tin thanh toán */}
           <div className="space-y-1 border rounded-lg p-4 text-sm dark:border-gray-600">
             <p>
-              Mã giao dịch: <span className="font-medium">{payment.transactionId}</span>
+              Mã giao dịch: <span className="font-medium">{payment.transactionId || 'N/A'}</span>
             </p>
-            <p>Dịch vụ: {payment.packageTitle}</p>
-            <p>Phương thức: {payment.paymentMethod}</p>
-            <p>Trạng thái: {payment.paymentStatus}</p>
-            <p>Giá tiền: {payment.amount.toLocaleString('vi-VN')}₫</p>
+            <p>Dịch vụ: {payment.packageTitle || 'N/A'}</p>
+            <p>Phương thức: {payment.paymentMethod || 'N/A'}</p>
+            <p>Trạng thái: {payment.paymentStatus || 'N/A'}</p>
+            <p>Giá tiền: {payment.amount?.toLocaleString('vi-VN') || '0'}₫</p>
           </div>
 
           {/* Lý do thất bại / hoàn tiền */}
@@ -84,19 +102,23 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
           {/* Tổng tiền chi tiết */}
           <div className="border rounded-lg p-4 dark:border-gray-600">
             <p className="flex items-center text-sm font-medium text-gray-900 dark:text-white mb-3">
-              <CreditCard className="w-4 h-4 mr-2" /> {payment.paymentMethod}
+              <CreditCard className="w-4 h-4 mr-2" /> {payment.paymentMethod || 'N/A'}
             </p>
             <div className="flex justify-between text-sm mb-1">
               <span>Tổng tiền</span>
-              <span>{payment.amount.toLocaleString('vi-VN')}₫</span>
+              <span>{payment.amount?.toLocaleString('vi-VN') || '0'}₫</span>
             </div>
             <div className="flex justify-between text-sm mb-1">
               <span>Phí nền tảng (10%)</span>
-              <span>{Math.round(payment.amount * 0.1).toLocaleString('vi-VN')}₫</span>
+              <span>
+                {payment.amount ? Math.round(payment.amount * 0.1).toLocaleString('vi-VN') : '0'}₫
+              </span>
             </div>
             <div className="flex justify-between text-sm font-bold text-green-600 dark:text-green-400">
               <span>{isRefund ? 'Khách hàng nhận lại' : 'Nhà tiên tri nhận được'}</span>
-              <span>{Math.round(payment.amount * 0.9).toLocaleString('vi-VN')}₫</span>
+              <span>
+                {payment.amount ? Math.round(payment.amount * 0.9).toLocaleString('vi-VN') : '0'}₫
+              </span>
             </div>
           </div>
         </div>
@@ -110,7 +132,7 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
             Đóng
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

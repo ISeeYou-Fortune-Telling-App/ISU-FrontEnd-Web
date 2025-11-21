@@ -6,7 +6,7 @@ import {
   ListResponse,
   ValidationErrorResponse,
 } from '@/types/response.type';
-import { PageResponse } from '@/types/finance.types';
+import type { PageResponse } from '@/types/finance/finance.types';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_REPORT_SERVICE_API_URL,
@@ -81,9 +81,12 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_REPORT_SERVICE_API_URL}/auth/refresh`, {
-          headers: { Authorization: `Bearer ${refreshToken}` },
-        });
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_REPORT_SERVICE_API_URL}/auth/refresh`,
+          {
+            headers: { Authorization: `Bearer ${refreshToken}` },
+          },
+        );
 
         const { token, refreshToken: newRefreshToken } = res.data;
         localStorage.setItem('accessToken', token);
@@ -109,7 +112,12 @@ api.interceptors.response.use(
 
 // API wrapper
 export const apiFetch = async <
-  T extends SingleResponse<any> | ListResponse<any> | SimpleResponse | ValidationErrorResponse | PageResponse<any>,
+  T extends
+    | SingleResponse<any>
+    | ListResponse<any>
+    | SimpleResponse
+    | ValidationErrorResponse
+    | PageResponse<any>,
 >(
   url: string,
   config?: AxiosRequestConfig,

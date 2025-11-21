@@ -20,6 +20,7 @@ import {
   Ban,
 } from 'lucide-react';
 import { AuthService } from '@/services/auth/auth.service';
+import { handleImageError } from '@/utils/imageHelpers';
 
 // Memo SidebarItem để tránh re-render không cần thiết
 const SidebarItem = memo(
@@ -59,10 +60,34 @@ export default function AdminSidebarNav() {
   const currentPath = usePathname();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userInfo, setUserInfo] = useState<{
+    fullName: string;
+    avatarUrl: string;
+    role: string;
+  } | null>(null);
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
     setIsAdmin(role === 'ADMIN');
+
+    // Load user info from API
+    const loadUserInfo = async () => {
+      try {
+        const { AccountService } = await import('@/services/account/account.service');
+        const response = await AccountService.getCurrentUser();
+        setUserInfo({
+          fullName: response.data.fullName,
+          avatarUrl: response.data.avatarUrl,
+          role: response.data.role,
+        });
+      } catch (error) {
+        console.error('Failed to load user info:', error);
+      }
+    };
+
+    if (role) {
+      loadUserInfo();
+    }
   }, []);
 
   // Tối ưu: Memoize logout handler
@@ -168,15 +193,18 @@ export default function AdminSidebarNav() {
           <div className="flex items-center justify-between">
             <button onClick={handleProfile} className="flex items-center space-x-2 group">
               <img
-                src="/default_avatar.jpg"
-                alt="Admin Avatar"
+                src={userInfo?.avatarUrl || '/default_avatar.jpg'}
+                alt="User Avatar"
                 className="w-8 h-8 rounded-full object-cover border border-gray-400 dark:border-gray-600 group-hover:scale-105 transition-transform"
+                onError={handleImageError}
               />
               <div className="text-left">
                 <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:underline">
-                  Quản trị viên
+                  {userInfo?.fullName || 'Đang tải...'}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Hồ sơ cá nhân</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {userInfo?.role || 'Hồ sơ cá nhân'}
+                </p>
               </div>
             </button>
 

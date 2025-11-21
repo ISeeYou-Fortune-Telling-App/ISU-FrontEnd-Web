@@ -1,7 +1,7 @@
 import { SingleResponse, ListResponse, SimpleResponse } from '../response.type';
 import { PagingParams } from '../paging.type';
 
-export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'COMPLETED' | 'CANCELLED';
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'COMPLETED' | 'CANCELED';
 export type PaymentMethod = 'VNPAY' | 'MOMO' | 'PAYPAL';
 export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
 

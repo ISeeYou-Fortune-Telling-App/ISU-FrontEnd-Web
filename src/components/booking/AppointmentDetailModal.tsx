@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, User, Clock, Check, Ban } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import type { BookingResponse } from '@/types/booking/booking.type';
@@ -22,7 +23,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   if (!booking) return null;
 
   const isPendingConfirmation = booking.status === 'PENDING';
-  const isCancelled = booking.status === 'CANCELLED';
+  const isCancelled = booking.status === 'CANCELED';
 
   const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (event.target === event.currentTarget) {
@@ -37,23 +38,26 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-end"
+      className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div
-        className="w-full max-w-md h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col"
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="w-full max-w-3xl max-h-[90vh] bg-white dark:bg-gray-800 shadow-2xl flex flex-col rounded-xl overflow-hidden border border-gray-400 dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-grow overflow-y-auto p-6 pb-20 space-y-5">
-          
           {/* HEADER */}
           <div className="pb-4 border-b border-dashed dark:border-gray-700">
-            <div className='flex justify-between items-start'>
+            <div className="flex justify-between items-start">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-snug">
                 Chi tiết lịch hẹn
               </h2>
-              <button 
-                onClick={onClose} 
+              <button
+                onClick={onClose}
                 className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 flex-shrink-0"
               >
                 <X className="w-6 h-6" />
@@ -66,7 +70,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Khách hàng</p>
                 <div className="flex items-center space-x-2">
                   <img
-                    src={booking.customer.avatarUrl}
+                    src={booking.customer.avatarUrl || '/default_avatar.jpg'}
                     alt={booking.customer.fullName}
                     className="w-8 h-8 rounded-full object-cover"
                   />
@@ -82,7 +86,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Nhà tiên tri</p>
                 <div className="flex items-center space-x-2">
                   <img
-                    src={booking.seer.avatarUrl}
+                    src={booking.seer.avatarUrl || '/default_avatar.jpg'}
                     alt={booking.seer.fullName}
                     className="w-8 h-8 rounded-full object-cover"
                   />
@@ -131,9 +135,12 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             {booking.servicePackage.packageContent && (
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Mô tả</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {booking.servicePackage.packageContent}
-                </p>
+                <div
+                  className="text-sm text-gray-700 dark:text-gray-300"
+                  dangerouslySetInnerHTML={{
+                    __html: booking.servicePackage.packageContent.replace(/\\n/g, '<br />'),
+                  }}
+                />
               </div>
             )}
           </div>
@@ -263,7 +270,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             </button>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
-}
+};

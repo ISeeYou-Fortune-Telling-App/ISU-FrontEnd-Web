@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { Badge } from '../common/Badge';
 import { UserAccount } from '@/types/account/account.type';
+import { handleImageError } from '@/utils/imageHelpers';
 import {
   ROLE_LABELS,
   STATUS_LABELS,
@@ -198,6 +199,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                   className="h-10 w-10 rounded-full object-cover border border-gray-400 dark:border-gray-600 shadow-sm"
                   src={user.avatarUrl || '/default_avatar.jpg'}
                   alt="Avatar"
+                  onError={handleImageError}
                 />
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

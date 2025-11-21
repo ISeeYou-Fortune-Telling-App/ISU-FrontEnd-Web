@@ -1,12 +1,56 @@
 'use client';
 
-import React from 'react';
-import { Users, MessageSquare, CreditCard, Award, Maximize } from 'lucide-react';
+import React, { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import { Users, MessageSquare, CreditCard, Award } from 'lucide-react';
 
 import StatCardDashboard from '../../../components/dashboard/StatCardDashboard';
-import TopSeerRankCard from '../../../components/dashboard/TopSeerRankCard';
-import ServiceDistributionCard from '../../../components/dashboard/ServiceDistributionCard';
-import RecentActivityCard from '../../../components/dashboard/RecentActivityCard';
+
+// Lazy load các components nặng
+const ServiceDistributionCard = dynamic(
+  () => import('../../../components/dashboard/ServiceDistributionCard'),
+  {
+    loading: () => (
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
+const RecentActivityCard = dynamic(
+  () => import('../../../components/dashboard/RecentActivityCard'),
+  {
+    loading: () => (
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
+const MonthlyUsersChart = dynamic(() => import('../../../components/dashboard/MonthlyUsersChart'), {
+  loading: () => (
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-80 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+    </div>
+  ),
+  ssr: false,
+});
+
+const TopSeerPerformanceChart = dynamic(
+  () => import('../../../components/dashboard/TopSeerPerformanceChart'),
+  {
+    loading: () => (
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
 
 export default function AdminDashboardPage() {
   return (
@@ -45,48 +89,46 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center space-x-2">
-              <Maximize className="w-5 h-5 text-indigo-500" />
-              <span>Doanh thu theo thời gian</span>
-            </h2>
-            <p className="text-sm font-light text-gray-500 dark:text-gray-400 mt-1">
-              Biểu đồ doanh thu và số phiên tư vấn 6 tháng gần nhất
-            </p>
+      <Suspense
+        fallback={
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-80 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
           </div>
-
-          <div className="flex items-center space-x-3">
-            <select
-              defaultValue="Tháng 8"
-              className="p-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="Tháng 8">Tháng 8</option>
-              <option value="Tháng 9">Tháng 9</option>
-              <option value="Tháng 10">Tháng 10</option>
-            </select>
-
-            <select
-              defaultValue="Năm 2025"
-              className="p-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="Năm 2025">Năm 2025</option>
-              <option value="Năm 2024">Năm 2024</option>
-              <option value="Năm 2023">Năm 2023</option>
-            </select>
-          </div>
-        </div>
-        <div className="h-64 mt-4 flex items-center justify-center text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700">
-          [Placeholder: Biểu đồ doanh thu 6 tháng]
-        </div>
-      </div>
+        }
+      >
+        <MonthlyUsersChart />
+      </Suspense>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopSeerRankCard />
-        <ServiceDistributionCard />
+        <Suspense
+          fallback={
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            </div>
+          }
+        >
+          <TopSeerPerformanceChart />
+        </Suspense>
+        <Suspense
+          fallback={
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            </div>
+          }
+        >
+          <ServiceDistributionCard />
+        </Suspense>
       </div>
-      <RecentActivityCard />
+
+      <Suspense
+        fallback={
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+          </div>
+        }
+      >
+        <RecentActivityCard />
+      </Suspense>
     </div>
   );
 }

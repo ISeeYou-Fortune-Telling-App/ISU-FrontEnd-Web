@@ -117,6 +117,17 @@ export const MessagesService = {
       throw new Error(response.message || 'Không thể kết thúc phiên chat');
     }
   },
+
+  extendChatSession: async (conversationId: string, additionalMinutes: number): Promise<void> => {
+    const response = await apiFetch<{ statusCode: number; message: string }>(
+      `/chat/conversations/${conversationId}/extend?additionalMinutes=${additionalMinutes}`,
+      { method: 'POST' },
+    );
+
+    if (response.statusCode !== 1073741824) {
+      throw new Error(response.message || 'Không thể gia hạn phiên chat');
+    }
+  },
 };
 
 export const getSimpleUserList = async (): Promise<SimpleUserInfo[]> => {

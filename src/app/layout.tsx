@@ -6,6 +6,8 @@ import '../styles/globals.css';
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
+  display: 'swap', // Tối ưu font loading
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -16,6 +18,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" suppressHydrationWarning>
+      <head>
+        {/* Preconnect to API */}
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL} />
+      </head>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}

@@ -7,13 +7,25 @@ import {
   TrendingUp,
   DollarSign,
   Award,
-  Users,
   X,
   Search,
   Filter,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  Cell,
+} from 'recharts';
 import { ReportService } from '@/services/finance/financeHistory.service';
 import RankingItem from '@/components/finance/RankingItem';
 
@@ -244,20 +256,7 @@ const RevenueChart: React.FC<{
   title?: string;
   yAxisLabel?: string;
   formatValue?: (val: number) => string;
-}> = ({
-  data,
-  year,
-  title,
-  yAxisLabel = 'Giá trị',
-  formatValue = (val) => val.toLocaleString('vi-VN'),
-}) => {
-  const [hoveredPoint, setHoveredPoint] = useState<{
-    month: string;
-    value: number;
-    x: number;
-    y: number;
-  } | null>(null);
-
+}> = ({ data, yAxisLabel = 'Giá trị', formatValue = (val) => val.toLocaleString('vi-VN') }) => {
   const months = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
 
   const dataMap = data.reduce((acc: any, item: any) => {
@@ -265,139 +264,64 @@ const RevenueChart: React.FC<{
     return acc;
   }, {});
 
-  const values = months.map((_, idx) => {
+  const chartData = months.map((month, idx) => {
     const monthKey = String(idx + 1);
-    return dataMap[monthKey] !== undefined ? dataMap[monthKey] : 0;
+    return {
+      month,
+      value: dataMap[monthKey] !== undefined ? dataMap[monthKey] : 0,
+    };
   });
 
-  const maxValue = Math.max(...values, 1);
-  const minValue = Math.min(...values.filter((v) => v > 0), 0);
-
-  const yAxisSteps = 4;
-  const stepValue = maxValue / yAxisSteps;
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-400 dark:border-gray-700 shadow-lg">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {payload[0].payload.month}
+          </p>
+          <p className="text-sm text-indigo-600 dark:text-indigo-400">
+            {yAxisLabel}: <span className="font-bold">{formatValue(payload[0].value)}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
-    <div className="relative w-full h-80 mt-6">
-      <div className="absolute -left-6 top-1/2 -translate-y-1/2 -rotate-90 origin-center">
-        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
-          {yAxisLabel}
-        </span>
-      </div>
-
-      <div className="absolute left-8 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400 pr-3">
-        {Array.from({ length: yAxisSteps + 1 }).map((_, i) => {
-          const value = maxValue - i * stepValue;
-          return (
-            <span key={i} className="text-right min-w-[60px]">
-              {formatValue(value)}
-            </span>
-          );
-        })}
-      </div>
-
-      <div className="ml-28 relative w-[calc(100%-7.5rem)] h-[calc(100%-2rem)]">
-        <div className="absolute inset-0 grid grid-rows-4 border-l border-b border-gray-300 dark:border-gray-700">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="border-t border-gray-200 dark:border-gray-700"></div>
-          ))}
-        </div>
-
-        <svg
-          className="w-full h-full relative z-10"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          <polygon
-            fill="url(#gradient)"
-            points={values
-              .map((v, i) => {
-                const x = (i / (months.length - 1)) * 100;
-                const y = 100 - ((v - minValue) / (maxValue - minValue || 1)) * 95;
-                return `${x},${y}`;
-              })
-              .concat(['100,100', '0,100'])
-              .join(' ')}
+    <div className="h-80 mt-6">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+          <XAxis
+            dataKey="month"
+            className="text-xs text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor' }}
           />
-
-          <polyline
-            fill="none"
+          <YAxis
+            className="text-xs text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor' }}
+            tickFormatter={formatValue}
+            width={100}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Line
+            type="monotone"
+            dataKey="value"
             stroke="#6366f1"
-            strokeWidth="0.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-            points={values
-              .map((v, i) => {
-                const x = (i / (months.length - 1)) * 100;
-                const y = 100 - ((v - minValue) / (maxValue - minValue || 1)) * 95;
-                return `${x},${y}`;
-              })
-              .join(' ')}
+            strokeWidth={3}
+            dot={{ fill: '#6366f1', r: 4 }}
+            activeDot={{ r: 6 }}
+            animationBegin={0}
+            animationDuration={800}
           />
-        </svg>
-
-        <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
-          {values.map((v, i) => {
-            const xPercent = (i / (months.length - 1)) * 100;
-            const yPercent = 100 - ((v - minValue) / (maxValue - minValue || 1)) * 95;
-            return (
-              <circle
-                key={i}
-                cx={`${xPercent}%`}
-                cy={`${yPercent}%`}
-                r="4"
-                fill="white"
-                stroke="#6366f1"
-                strokeWidth="2"
-                className="pointer-events-auto cursor-pointer transition-all hover:r-6"
-                onMouseEnter={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setHoveredPoint({
-                    month: months[i],
-                    value: v,
-                    x: rect.left + rect.width / 2,
-                    y: rect.top,
-                  });
-                }}
-                onMouseLeave={() => setHoveredPoint(null)}
-              />
-            );
-          })}
-        </svg>
-
-        <div className="absolute -bottom-8 left-0 w-full flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
-          {months.map((m, i) => (
-            <span key={i} className="text-center flex-1">
-              {m}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {hoveredPoint && (
-        <div
-          className="fixed z-50 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg shadow-lg pointer-events-none transform -translate-x-1/2 -translate-y-full -mt-2"
-          style={{
-            left: hoveredPoint.x,
-            top: hoveredPoint.y,
-          }}
-        >
-          <div className="font-semibold">{hoveredPoint.month}</div>
-          <div className="text-indigo-300">{formatValue(hoveredPoint.value)}</div>
-        </div>
-      )}
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 };
 
-const PieChart: React.FC<{ data: Record<string, number>; title: string }> = ({ data, title }) => {
+const TierPieChart: React.FC<{ data: Record<string, number>; title: string }> = ({ data }) => {
   const total = Object.values(data).reduce((sum, val) => sum + val, 0);
 
   if (total === 0 || Object.keys(data).length === 0) {
@@ -408,9 +332,7 @@ const PieChart: React.FC<{ data: Record<string, number>; title: string }> = ({ d
     );
   }
 
-  let currentAngle = 0;
-
-  const colors: Record<string, string> = {
+  const COLORS: Record<string, string> = {
     MASTER: '#06b6d4',
     EXPERT: '#a855f7',
     PROFESSIONAL: '#eab308',
@@ -421,49 +343,61 @@ const PieChart: React.FC<{ data: Record<string, number>; title: string }> = ({ d
     CASUAL: '#d1d5db',
   };
 
+  const chartData = Object.entries(data).map(([name, value]) => ({
+    name,
+    value,
+    percentage: Math.round((value / total) * 100),
+  }));
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-400 dark:border-gray-700 shadow-lg">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {payload[0].name}
+          </p>
+          <p className="text-sm text-indigo-600 dark:text-indigo-400">
+            Số lượng: <span className="font-bold">{payload[0].value}</span>
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {payload[0].payload.percentage}%
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <div className="flex flex-col items-center">
-      <svg width="200" height="200" viewBox="0 0 200 200" className="mb-4">
-        {Object.entries(data).map(([key, value], idx) => {
-          const percentage = (value / total) * 100;
-          const angle = (percentage / 100) * 360;
-          const startAngle = currentAngle;
-          const endAngle = currentAngle + angle;
-          currentAngle = endAngle;
-
-          const x1 = 100 + 90 * Math.cos((Math.PI * startAngle) / 180);
-          const y1 = 100 + 90 * Math.sin((Math.PI * startAngle) / 180);
-          const x2 = 100 + 90 * Math.cos((Math.PI * endAngle) / 180);
-          const y2 = 100 + 90 * Math.sin((Math.PI * endAngle) / 180);
-          const largeArc = angle > 180 ? 1 : 0;
-
-          return (
-            <path
-              key={idx}
-              d={`M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`}
-              fill={colors[key] || '#9ca3af'}
-              className="transition-opacity hover:opacity-80"
-            />
-          );
-        })}
-      </svg>
-      <div className="space-y-2">
-        {Object.entries(data).map(([key, value]) => {
-          const percentage = total === 0 ? 0 : Math.round((value / total) * 100);
-
-          return (
-            <div key={key} className="flex items-center space-x-2 text-sm">
-              <div
-                className="w-4 h-4 rounded"
-                style={{ backgroundColor: colors[key] || '#9ca3af' }}
-              ></div>
-              <span className="text-gray-700 dark:text-gray-300">
-                {key}: {percentage}%
-              </span>
-            </div>
-          );
-        })}
-      </div>
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="45%"
+            labelLine={false}
+            label={({ name, percentage }: any) => `${name} (${percentage}%)`}
+            outerRadius={80}
+            fill="#8884d8"
+            dataKey="value"
+            animationBegin={0}
+            animationDuration={800}
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#9ca3af'} />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+          <Legend
+            layout="horizontal"
+            verticalAlign="bottom"
+            align="center"
+            wrapperStyle={{ paddingTop: '10px' }}
+            formatter={(value, entry: any) => `${value} (${entry.payload.value})`}
+          />
+        </PieChart>
+      </ResponsiveContainer>
     </div>
   );
 };
@@ -478,9 +412,8 @@ const FinanceDashboard: React.FC = () => {
   // Data states
   const [financeStats, setFinanceStats] = useState<any>(null);
   const [revenueChartData, setRevenueChartData] = useState<any[]>([]);
-  const [bookingRequestChartData, setBookingRequestChartData] = useState<any[]>([]);
-  const [bookingCompleteChartData, setBookingCompleteChartData] = useState<any[]>([]);
-  const [packagesChartData, setPackagesChartData] = useState<any[]>([]);
+  const [avgSeerRevenueData, setAvgSeerRevenueData] = useState<any[]>([]);
+  const [avgCustomerSpendingData, setAvgCustomerSpendingData] = useState<any[]>([]);
   const [seerFilters, setSeerFilters] = useState<any>({});
   const [customerFilters, setCustomerFilters] = useState<any>({});
   const [tierDistribution, setTierDistribution] = useState<any>({ seer: {}, customer: {} });
@@ -518,16 +451,14 @@ const FinanceDashboard: React.FC = () => {
     if (activeTab === 'system') {
       const fetchCharts = async () => {
         try {
-          const [revenue, bookingReq, bookingComp, packages] = await Promise.all([
+          const [revenue, avgSeerRevenue, avgCustomerSpending] = await Promise.all([
             ReportService.getChart('TOTAL_REVENUE', undefined, selectedYear),
-            ReportService.getChart('TOTAL_BOOKING_REQUESTS', undefined, selectedYear),
-            ReportService.getChart('TOTAL_BOOKING_COMPLETED', undefined, selectedYear),
-            ReportService.getChart('TOTAL_PACKAGES', undefined, selectedYear),
+            ReportService.getChart('AVG_SEER_REVENUE', undefined, selectedYear),
+            ReportService.getChart('AVG_CUSTOMER_SPENDING', undefined, selectedYear),
           ]);
           setRevenueChartData(revenue.data || []);
-          setBookingRequestChartData(bookingReq.data || []);
-          setBookingCompleteChartData(bookingComp.data || []);
-          setPackagesChartData(packages.data || []);
+          setAvgSeerRevenueData(avgSeerRevenue.data || []);
+          setAvgCustomerSpendingData(avgCustomerSpending.data || []);
         } catch (error) {
           console.error('Error fetching charts:', error);
         }
@@ -737,9 +668,16 @@ const FinanceDashboard: React.FC = () => {
             }
           />
           <StatCard
-            title="Người dùng hoạt động"
-            value={financeStats ? `${financeStats.activeUsers || 0}` : '...'}
-            icon={Users}
+            title="Doanh thu trong ngày"
+            value={financeStats ? formatCurrency(financeStats.totalRevenueDay) : '...'}
+            icon={Award}
+            trend={
+              financeStats
+                ? `${
+                    financeStats.percentChangeTotalRevenueDay > 0 ? '+' : ''
+                  }${financeStats.percentChangeTotalRevenueDay.toFixed(1)}%`
+                : undefined
+            }
           />
         </div>
 
@@ -777,40 +715,37 @@ const FinanceDashboard: React.FC = () => {
         </div>
 
         {activeTab === 'system' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                title: 'Tổng doanh thu',
-                data: revenueChartData,
-                yAxisLabel: 'Doanh thu (VNĐ)',
-                formatValue: (val: number) => formatCurrency(val).replace('₫', '').trim(),
-              },
-              {
-                title: 'Tổng booking requests',
-                data: bookingRequestChartData,
-                yAxisLabel: 'Số lượng booking',
-                formatValue: (val: number) => Math.round(val).toLocaleString('vi-VN'),
-              },
-              {
-                title: 'Tổng booking complete',
-                data: bookingCompleteChartData,
-                yAxisLabel: 'Số lượng hoàn thành',
-                formatValue: (val: number) => Math.round(val).toLocaleString('vi-VN'),
-              },
-              {
-                title: 'Tổng gói dịch vụ',
-                data: packagesChartData,
-                yAxisLabel: 'Số gói',
-                formatValue: (val: number) => Math.round(val).toLocaleString('vi-VN'),
-              },
-            ].map((chart, idx) => (
-              <div
-                key={idx}
-                className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700"
-              >
+          <div className="space-y-6">
+            {/* Total Revenue - Full Width */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                  Tổng doanh thu
+                </h2>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+                >
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                </select>
+              </div>
+              <RevenueChart
+                data={revenueChartData}
+                year={String(selectedYear)}
+                yAxisLabel="Doanh thu (VNĐ)"
+                formatValue={(val: number) => formatCurrency(val).replace('₫', '').trim()}
+              />
+            </div>
+
+            {/* Avg Seer Revenue & Avg Customer Spending - Half Width Each */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                    {chart.title}
+                    Doanh thu trung bình Seer
                   </h2>
                   <select
                     value={selectedYear}
@@ -823,13 +758,36 @@ const FinanceDashboard: React.FC = () => {
                   </select>
                 </div>
                 <RevenueChart
-                  data={chart.data}
+                  data={avgSeerRevenueData}
                   year={String(selectedYear)}
-                  yAxisLabel={chart.yAxisLabel}
-                  formatValue={chart.formatValue}
+                  yAxisLabel="Doanh thu TB (VNĐ)"
+                  formatValue={(val: number) => formatCurrency(val).replace('₫', '').trim()}
                 />
               </div>
-            ))}
+
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    Chi tiêu trung bình khách hàng
+                  </h2>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+                  >
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                  </select>
+                </div>
+                <RevenueChart
+                  data={avgCustomerSpendingData}
+                  year={String(selectedYear)}
+                  yAxisLabel="Chi tiêu TB (VNĐ)"
+                  formatValue={(val: number) => formatCurrency(val).replace('₫', '').trim()}
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -840,7 +798,7 @@ const FinanceDashboard: React.FC = () => {
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                   Phân phối tier giữa các seer
                 </h2>
-                <PieChart data={tierDistribution.seer} title="Tier Distribution" />
+                <TierPieChart data={tierDistribution.seer} title="Tier Distribution" />
               </div>
 
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -906,7 +864,7 @@ const FinanceDashboard: React.FC = () => {
                     <button
                       onClick={() => {
                         setSeerSearch('');
-                        setSeerFilters({}); 
+                        setSeerFilters({});
                       }}
                       className="px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/50 flex items-center space-x-2"
                     >
@@ -958,7 +916,7 @@ const FinanceDashboard: React.FC = () => {
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                   Phân phối tier giữa các khách hàng
                 </h2>
-                <PieChart data={tierDistribution.customer} title="Customer Tier" />
+                <TierPieChart data={tierDistribution.customer} title="Customer Tier" />
               </div>
 
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">

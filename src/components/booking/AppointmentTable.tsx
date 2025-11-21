@@ -1,13 +1,14 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Eye, X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { BookingDetailModal } from './AppointmentDetailModal';
 import { Badge } from '../common/Badge';
 import { BookingService } from '@/services/booking/booking.service';
 import type { BookingResponse, BookingStatus } from '@/types/booking/booking.type';
 
 const ITEMS_PER_PAGE = 10;
-type StatusFilterType = 'Tất cả' | 'PENDING' | 'CONFIRMED' | 'FAILED' | 'COMPLETED' | 'CANCELLED';
+type StatusFilterType = 'Tất cả' | 'PENDING' | 'CONFIRMED' | 'FAILED' | 'COMPLETED' | 'CANCELED';
 
 export const BookingTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,19 +70,19 @@ export const BookingTable: React.FC = () => {
   // =========================================================
   const handleDelete = async (booking: BookingResponse) => {
     const confirmed = window.confirm(
-      `Bạn có chắc chắn muốn xóa lịch hẹn của ${booking.customer.fullName} với ${booking.seer.fullName}?`
+      `Bạn có chắc chắn muốn xóa lịch hẹn của ${booking.customer.fullName} với ${booking.seer.fullName}?`,
     );
-    
+
     if (!confirmed) return;
 
     try {
       setDeletingId(booking.id);
       const message = await BookingService.deleteBooking(booking.id);
       console.log('Xóa thành công:', message);
-      
+
       // Refresh danh sách sau khi xóa
       await fetchBookings();
-      
+
       // Hiển thị thông báo thành công
       alert('Xóa lịch hẹn thành công!');
     } catch (error) {
@@ -105,7 +106,7 @@ export const BookingTable: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
       {/* Search */}
       <div className="mb-4">
         <div className="relative">
@@ -113,7 +114,7 @@ export const BookingTable: React.FC = () => {
           <input
             type="text"
             placeholder="Tìm kiếm theo tên Khách hàng hoặc Nhà tiên tri..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg 
                        focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
                        text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
             value={searchTerm}
@@ -127,25 +128,26 @@ export const BookingTable: React.FC = () => {
 
       {/* Filter Tabs */}
       <div className="flex space-x-2 mb-4 overflow-x-auto pb-1">
-        <div className='inline-flex border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700'>
+        <div className="inline-flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
           {[
             { label: 'Tất cả', value: 'Tất cả' },
             { label: 'Chờ xác nhận', value: 'PENDING' },
             { label: 'Đã xác nhận', value: 'CONFIRMED' },
             { label: 'Hoàn thành', value: 'COMPLETED' },
-            { label: 'Bị hủy', value: 'CANCELLED' },
+            { label: 'Bị hủy', value: 'CANCELED' },
             { label: 'Thất bại', value: 'FAILED' },
-          ].map(status => (
-            <button 
+          ].map((status) => (
+            <button
               key={status.value}
               onClick={() => {
                 setSelectedFilter(status.value as StatusFilterType);
                 setCurrentPage(1);
               }}
               className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
-                ${selectedFilter === status.value
-                  ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ${
+                  selectedFilter === status.value
+                    ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
             >
               {status.label}
@@ -155,88 +157,119 @@ export const BookingTable: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-        {isLoading ? (
-          <div className="flex justify-center items-center py-10 text-gray-500 dark:text-gray-400">
-            <Loader2 className="animate-spin w-5 h-5 mr-2" /> Đang tải dữ liệu...
-          </div>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+      <div className="rounded-lg border border-gray-400 dark:border-gray-700 relative overflow-hidden">
+        <table
+          className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed"
+          style={{ tableLayout: 'fixed', width: '100%' }}
+        >
+          <thead className="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th className="w-[180px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Khách hàng
+              </th>
+              <th className="w-[180px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Nhà tiên tri
+              </th>
+              <th className="w-[160px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Thời gian
+              </th>
+              <th className="w-[100px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Thời lượng
+              </th>
+              <th className="w-[140px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Trạng thái
+              </th>
+              <th className="w-[140px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Thanh toán
+              </th>
+              <th className="w-[120px] px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                Thao tác
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
+            {isLoading ? (
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Khách hàng
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Nhà tiên tri
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Gói dịch vụ
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Thời gian
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Thời lượng
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Trạng thái
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Thanh toán
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                  Thao tác
-                </th>
+                <td colSpan={8} className="text-center py-10 text-gray-500 dark:text-gray-400">
+                  <div className="flex justify-center items-center">
+                    <Loader2 className="animate-spin w-5 h-5 mr-2" /> Đang tải dữ liệu...
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredBookings.map((b) => (
-                <tr
+            ) : filteredBookings.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="text-center py-10 text-gray-500 dark:text-gray-400">
+                  Không có dữ liệu
+                </td>
+              </tr>
+            ) : (
+              filteredBookings.map((b, index) => (
+                <motion.tr
                   key={b.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, delay: index * 0.02 }}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
                 >
                   {/* Khách hàng với avatar */}
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
                       <img
-                        src={b.customer.avatarUrl}
+                        src={b.customer.avatarUrl || '/default_avatar.jpg'}
                         alt={b.customer.fullName}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                       />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {b.customer.fullName}
+                      <span
+                        className="text-sm font-medium text-gray-900 dark:text-white truncate"
+                        title={b.customer.fullName}
+                      >
+                        {b.customer.fullName || 'Không có dữ liệu'}
                       </span>
                     </div>
                   </td>
 
                   {/* Nhà tiên tri với avatar */}
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
                       <img
-                        src={b.seer.avatarUrl}
+                        src={b.seer.avatarUrl || '/default_avatar.jpg'}
                         alt={b.seer.fullName}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                       />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {b.seer.fullName}
+                      <span
+                        className="text-sm text-gray-500 dark:text-gray-400 truncate"
+                        title={b.seer.fullName}
+                      >
+                        {b.seer.fullName || 'Không có dữ liệu'}
                       </span>
                     </div>
                   </td>
-
-                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                    {b.servicePackage.packageTitle}
+                  <td className="px-4 py-3">
+                    {b.scheduledTime ? (
+                      <div className="flex flex-col items-center">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {new Date(b.scheduledTime).toLocaleDateString('vi-VN')}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(b.scheduledTime).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    ) : (
+                      'Không có dữ liệu'
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(b.scheduledTime).toLocaleString('vi-VN')}
+                  <td className="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                    {b.servicePackage.durationMinutes
+                      ? `${b.servicePackage.durationMinutes} phút`
+                      : 'Không có dữ liệu'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                    {b.servicePackage.durationMinutes} phút
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-3 text-center">
                     <Badge type="status" value={b.status} />
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-3 text-center">
                     <Badge
                       type="payment"
                       value={b.bookingPaymentInfos[0]?.paymentStatus || 'PENDING'}
@@ -265,20 +298,22 @@ export const BookingTable: React.FC = () => {
                       </button>
                     </div>
                   </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                </motion.tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+      <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
           {startIndex + 1}-{endIndex} of {totalItems}
         </span>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-700 dark:text-gray-300">{currentPage}/{totalPages}</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            {currentPage}/{totalPages}
+          </span>
           <button
             onClick={goToPrevPage}
             disabled={currentPage === 1}
