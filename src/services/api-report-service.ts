@@ -6,11 +6,7 @@ import {
   ListResponse,
   ValidationErrorResponse,
 } from '@/types/response.type';
-<<<<<<< HEAD:src/services/api2.ts
-import type { PageResponse } from '@/types/finance/finance.types';
-=======
-import { Paging } from '@/types/paging.type';
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741:src/services/api-report-service.ts
+import type { PageResponse } from '@/types/paging.type';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_REPORT_SERVICE_API_URL,
@@ -116,16 +112,12 @@ api.interceptors.response.use(
 
 // API wrapper
 export const apiFetch = async <
-<<<<<<< HEAD:src/services/api2.ts
   T extends
     | SingleResponse<any>
     | ListResponse<any>
     | SimpleResponse
     | ValidationErrorResponse
-    | PageResponse<any>,
-=======
-  T extends SingleResponse<any> | ListResponse<any> | SimpleResponse | ValidationErrorResponse | Paging | boolean,
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741:src/services/api-report-service.ts
+    | boolean,
 >(
   url: string,
   config?: AxiosRequestConfig,

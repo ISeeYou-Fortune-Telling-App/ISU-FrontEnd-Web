@@ -32,23 +32,15 @@ export const MessageTable: React.FC = () => {
     targetUserAvatar?: string;
     callObject: any;
   } | null>(null);
-<<<<<<< HEAD
-=======
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
 
   // 1. Ref để theo dõi container cuộn của danh sách hội thoại
   const conversationListRef = useRef<HTMLDivElement | null>(null);
   // Ref để lưu vị trí cuộn trước đó
   const scrollPositionRef = useRef(0);
-<<<<<<< HEAD
   // Ref để track trạng thái đang load (tránh trigger nhiều lần)
   const isLoadingNextPageRef = useRef(false);
-=======
-  // Ref cho spinner element để detect khi nó hiện ra
+  // Ref để observe khi scroll đến cuối (trigger load more)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
 
   useEffect(() => {
     setAdminId(localStorage.getItem('userId'));
@@ -106,7 +98,6 @@ export const MessageTable: React.FC = () => {
     // LƯU vị trí scroll CHÍNH XÁC trước khi load
     const container = conversationListRef.current;
     const scrollTopBefore = container?.scrollTop || 0;
-    const scrollHeightBefore = container?.scrollHeight || 0;
 
     setError(null);
     try {
@@ -141,7 +132,6 @@ export const MessageTable: React.FC = () => {
         unreadForAdmin: c.adminUnreadCount > 0,
       }));
 
-<<<<<<< HEAD
       // Check nếu không còn data
       if (formatted.length < ITEMS_PER_PAGE) {
         setHasMore(false);
@@ -155,11 +145,6 @@ export const MessageTable: React.FC = () => {
       } else {
         setConversations((prev) => [...prev, ...formatted]);
       }
-=======
-      // Check if there are more pages
-      setHasMore(formatted.length === ITEMS_PER_PAGE);
-      setConversations(formatted);
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
     } catch (err: any) {
       setError(err.message || 'Lỗi khi tải danh sách hội thoại.');
     } finally {
@@ -181,17 +166,17 @@ export const MessageTable: React.FC = () => {
 
   // Intersection Observer để detect khi scroll đến cuối
   useEffect(() => {
-    if (!loadMoreTriggerRef.current || !hasMore || isLoadingMore || loading) return;
+    if (!loadMoreTriggerRef.current || !hasMore || loadingMore || loading) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const target = entries[0];
-        if (target.isIntersecting && !isLoadingMore && hasMore) {
+        if (target.isIntersecting && !loadingMore && hasMore) {
           // Khi spinner hiện ra, set loading state và setTimeout 2s
-          setIsLoadingMore(true);
+          setLoadingMore(true);
           setTimeout(() => {
             setPage((prev) => prev + 1);
-            setIsLoadingMore(false);
+            setLoadingMore(false);
           }, 2000);
         }
       },
@@ -204,7 +189,7 @@ export const MessageTable: React.FC = () => {
     observer.observe(loadMoreTriggerRef.current);
 
     return () => observer.disconnect();
-  }, [hasMore, isLoadingMore, loading]);
+  }, [hasMore, loadingMore, loading]);
 
   useEffect(() => {
     // Reset page về 1 và hasMore khi search thay đổi
@@ -338,13 +323,7 @@ export const MessageTable: React.FC = () => {
       {/* Video Call Modal */}
       {showIncomingCall && adminId && incomingCallData && (
         <VideoCall
-<<<<<<< HEAD
           currentUserId={adminId}
-=======
-          conversationId={selectedConvId || ''}
-          currentUserId={adminId}
-          currentUserName="Admin"
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
           targetUserId={incomingCallData.targetUserId}
           targetUserName={incomingCallData.targetUserName}
           targetUserAvatar={incomingCallData.targetUserAvatar}
@@ -484,10 +463,9 @@ export const MessageTable: React.FC = () => {
                     </div>
                   ))}
 
-<<<<<<< HEAD
                   {/* Spinner luôn hiện ở cuối nếu còn data */}
                   {hasMore && conversations.length > 0 && (
-                    <div className="flex justify-center py-4">
+                    <div ref={loadMoreTriggerRef} className="flex justify-center py-4">
                       <div
                         className={`rounded-full h-8 w-8 border-b-2 border-indigo-600 ${
                           loadingMore ? 'animate-spin' : ''
@@ -500,18 +478,6 @@ export const MessageTable: React.FC = () => {
                   {!hasMore && conversations.length > 0 && (
                     <p className="text-center text-gray-400 text-sm py-4">Đã hiển thị tất cả</p>
                   )}
-=======
-                  {/* Spinner ở cuối danh sách - trigger infinite scroll */}
-                  {hasMore && (
-                    <div ref={loadMoreTriggerRef} className="flex justify-center items-center py-4">
-                      <div
-                        className={`w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full ${
-                          isLoadingMore ? 'animate-spin' : ''
-                        }`}
-                      />
-                    </div>
-                  )}
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
                 </>
               )}
             </div>
