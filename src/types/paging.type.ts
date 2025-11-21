@@ -12,3 +12,10 @@ export interface PagingParams {
   sortType?: 'asc' | 'desc';
   keyword?: string;       
 }
+
+export interface PageResponse<T> {
+  statusCode: number;
+  message: string;
+  data: T[];
+  paging: Paging;
+}
