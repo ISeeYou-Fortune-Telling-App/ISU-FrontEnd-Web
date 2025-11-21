@@ -1,6 +1,6 @@
 import { SingleResponse } from '@/types/response.type';
-import { apiFetch } from '../api2';
-import { apiFetch as apiFetchCore } from '../api';
+import { apiFetch } from '../api-report-service';
+import { apiFetch as apiFetchCore } from '../api-core';
 
 import {
   ChartData,
@@ -10,12 +10,12 @@ import {
   CustomerPotential,
   CustomerPotentialParams,
   FinanceStatistic,
-  PageResponse,
   SeerAction,
   SeerPerformance,
   SeerPerformanceParams,
   PaymentResponse,
 } from '@/types/finance/finance.types';
+import { PageResponse } from '@/types/paging.type';
 
 export const ReportService = {
   // ==================== CUSTOMER POTENTIAL ====================

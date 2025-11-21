@@ -1,11 +1,11 @@
-import { apiFetch } from '@/services/api';
-import { apiFetch as apiFetch2 } from '@/services/api2';
+import { apiFetch } from '@/services/api-core';
+import { apiFetch as apiFetch2 } from '@/services/api-report-service';
 import {
   StatisticsResponse,
   MonthlyUsersResponse,
   SeerPerformance,
 } from '@/types/dashboard/dashboard.type';
-import { PageResponse } from '@/types/finance/finance.types';
+import { PageResponse } from '@/types/paging.type';
 
 export const dashboardService = {
   // Get package distribution by category

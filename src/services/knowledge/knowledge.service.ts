@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { apiFetch } from '@/services/api';
+import { apiFetch } from '@/services/api-core';
 import { ListResponse, SimpleResponse, SingleResponse } from '@/types/response.type';
 import {
   KnowledgeCategory,

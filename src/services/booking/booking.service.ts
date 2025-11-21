@@ -1,4 +1,4 @@
-import { apiFetch } from '@/services/api';
+import { apiFetch } from '@/services/api-core';
 import { ListResponse, SingleResponse } from '@/types/response.type';
 import { BookingResponse, BookingParams, BookingStats } from '@/types/booking/booking.type';
 

@@ -1,4 +1,4 @@
-import { apiFetch } from '../api';
+import { apiFetch } from '../api-core';
 import { SingleResponse } from '@/types/response.type';
 import { LoginRequest, LoginResponse } from '@/types/auth/auth.type';
 
