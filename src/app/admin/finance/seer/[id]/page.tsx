@@ -55,18 +55,45 @@ const PayBonusModal: React.FC<{
     setError('');
 
     try {
-      await ReportService.payBonus(seer.seerId, parseFloat(amount), reason);
+      const bonusAmount = parseFloat(amount);
+      const currentDate = new Date();
       
-      // Optimistic update: Cập nhật ngay giá trị bonus
-      const updatedSeer: SeerPerformance = {
-        ...seer,
-        bonus: seer.bonus + parseFloat(amount),
-      };
+      console.log('=== BẮT ĐẦU THANH TOÁN BONUS ===');
+      console.log('Seer ID:', seer.seerId);
+      console.log('Bonus amount:', bonusAmount);
+      console.log('Bonus hiện tại:', seer.bonus);
+      console.log('Bonus mong đợi:', seer.bonus + bonusAmount);
       
-      alert('Thanh toán bonus thành công!');
-      onSuccess(updatedSeer);
+      const paymentResult = await ReportService.payBonus(seer.seerId, bonusAmount, reason);
+      console.log('✅ Payment thành công:', paymentResult);
+      
+      const actionResult = await ReportService.seerAction(seer.seerId, 'EARNING', bonusAmount);
+      console.log('✅ SeerAction result:', actionResult);
+      
+      const verifyResponse = await ReportService.getSeerPerformance(
+        seer.seerId,
+        currentDate.getMonth() + 1,
+        currentDate.getFullYear()
+      );
+      
+      if (verifyResponse.data.bonus >= seer.bonus + bonusAmount) {
+        console.log('✅ SERVER ĐÃ CẬP NHẬT THÀNH CÔNG!');
+        alert('Thanh toán bonus thành công!');
+        onSuccess(verifyResponse.data);
+      } else {
+        console.warn('⚠️ Server chưa cập nhật kịp, dùng optimistic update');
+        const optimisticUpdate: SeerPerformance = {
+          ...seer,
+          bonus: seer.bonus + bonusAmount,
+        };
+        alert('Thanh toán bonus thành công!');
+        onSuccess(optimisticUpdate);
+      }
+      
       onClose();
     } catch (err: any) {
+      console.error('❌ LỖI:', err);
+      console.error('Error details:', err.response?.data || err.message);
       setError(err.message || 'Có lỗi xảy ra khi thanh toán');
     } finally {
       setLoading(false);
@@ -79,7 +106,7 @@ const PayBonusModal: React.FC<{
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
             <DollarSign className="w-5 h-5 text-green-500" />
-            <span>Thanh toán Bonus</span>
+            <span>Bonus</span>
           </h3>
           <button
             onClick={onClose}
@@ -95,6 +122,12 @@ const PayBonusModal: React.FC<{
               Seer:{' '}
               <span className="font-semibold text-gray-900 dark:text-white">
                 {seer?.fullName || 'N/A'}
+              </span>
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Bonus hiện tại:{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {formatCurrency(seer?.bonus || 0)}
               </span>
             </p>
           </div>
@@ -192,23 +225,29 @@ const SeerDetailPage: React.FC = () => {
   }, [seerId]);
 
   const handleBonusSuccess = (updatedSeer: SeerPerformance) => {
-    // Cập nhật state ngay lập tức với bonus mới
+    console.log('🔄 Cập nhật UI với data mới:', updatedSeer);
     setSeerData(updatedSeer);
   };
 
   const handleRefresh = async () => {
+    console.log('🔄 Bắt đầu refresh dữ liệu...');
     setLoading(true);
     const currentDate = new Date();
     
-    ReportService.getSeerPerformance(seerId, currentDate.getMonth() + 1, currentDate.getFullYear())
-      .then((response) => {
-        setSeerData(response.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error refreshing seer detail:', error);
-        setLoading(false);
-      });
+    try {
+      const response = await ReportService.getSeerPerformance(
+        seerId, 
+        currentDate.getMonth() + 1, 
+        currentDate.getFullYear()
+      );
+      console.log('✅ Refresh thành công:', response.data);
+      setSeerData(response.data);
+    } catch (error) {
+      console.error('❌ Lỗi khi refresh:', error);
+      alert('Có lỗi khi làm mới dữ liệu. Vui lòng thử lại!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -247,7 +286,7 @@ const SeerDetailPage: React.FC = () => {
               className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center space-x-2"
             >
               <DollarSign className="w-4 h-4" />
-              <span>Thanh toán Bonus</span>
+              <span>Bonus</span>
             </button>
           </div>
         </div>
@@ -374,7 +413,7 @@ const SeerDetailPage: React.FC = () => {
             <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <DollarSign className="w-5 h-5 text-yellow-500" />
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Bonus</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Tiền thưởng</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
                   {formatCurrency(seerData?.bonus)}
                 </p>
