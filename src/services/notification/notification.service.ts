@@ -14,7 +14,7 @@ export const notificationService = {
   createNotification: async (
     data: NotificationCreateRequest,
   ): Promise<SingleResponse<Notification>> => {
-    const res = await apiFetch<SingleResponse<Notification>>('/notifications', {
+    const res = await apiFetch<SingleResponse<Notification>>('', {
       method: 'POST',
       data,
     });
@@ -31,7 +31,7 @@ export const notificationService = {
       throw new Error('recipientId is required');
     }
 
-    const res = await apiFetch<PageResponse<Notification>>('/notifications', {
+    const res = await apiFetch<PageResponse<Notification>>('', {
       method: 'GET',
       params: {
         page: params.page ?? 1,
@@ -53,7 +53,7 @@ export const notificationService = {
     sortBy?: string;
     sortType?: 'asc' | 'desc';
   }): Promise<PageResponse<Notification>> => {
-    const res = await apiFetch<PageResponse<Notification>>('/notifications/me', {
+    const res = await apiFetch<PageResponse<Notification>>('/me', {
       method: 'GET',
       params: {
         page: params?.page ?? 1,
@@ -70,7 +70,7 @@ export const notificationService = {
    */
   markAsRead: async (notificationId: string): Promise<SingleResponse<Notification>> => {
     const res = await apiFetch<SingleResponse<Notification>>(
-      `/notifications/${notificationId}/read`,
+      `/${notificationId}/read`,
       {
         method: 'PATCH',
       },
@@ -82,7 +82,7 @@ export const notificationService = {
    * Xóa notification
    */
   deleteNotification: async (notificationId: string): Promise<SimpleResponse> => {
-    const res = await apiFetch<SimpleResponse>(`/notifications/${notificationId}`, {
+    const res = await apiFetch<SimpleResponse>(`/${notificationId}`, {
       method: 'DELETE',
     });
     return res;
