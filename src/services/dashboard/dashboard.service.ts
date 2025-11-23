@@ -28,7 +28,7 @@ export const dashboardService = {
     limit: number = 10,
   ): Promise<PageResponse<SeerPerformance>> => {
     return await apiFetch2<PageResponse<SeerPerformance>>(
-      '/statistic-report/all-seer-performance',
+      '/all-seer-performance',
       {
         method: 'GET',
         params: {

@@ -26,7 +26,7 @@ export const ReportService = {
     year: number,
   ): Promise<SingleResponse<CustomerPotential>> => {
     const res = await apiFetch<SingleResponse<CustomerPotential>>(
-      '/statistic-report/customer-potential',
+      '/customer-potential',
       {
         method: 'GET',
         params: { customerId, month, year },
@@ -40,7 +40,7 @@ export const ReportService = {
     year: number,
   ): Promise<SingleResponse<CustomerPotential>> => {
     const res = await apiFetch<SingleResponse<CustomerPotential>>(
-      '/statistic-report/my-customer-potential',
+      '/my-customer-potential',
       {
         method: 'GET',
         params: { month, year },
@@ -53,7 +53,7 @@ export const ReportService = {
     params?: CustomerPotentialParams,
   ): Promise<PageResponse<CustomerPotential>> => {
     const res = await apiFetch<PageResponse<CustomerPotential>>(
-      '/statistic-report/all-customer-potential',
+      '/all-customer-potential',
       {
         method: 'GET',
         params: {
@@ -88,7 +88,7 @@ export const ReportService = {
     year: number,
   ): Promise<SingleResponse<SeerPerformance>> => {
     const res = await apiFetch<SingleResponse<SeerPerformance>>(
-      '/statistic-report/seer-performance',
+      '/seer-performance',
       {
         method: 'GET',
         params: { seerId, month, year },
@@ -102,7 +102,7 @@ export const ReportService = {
     year: number,
   ): Promise<SingleResponse<SeerPerformance>> => {
     const res = await apiFetch<SingleResponse<SeerPerformance>>(
-      '/statistic-report/my-seer-performance',
+      '/my-seer-performance',
       {
         method: 'GET',
         params: { month, year },
@@ -115,7 +115,7 @@ export const ReportService = {
     params?: SeerPerformanceParams,
   ): Promise<PageResponse<SeerPerformance>> => {
     const res = await apiFetch<PageResponse<SeerPerformance>>(
-      '/statistic-report/all-seer-performance',
+      '/all-seer-performance',
       {
         method: 'GET',
         params: {
@@ -160,7 +160,7 @@ export const ReportService = {
     year: number,
   ): Promise<SingleResponse<SeerPerformance>> => {
     const res = await apiFetch<SingleResponse<SeerPerformance>>(
-      '/internal/statistic-report/seer-simple-rating',
+      '/internal/seer-simple-rating',
       {
         method: 'GET',
         params: { seerId, month, year },
@@ -176,7 +176,7 @@ export const ReportService = {
     month: number,
     year: number,
   ): Promise<SingleResponse<boolean>> => {
-    const res = await apiFetch<SingleResponse<boolean>>('/statistic-report/customer-reports', {
+    const res = await apiFetch<SingleResponse<boolean>>('/customer-reports', {
       method: 'POST',
       data: customerIds,
       params: { month, year },
@@ -193,7 +193,7 @@ export const ReportService = {
     year: number,
   ): Promise<SingleResponse<boolean>> => {
     const res = await apiFetch<SingleResponse<boolean>>(
-      '/statistic-report/seer-performance-reports',
+      '/seer-performance-reports',
       {
         method: 'POST',
         data: seerIds,
@@ -213,7 +213,7 @@ export const ReportService = {
     action: CustomerAction,
     amount?: number,
   ): Promise<boolean> => {
-    const res = await apiFetch<SingleResponse<boolean>>('/statistic-report/customer-action', {
+    const res = await apiFetch<SingleResponse<boolean>>('/customer-action', {
       method: 'POST',
       params: {
         customerId,
@@ -225,7 +225,7 @@ export const ReportService = {
   },
 
   seerAction: async (seerId: string, action: SeerAction, amount?: number): Promise<boolean> => {
-    const res = await apiFetch<SingleResponse<boolean>>('/statistic-report/seer-action', {
+    const res = await apiFetch<SingleResponse<boolean>>('/seer-action', {
       method: 'POST',
       params: {
         seerId,
@@ -259,7 +259,7 @@ export const ReportService = {
 
   getFinanceStatistic: async (): Promise<SingleResponse<FinanceStatistic>> => {
     const res = await apiFetch<SingleResponse<FinanceStatistic>>(
-      '/statistic-report/finance-statistic',
+      '/finance-statistic',
       {
         method: 'GET',
       },
@@ -272,7 +272,7 @@ export const ReportService = {
     month?: number,
     year?: number,
   ): Promise<SingleResponse<ChartData[]>> => {
-    const res = await apiFetch<SingleResponse<ChartDto>>('/statistic-report/chart', {
+    const res = await apiFetch<SingleResponse<ChartDto>>('/chart', {
       method: 'GET',
       params: {
         chartType,
