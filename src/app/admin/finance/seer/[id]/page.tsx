@@ -34,7 +34,7 @@ const getTierColor = (tier: string) => {
 const PayBonusModal: React.FC<{
   seer: SeerPerformance;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (updatedSeer: SeerPerformance) => void;
 }> = ({ seer, onClose, onSuccess }) => {
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
@@ -56,8 +56,15 @@ const PayBonusModal: React.FC<{
 
     try {
       await ReportService.payBonus(seer.seerId, parseFloat(amount), reason);
+      
+      // Optimistic update: Cập nhật ngay giá trị bonus
+      const updatedSeer: SeerPerformance = {
+        ...seer,
+        bonus: seer.bonus + parseFloat(amount),
+      };
+      
       alert('Thanh toán bonus thành công!');
-      onSuccess();
+      onSuccess(updatedSeer);
       onClose();
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra khi thanh toán');
@@ -184,9 +191,15 @@ const SeerDetailPage: React.FC = () => {
     }
   }, [seerId]);
 
-  const handleRefresh = () => {
+  const handleBonusSuccess = (updatedSeer: SeerPerformance) => {
+    // Cập nhật state ngay lập tức với bonus mới
+    setSeerData(updatedSeer);
+  };
+
+  const handleRefresh = async () => {
     setLoading(true);
     const currentDate = new Date();
+    
     ReportService.getSeerPerformance(seerId, currentDate.getMonth() + 1, currentDate.getFullYear())
       .then((response) => {
         setSeerData(response.data);
@@ -219,20 +232,31 @@ const SeerDetailPage: React.FC = () => {
             <span>Quay lại</span>
           </button>
 
-          <button
-            onClick={() => setShowPayModal(true)}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center space-x-2"
-          >
-            <DollarSign className="w-4 h-4" />
-            <span>Thanh toán Bonus</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2 disabled:opacity-50"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>Làm mới</span>
+            </button>
+            
+            <button
+              onClick={() => setShowPayModal(true)}
+              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center space-x-2"
+            >
+              <DollarSign className="w-4 h-4" />
+              <span>Thanh toán Bonus</span>
+            </button>
+          </div>
         </div>
 
         {/* Profile Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-start space-x-4">
             <img
-              src={seerData?.avatarUrl || `https://i.pravatar.cc/150?u=${seerId}`} // Dùng avatarUrl, nếu không có mới dùng placeholder
+              src={seerData?.avatarUrl || `https://i.pravatar.cc/150?u=${seerId}`}
               alt={seerData?.fullName || 'Seer Avatar'}
               className="w-20 h-20 rounded-full object-cover"
             />
@@ -389,7 +413,7 @@ const SeerDetailPage: React.FC = () => {
         <PayBonusModal
           seer={seerData}
           onClose={() => setShowPayModal(false)}
-          onSuccess={handleRefresh}
+          onSuccess={handleBonusSuccess}
         />
       )}
     </div>
