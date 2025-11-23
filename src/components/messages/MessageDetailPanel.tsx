@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Image as ImageIcon, X, Video } from 'lucide-react';
+import { Send, Image as ImageIcon, X, Video, Phone } from 'lucide-react';
 import { MessagesService } from '@/services/messages/messages.service';
 import type { Message, ConversationSession } from '@/types/messages/messages.type';
 import { VideoCall } from './VideoCall';
@@ -42,6 +42,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
   const [sendingMedia, setSendingMedia] = useState(false);
   const [adminId, setAdminId] = useState<string | null>(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [callType, setCallType] = useState<'audio' | 'video'>('video');
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -239,14 +240,30 @@ export const MessageDetailPanel: React.FC<Props> = ({
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setShowVideoCall(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-green-400 
-                     text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all"
-        >
-          <Video className="w-4 h-4" />
-          <span className="text-sm font-medium">Video Call</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setCallType('audio');
+              setShowVideoCall(true);
+            }}
+            title="Gọi thoại"
+            className="p-2.5 rounded-full bg-blue-500 hover:bg-blue-600 
+                       text-white hover:shadow-lg hover:scale-110 transition-all"
+          >
+            <Phone className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => {
+              setCallType('video');
+              setShowVideoCall(true);
+            }}
+            title="Gọi video"
+            className="p-2.5 rounded-full bg-green-500 hover:bg-green-600 
+                       text-white hover:shadow-lg hover:scale-110 transition-all"
+          >
+            <Video className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div
@@ -441,6 +458,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
           targetUserId={convInfo.customerId?.toString() || convInfo.seerId?.toString() || ''}
           targetUserName={convInfo.customerName || convInfo.seerName || 'User'}
           targetUserAvatar={convInfo.customerAvatarUrl || convInfo.seerAvatarUrl || undefined}
+          callType={callType}
           onClose={() => {
             setShowVideoCall(false);
             onCloseIncomingCall?.();

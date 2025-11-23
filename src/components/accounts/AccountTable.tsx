@@ -283,7 +283,7 @@ export const AccountTable: React.FC = () => {
                     {user.email}
                   </td>
                   <td className="px-3 py-3 text-center">
-                    <Badge type="AccountRole" value={ROLE_LABELS[user.role]} />
+                    <Badge type="AccountRole" value={ROLE_LABELS[user.role] || user.role} />
                   </td>
                   <td className="px-3 py-3 text-center">
                     <Badge type="AccountStatus" value={STATUS_LABELS[user.status]} />

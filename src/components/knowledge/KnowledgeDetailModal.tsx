@@ -1,22 +1,18 @@
 'use client';
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  X,
-  Image as ImageIcon,
-  Trash2,
-  Edit2,
-  Calendar,
-  ChevronDown,
-  Plus,
-  Eye,
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { X, Image as ImageIcon, Trash2, Edit2, Calendar, Eye } from 'lucide-react';
+import Swal from 'sweetalert2';
+import ReactMarkdown from 'react-markdown';
 import type { KnowledgeItem } from '@/types/knowledge/knowledge.type';
+import { KnowledgeService } from '@/services/knowledge/knowledge.service';
+import { KnowledgeEditModal } from './KnowledgeEditModal';
 
 // --- 1. Props interface ---
 interface KnowledgeDetailModalProps {
   knowledge: KnowledgeItem | null;
   onClose: () => void;
+  onRefresh?: () => void;
 }
 
 // --- 2. Badge hiển thị danh mục ---
@@ -42,8 +38,52 @@ const CategoryBadge = ({ value }: { value: string }) => {
 export const KnowledgeDetailModal: React.FC<KnowledgeDetailModalProps> = ({
   knowledge,
   onClose,
+  onRefresh,
 }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+
   if (!knowledge) return null;
+
+  const handleDelete = async () => {
+    const result = await Swal.fire({
+      title: 'Xác nhận xóa',
+      text: `Bạn có chắc chắn muốn xóa bài viết "${knowledge.title}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await KnowledgeService.deleteKnowledgeItem(knowledge.id);
+        Swal.fire({
+          title: 'Đã xóa!',
+          text: 'Bài viết đã được xóa thành công.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+        onClose();
+        onRefresh?.();
+      } catch (error) {
+        console.error('Error deleting knowledge:', error);
+        Swal.fire({
+          title: 'Lỗi!',
+          text: 'Không thể xóa bài viết. Vui lòng thử lại.',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
+    }
+  };
 
   return (
     <div
@@ -82,59 +122,55 @@ export const KnowledgeDetailModal: React.FC<KnowledgeDetailModalProps> = ({
             </p>
           </div>
 
-          {/* Nội dung */}
-          <div className="space-y-2 pt-2">
-            <h4 className="font-semibold text-gray-700 dark:text-gray-200">Nội dung bài viết</h4>
-            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line">
-              {knowledge.content || '(Không có nội dung)'}
-            </div>
-          </div>
-
-          {/* Danh mục */}
-          <div className="space-y-2 pt-2">
-            <h4 className="font-semibold text-gray-700 dark:text-gray-200">Danh mục</h4>
-            <div className="flex flex-wrap items-center">
-              {knowledge.categories.map((cat, index) => (
-                <CategoryBadge key={index} value={cat} />
-              ))}
-              <button className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium hover:opacity-80 transition">
-                <Plus className="w-4 h-4 mr-1" /> Thêm danh mục
-              </button>
-            </div>
-          </div>
-
-          {/* Trạng thái */}
-          <div className="space-y-2 pt-2">
-            <h4 className="font-semibold text-gray-700 dark:text-gray-200">Trạng thái</h4>
-            <div className="inline-block relative">
-              <select
-                value={knowledge.status}
-                className="appearance-none block w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 
-                            text-gray-900 dark:text-gray-200 py-2 pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                disabled
-              >
-                <option value="PUBLISHED">Đã xuất bản</option>
-                <option value="DRAFT">Bản nháp</option>
-                <option value="HIDDEN">Đã ẩn</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute inset-y-0 right-0 w-5 h-5 my-auto mr-2 text-gray-400" />
-            </div>
-          </div>
-
-          {/* Ảnh minh họa */}
-          <div className="space-y-2 pt-2">
-            <h4 className="font-semibold text-gray-700 dark:text-gray-200">Ảnh minh họa</h4>
-            {knowledge.imageUrl ? (
+          {/* Ảnh minh họa - Đưa lên trước */}
+          {knowledge.imageUrl && (
+            <div className="space-y-2 pt-2">
+              <h4 className="font-semibold text-gray-700 dark:text-gray-200">Ảnh minh họa</h4>
               <img
                 src={knowledge.imageUrl}
                 alt={knowledge.title}
-                className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                className="w-full h-64 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
               />
-            ) : (
-              <div className="w-full h-40 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center border-2 border-dashed border-blue-200 dark:border-blue-700">
-                <ImageIcon className="w-10 h-10 text-blue-400 dark:text-blue-600" />
+            </div>
+          )}
+
+          {/* Danh mục & Trạng thái */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="space-y-2">
+              <h4 className="font-semibold text-gray-700 dark:text-gray-200">Danh mục</h4>
+              <div className="flex flex-wrap">
+                {knowledge.categories.map((cat, index) => (
+                  <CategoryBadge key={index} value={cat} />
+                ))}
               </div>
-            )}
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-semibold text-gray-700 dark:text-gray-200">Trạng thái</h4>
+              <span
+                className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                  knowledge.status === 'PUBLISHED'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                    : knowledge.status === 'DRAFT'
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
+                }`}
+              >
+                {knowledge.status === 'PUBLISHED'
+                  ? 'Đã xuất bản'
+                  : knowledge.status === 'DRAFT'
+                  ? 'Bản nháp'
+                  : 'Đã ẩn'}
+              </span>
+            </div>
+          </div>
+
+          {/* Nội dung */}
+          <div className="space-y-2 pt-2">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-200">Nội dung bài viết</h4>
+            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:font-bold">
+              <ReactMarkdown>{knowledge.content || '(Không có nội dung)'}</ReactMarkdown>
+            </div>
           </div>
 
           {/* Lượt xem */}
@@ -146,15 +182,33 @@ export const KnowledgeDetailModal: React.FC<KnowledgeDetailModalProps> = ({
         </div>
 
         {/* --- Footer --- */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between space-x-3">
-          <button className="flex items-center justify-center flex-1 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-            <Edit2 className="w-5 h-5 mr-2" /> Lưu thay đổi
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="flex items-center justify-center px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            <Edit2 className="w-5 h-5 mr-2" /> Chỉnh sửa
           </button>
-          <button className="flex items-center justify-center flex-1 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
+          <button
+            onClick={handleDelete}
+            className="flex items-center justify-center px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+          >
             <Trash2 className="w-5 h-5 mr-2" /> Xóa
           </button>
         </div>
       </motion.div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <KnowledgeEditModal
+          knowledge={knowledge}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => {
+            onRefresh?.();
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 };

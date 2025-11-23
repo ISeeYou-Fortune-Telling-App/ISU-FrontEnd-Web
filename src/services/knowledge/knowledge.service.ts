@@ -46,6 +46,14 @@ export const KnowledgeService = {
   },
 
   // Lấy chi tiết tri thức
+  getKnowledgeItem: async (id: string): Promise<KnowledgeItem> => {
+    const res = await apiFetch<SingleResponse<KnowledgeItem>>(`/knowledge-items/${id}`, {
+      method: 'GET',
+    });
+    return res.data;
+  },
+
+  // Alias for backward compatibility
   getKnowledgeById: async (id: string): Promise<KnowledgeItem> => {
     const res = await apiFetch<SingleResponse<KnowledgeItem>>(`/knowledge-items/${id}`, {
       method: 'GET',
@@ -119,5 +127,36 @@ export const KnowledgeService = {
     await apiFetch<SimpleResponse>(`/knowledge-categories/${id}`, {
       method: 'DELETE',
     });
+  },
+
+  // Xóa tri thức (Admin only)
+  deleteKnowledgeItem: async (id: string): Promise<void> => {
+    await apiFetch<SimpleResponse>(`/knowledge-items/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Cập nhật tri thức (Admin only)
+  updateKnowledgeItem: async (id: string, data: FormData): Promise<KnowledgeItem> => {
+    const res = await apiFetch<SingleResponse<KnowledgeItem>>(`/knowledge-items/${id}`, {
+      method: 'PATCH',
+      data,
+      headers: {
+        // Let browser set Content-Type for FormData
+      },
+    });
+    return res.data;
+  },
+
+  // Tạo tri thức mới (Admin only)
+  createKnowledgeItem: async (data: FormData): Promise<KnowledgeItem> => {
+    const res = await apiFetch<SingleResponse<KnowledgeItem>>('/knowledge-items', {
+      method: 'POST',
+      data,
+      headers: {
+        // Let browser set Content-Type for FormData
+      },
+    });
+    return res.data;
   },
 };

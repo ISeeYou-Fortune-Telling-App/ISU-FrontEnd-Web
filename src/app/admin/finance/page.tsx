@@ -233,7 +233,7 @@ const StatCard: React.FC<{
   icon: React.ElementType;
   trend?: string;
 }> = ({ title, value, icon: Icon, trend }) => (
-  <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+  <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
     <div className="flex items-center justify-between">
       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
       <Icon className="w-5 h-5 text-indigo-500" />
@@ -292,7 +292,7 @@ const RevenueChart: React.FC<{
     <div className="h-80 mt-6">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-400 dark:stroke-gray-700" />
           <XAxis
             dataKey="month"
             className="text-xs text-gray-600 dark:text-gray-400"
@@ -321,6 +321,26 @@ const RevenueChart: React.FC<{
   );
 };
 
+const TierLegendItem: React.FC<{
+  color: string;
+  label: string;
+  value: number;
+  percentage: number;
+}> = ({ color, label, value, percentage }) => (
+  <div className="flex items-center justify-between w-full py-2 px-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+    <div className="flex items-center space-x-3">
+      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }}></div>
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+    </div>
+    <div className="flex items-center space-x-3">
+      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{value}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400 min-w-[45px] text-right">
+        {percentage.toFixed(1)}%
+      </span>
+    </div>
+  </div>
+);
+
 const TierPieChart: React.FC<{ data: Record<string, number>; title: string }> = ({ data }) => {
   const total = Object.values(data).reduce((sum, val) => sum + val, 0);
 
@@ -346,21 +366,21 @@ const TierPieChart: React.FC<{ data: Record<string, number>; title: string }> = 
   const chartData = Object.entries(data).map(([name, value]) => ({
     name,
     value,
-    percentage: Math.round((value / total) * 100),
+    color: COLORS[name] || '#9ca3af',
+    percentage: (value / total) * 100,
   }));
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
+      const data = payload[0];
       return (
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-400 dark:border-gray-700 shadow-lg">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {payload[0].name}
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{data.name}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Số lượng: <span className="font-bold">{data.value}</span>
           </p>
-          <p className="text-sm text-indigo-600 dark:text-indigo-400">
-            Số lượng: <span className="font-bold">{payload[0].value}</span>
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {payload[0].payload.percentage}%
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Tỷ lệ: <span className="font-bold">{data.payload.percentage.toFixed(1)}%</span>
           </p>
         </div>
       );
@@ -369,35 +389,49 @@ const TierPieChart: React.FC<{ data: Record<string, number>; title: string }> = 
   };
 
   return (
-    <div className="h-72">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="45%"
-            labelLine={false}
-            label={({ name, percentage }: any) => `${name} (${percentage}%)`}
-            outerRadius={80}
-            fill="#8884d8"
-            dataKey="value"
-            animationBegin={0}
-            animationDuration={800}
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#9ca3af'} />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-          <Legend
-            layout="horizontal"
-            verticalAlign="bottom"
-            align="center"
-            wrapperStyle={{ paddingTop: '10px' }}
-            formatter={(value, entry: any) => `${value} (${entry.payload.value})`}
+    <div className="flex flex-col md:flex-row items-center gap-6">
+      <div className="w-full md:w-1/2 h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+              animationBegin={0}
+              animationDuration={800}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="w-full md:w-1/2 flex flex-col space-y-1">
+        {chartData.map((item, index) => (
+          <TierLegendItem
+            key={index}
+            color={item.color}
+            label={item.name}
+            value={item.value}
+            percentage={item.percentage}
           />
-        </PieChart>
-      </ResponsiveContainer>
+        ))}
+        {chartData.length > 0 && (
+          <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between px-3">
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Tổng cộng</span>
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{total}</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -619,12 +653,14 @@ const FinanceDashboard: React.FC = () => {
   }, [activeTab, selectedYear]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="min-h-screen dark:bg-gray-900">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Lịch sử tài chính</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              Lịch sử tài chính
+            </h1>
+            <p className="text-base font-light text-gray-500 dark:text-gray-400 mt-1">
               Quản lý và theo dõi các chỉ số tài chính
             </p>
           </div>
@@ -681,7 +717,7 @@ const FinanceDashboard: React.FC = () => {
           />
         </div>
 
-        <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex space-x-2 border-b border-gray-400 dark:border-gray-700">
           <button
             onClick={() => setActiveTab('system')}
             className={`px-4 py-2 font-medium transition-colors ${
@@ -717,7 +753,7 @@ const FinanceDashboard: React.FC = () => {
         {activeTab === 'system' && (
           <div className="space-y-6">
             {/* Total Revenue - Full Width */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                   Tổng doanh thu
@@ -739,10 +775,14 @@ const FinanceDashboard: React.FC = () => {
                 formatValue={(val: number) => formatCurrency(val).replace('₫', '').trim()}
               />
             </div>
+          </div>
+        )}
 
-            {/* Avg Seer Revenue & Avg Customer Spending - Half Width Each */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        {activeTab === 'seer' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* LineChart bên trái */}
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                     Doanh thu trung bình Seer
@@ -750,7 +790,7 @@ const FinanceDashboard: React.FC = () => {
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+                    className="px-3 py-1.5 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
                   >
                     <option value="2025">2025</option>
                     <option value="2024">2024</option>
@@ -765,70 +805,16 @@ const FinanceDashboard: React.FC = () => {
                 />
               </div>
 
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                    Chi tiêu trung bình khách hàng
-                  </h2>
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-                  >
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                    <option value="2023">2023</option>
-                  </select>
-                </div>
-                <RevenueChart
-                  data={avgCustomerSpendingData}
-                  year={String(selectedYear)}
-                  yAxisLabel="Chi tiêu TB (VNĐ)"
-                  formatValue={(val: number) => formatCurrency(val).replace('₫', '').trim()}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'seer' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+              {/* PieChart bên phải */}
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                   Phân phối tier giữa các seer
                 </h2>
                 <TierPieChart data={tierDistribution.seer} title="Tier Distribution" />
               </div>
-
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                  Thống kê tổng quan
-                </h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Tổng seer</span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {allSeers.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Hiển thị</span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {seerRankings.length} / {allSeers.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Tổng trang</span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {seerTotalPages}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center space-x-2">
@@ -884,7 +870,7 @@ const FinanceDashboard: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+              <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Hiển thị trang {seerPage} / {seerTotalPages} (Tổng: {allSeers.length})
                 </span>
@@ -911,40 +897,37 @@ const FinanceDashboard: React.FC = () => {
 
         {activeTab === 'customer' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* LineChart bên trái */}
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    Chi tiêu trung bình khách hàng
+                  </h2>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+                  >
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                  </select>
+                </div>
+                <RevenueChart
+                  data={avgCustomerSpendingData}
+                  year={String(selectedYear)}
+                  yAxisLabel="Chi tiêu TB (VNĐ)"
+                  formatValue={(val: number) => formatCurrency(val).replace('₫', '').trim()}
+                />
+              </div>
+
+              {/* PieChart bên phải */}
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                   Phân phối tier giữa các khách hàng
                 </h2>
                 <TierPieChart data={tierDistribution.customer} title="Customer Tier" />
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                  Thống kê tổng quan
-                </h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      Tổng khách hàng
-                    </span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {allCustomers.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Hiển thị</span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {customerRankings.length} / {allCustomers.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Tổng trang</span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {customerTotalPages}
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
 

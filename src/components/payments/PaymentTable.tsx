@@ -1,6 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Eye, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { PaymentDetailModal } from './PaymentDetailModal';
 import { BookingPaymentService } from '@/services/payments/payments.service';
@@ -10,13 +10,37 @@ const ITEMS_PER_PAGE = 10;
 
 export const PaymentTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<PaymentStatus | 'ALL'>('ALL');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | 'ALL'>('ALL');
+  const [isMethodDropdownOpen, setIsMethodDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [payments, setPayments] = useState<BookingPayment[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<BookingPayment | null>(null);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsMethodDropdownOpen(false);
+      }
+    };
+    if (isMethodDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMethodDropdownOpen]);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1); // Reset về trang 1 khi search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // ================== Fetch API ==================
   useEffect(() => {
@@ -30,6 +54,7 @@ export const PaymentTable: React.FC = () => {
           sortBy: 'createdAt',
           paymentMethod: selectedMethod === 'ALL' ? undefined : selectedMethod,
           paymentStatus: selectedStatus === 'ALL' ? undefined : selectedStatus,
+          searchName: debouncedSearch || undefined, // ✅ Gửi debounced search lên API
         });
         setPayments(res.data);
         if (res.paging && typeof res.paging.total === 'number') {
@@ -45,18 +70,10 @@ export const PaymentTable: React.FC = () => {
       }
     };
     fetchPayments();
-  }, [currentPage, selectedMethod, selectedStatus]);
+  }, [currentPage, selectedMethod, selectedStatus, debouncedSearch]); // ✅ Dùng debouncedSearch
 
-  // ================== Filter by search ==================
-  const filteredPayments = useMemo(() => {
-    return payments.filter((p) => {
-      const matchesSearch =
-        p.customer?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.seer?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.transactionId?.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
-  }, [payments, searchTerm]);
+  // ================== Không cần filter ở frontend nữa ==================
+  const filteredPayments = payments; // ✅ API đã filter rồi
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
   const goToNextPage = () => setCurrentPage((p) => (p < totalPages ? p + 1 : p));
@@ -64,26 +81,71 @@ export const PaymentTable: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo tên, nhà tiên tri, hoặc mã giao dịch..."
-          className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg
-                     focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
-                     text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
-          }}
-        />
+      {/* Search + Dropdown */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="relative flex-grow mr-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên, nhà tiên tri, hoặc mã giao dịch..."
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="relative flex-shrink-0" ref={dropdownRef}>
+          <button
+            onClick={() => setIsMethodDropdownOpen(!isMethodDropdownOpen)}
+            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
+                       dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
+                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
+          >
+            <span>{selectedMethod === 'ALL' ? 'Tất cả phương thức' : selectedMethod}</span>
+            <ChevronDown
+              className={`w-4 h-4 ml-1 transition-transform ${
+                isMethodDropdownOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {isMethodDropdownOpen && (
+            <div
+              className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 
+                         ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-20 animate-fadeIn"
+            >
+              <div className="py-1">
+                {[
+                  ['ALL', 'Tất cả phương thức'],
+                  ['MOMO', 'MOMO'],
+                  ['VNPAY', 'VNPAY'],
+                  ['PAYPAL', 'PAYPAL'],
+                ].map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSelectedMethod(key as PaymentMethod | 'ALL');
+                      setIsMethodDropdownOpen(false);
+                      setCurrentPage(1);
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                      selectedMethod === key
+                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="inline-flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
+      {/* Filter theo trạng thái */}
+      <div className="flex space-x-2 mb-4">
+        <div className="flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
           {['ALL', 'PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'].map((status) => (
             <button
               key={status}
@@ -218,29 +280,31 @@ export const PaymentTable: React.FC = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+      <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          Trang {currentPage}/{totalPages}
+          Trang {currentPage}/{totalPages} • {totalItems} thanh toán
         </span>
+
         <div className="flex items-center space-x-2">
           <button
             onClick={goToPrevPage}
-            disabled={currentPage === 1}
-            className={`p-1 border border-gray-300 dark:border-gray-600 rounded-lg ${
-              currentPage === 1
+            disabled={currentPage <= 1 || isLoading}
+            className={`p-2 rounded-md transition ${
+              currentPage <= 1 || isLoading
                 ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
+
           <button
             onClick={goToNextPage}
-            disabled={currentPage === totalPages}
-            className={`p-1 border border-gray-300 dark:border-gray-600 rounded-lg ${
-              currentPage === totalPages
+            disabled={currentPage >= totalPages || isLoading}
+            className={`p-2 rounded-md transition ${
+              currentPage >= totalPages || isLoading
                 ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronRight className="w-4 h-4" />

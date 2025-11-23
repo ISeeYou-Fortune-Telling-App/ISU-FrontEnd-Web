@@ -16,6 +16,15 @@ import {
   X,
 } from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -193,6 +202,74 @@ const PayBonusModal: React.FC<{
   );
 };
 
+const RevenueChart: React.FC<{
+  data: any[];
+  formatValue?: (val: number) => string;
+}> = ({ data, formatValue = (val) => val.toLocaleString('vi-VN') }) => {
+  const months = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+
+  const dataMap = data.reduce((acc: any, item: any) => {
+    acc[item.label] = item.value;
+    return acc;
+  }, {});
+
+  const chartData = months.map((month, idx) => {
+    const monthKey = String(idx + 1);
+    return {
+      month,
+      value: dataMap[monthKey] !== undefined ? dataMap[monthKey] : 0,
+    };
+  });
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-400 dark:border-gray-700 shadow-lg">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {payload[0].payload.month}
+          </p>
+          <p className="text-sm text-indigo-600 dark:text-indigo-400">
+            Doanh thu TB: <span className="font-bold">{formatValue(payload[0].value)}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="h-80 mt-4">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+          <XAxis
+            dataKey="month"
+            className="text-xs text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor' }}
+          />
+          <YAxis
+            className="text-xs text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor' }}
+            tickFormatter={formatValue}
+            width={100}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#6366f1"
+            strokeWidth={3}
+            dot={{ fill: '#6366f1', r: 4 }}
+            activeDot={{ r: 6 }}
+            animationBegin={0}
+            animationDuration={800}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
 const SeerDetailPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
@@ -201,17 +278,23 @@ const SeerDetailPage: React.FC = () => {
   const [seerData, setSeerData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [avgRevenueData, setAvgRevenueData] = useState<any[]>([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     const fetchSeerDetail = async () => {
       try {
         const currentDate = new Date();
-        const response = await ReportService.getSeerPerformance(
-          seerId,
-          currentDate.getMonth() + 1,
-          currentDate.getFullYear(),
-        );
-        setSeerData(response.data);
+        const [seerResponse, avgRevenueResponse] = await Promise.all([
+          ReportService.getSeerPerformance(
+            seerId,
+            currentDate.getMonth() + 1,
+            currentDate.getFullYear(),
+          ),
+          ReportService.getChart('AVG_SEER_REVENUE', undefined, selectedYear),
+        ]);
+        setSeerData(seerResponse.data);
+        setAvgRevenueData(avgRevenueResponse.data || []);
       } catch (error) {
         console.error('Error fetching seer detail:', error);
       } finally {
@@ -222,7 +305,7 @@ const SeerDetailPage: React.FC = () => {
     if (seerId) {
       fetchSeerDetail();
     }
-  }, [seerId]);
+  }, [seerId, selectedYear]);
 
   const handleBonusSuccess = (updatedSeer: SeerPerformance) => {
     console.log('🔄 Cập nhật UI với data mới:', updatedSeer);

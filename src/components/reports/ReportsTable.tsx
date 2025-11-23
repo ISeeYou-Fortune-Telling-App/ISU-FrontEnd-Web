@@ -1,12 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-<<<<<<< HEAD
 import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2, X } from 'lucide-react';
 import Swal from 'sweetalert2';
-=======
-import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
 import { ReportsService } from '@/services/reports/reports.service';
 import type {
   Report,
@@ -51,18 +47,12 @@ export function ReportsTable() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-<<<<<<< HEAD
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const typeDropdownRef = useRef<HTMLDivElement>(null);
 
-=======
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const typeDropdownRef = useRef<HTMLDivElement>(null);
-
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
   // Close dropdown when click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -158,7 +148,6 @@ export function ReportsTable() {
     return type ? type.description : name;
   };
 
-<<<<<<< HEAD
   const handleViewDetail = (report: Report) => {
     setSelectedReport(report);
   };
@@ -212,8 +201,6 @@ export function ReportsTable() {
     }
   };
 
-=======
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
   if (loading) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-10">
@@ -379,13 +366,8 @@ export function ReportsTable() {
               <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thời gian
               </th>
-<<<<<<< HEAD
               <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thao tác
-=======
-              <th className="w-[6%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                Chi tiết
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
               </th>
             </tr>
           </thead>
@@ -409,11 +391,7 @@ export function ReportsTable() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 justify-start">
                       <img
-<<<<<<< HEAD
                         src={report.reporter.avatarUrl || '/default_avatar.jpg'}
-=======
-                        src={report.reporter.avatarUrl}
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
                         alt={report.reporter.username}
                         className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                       />
@@ -421,7 +399,6 @@ export function ReportsTable() {
                         {report.reporter.username}
                       </span>
                     </div>
-<<<<<<< HEAD
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 justify-start">
@@ -478,46 +455,6 @@ export function ReportsTable() {
                       </button>
                     </div>
                   </td>
-=======
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 justify-start">
-                      <img
-                        src={report.reported.avatarUrl}
-                        alt={report.reported.username}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                      <span className="text-sm text-gray-900 dark:text-white truncate">
-                        {report.reported.username}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {getReportTypeLabel(report.reportType)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                      {report.targetReportType}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center">
-                      <Badge type="AccountStatus" value={STATUS_LABELS[report.reportStatus]} />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatDate(report.createdAt)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition">
-                      <Eye className="w-5 h-5 mx-auto" />
-                    </button>
-                  </td>
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
                 </tr>
               ))
             )}
@@ -564,7 +501,6 @@ export function ReportsTable() {
           </button>
         </div>
       </div>
-<<<<<<< HEAD
 
       {/* Detail Modal */}
       {selectedReport && (
@@ -577,8 +513,6 @@ export function ReportsTable() {
           }}
         />
       )}
-=======
->>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
     </div>
   );
 }

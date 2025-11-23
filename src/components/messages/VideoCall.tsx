@@ -2,19 +2,23 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Phone, PhoneOff, Video, Mic } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Phone, PhoneOff } from 'lucide-react';
 import { CometChat } from '@cometchat/chat-sdk-javascript';
 import { CometChatCalls } from '@cometchat/calls-sdk-javascript';
-import { COMETCHAT_CONSTANTS } from '@/config/cometchat.config';
 
 interface VideoCallProps {
+  conversationId?: string;
   currentUserId: string;
+  currentUserName?: string;
+  currentUserAvatar?: string;
   targetUserId: string;
   targetUserName: string;
   targetUserAvatar?: string;
   onClose: () => void;
   isIncomingCall?: boolean;
   incomingCallObject?: any;
+  callType?: 'audio' | 'video';
 }
 
 export const VideoCall: React.FC<VideoCallProps> = ({
@@ -25,6 +29,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   onClose,
   isIncomingCall = false,
   incomingCallObject,
+  callType,
 }) => {
   const [loggedInUser, setLoggedInUser] = useState<CometChat.User | null>(null);
   const [currentCall, setCurrentCall] = useState<any>(incomingCallObject || null);
@@ -34,6 +39,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const callListenerRef = useRef<string>('');
   const sessionIdRef = useRef<string>('');
+  const hasAutoInitiatedRef = useRef<boolean>(false);
 
   // Initialize and get logged in user
   useEffect(() => {
@@ -59,6 +65,23 @@ export const VideoCall: React.FC<VideoCallProps> = ({
       setShowIncomingCallScreen(true);
     }
   }, [incomingCallObject]);
+
+  // Auto-initiate call based on callType
+  useEffect(() => {
+    if (!isIncomingCall && callType && loggedInUser && !hasAutoInitiatedRef.current) {
+      hasAutoInitiatedRef.current = true;
+      console.log('🚀 Auto-initiating call type:', callType);
+
+      // Delay để đảm bảo component đã mount
+      setTimeout(() => {
+        if (callType === 'audio') {
+          handleInitiateAudioCall();
+        } else if (callType === 'video') {
+          handleInitiateVideoCall();
+        }
+      }, 100);
+    }
+  }, [callType, loggedInUser, isIncomingCall]);
 
   // Setup call listeners
   useEffect(() => {
@@ -228,43 +251,75 @@ export const VideoCall: React.FC<VideoCallProps> = ({
 
   const handleInitiateVideoCall = async () => {
     try {
+      console.log('🎬 Starting video call initiation...');
+      console.log('📋 Current user:', currentUserId);
+      console.log('📋 Target user:', targetUserId);
+      console.log('📋 Logged in user:', loggedInUser?.getUid());
+
       // Request permissions
+      console.log('🎥 Requesting camera/mic permissions...');
       await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log('✅ Permissions granted');
 
       const callType = CometChat.CALL_TYPE.VIDEO;
       const receiverType = CometChat.RECEIVER_TYPE.USER;
       const call = new CometChat.Call(targetUserId, callType, receiverType);
 
       console.log('📞 Initiating video call to:', targetUserId);
+      console.log('📞 Call object:', call);
+
       const outgoingCall = await CometChat.initiateCall(call);
-      console.log('✅ Call initiated:', outgoingCall);
+      console.log('✅ Call initiated successfully:', outgoingCall);
+      console.log('✅ Session ID:', outgoingCall.getSessionId());
 
       setCurrentCall(outgoingCall);
       setShowOutgoingCallScreen(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to initiate call:', error);
-      alert('Không thể thực hiện cuộc gọi. Vui lòng kiểm tra quyền camera/microphone.');
+      console.error('❌ Error code:', error?.code);
+      console.error('❌ Error message:', error?.message);
+      console.error('❌ Error details:', error?.details);
+      alert(
+        `Không thể thực hiện cuộc gọi: ${
+          error?.message || 'Vui lòng kiểm tra quyền camera/microphone.'
+        }`,
+      );
     }
   };
 
   const handleInitiateAudioCall = async () => {
     try {
+      console.log('🎬 Starting audio call initiation...');
+      console.log('📋 Current user:', currentUserId);
+      console.log('📋 Target user:', targetUserId);
+      console.log('📋 Logged in user:', loggedInUser?.getUid());
+
       // Request permissions
+      console.log('🎤 Requesting mic permissions...');
       await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('✅ Permissions granted');
 
       const callType = CometChat.CALL_TYPE.AUDIO;
       const receiverType = CometChat.RECEIVER_TYPE.USER;
       const call = new CometChat.Call(targetUserId, callType, receiverType);
 
       console.log('📞 Initiating audio call to:', targetUserId);
+      console.log('📞 Call object:', call);
+
       const outgoingCall = await CometChat.initiateCall(call);
-      console.log('✅ Call initiated:', outgoingCall);
+      console.log('✅ Call initiated successfully:', outgoingCall);
+      console.log('✅ Session ID:', outgoingCall.getSessionId());
 
       setCurrentCall(outgoingCall);
       setShowOutgoingCallScreen(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to initiate call:', error);
-      alert('Không thể thực hiện cuộc gọi. Vui lòng kiểm tra quyền microphone.');
+      console.error('❌ Error code:', error?.code);
+      console.error('❌ Error message:', error?.message);
+      console.error('❌ Error details:', error?.details);
+      alert(
+        `Không thể thực hiện cuộc gọi: ${error?.message || 'Vui lòng kiểm tra quyền microphone.'}`,
+      );
     }
   };
 
@@ -331,8 +386,11 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+  const modalContent = (
+    <div
+      className="fixed inset-0 bg-black/95 flex items-center justify-center z-[9999]"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+    >
       {/* Ongoing Call Screen */}
       {showOngoingCallScreen && (
         <div className="w-full h-full relative">
@@ -408,54 +466,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
           </button>
         </div>
       )}
-
-      {/* Initial Screen - Choose call type */}
-      {!showIncomingCallScreen && !showOutgoingCallScreen && !showOngoingCallScreen && (
-        <div className="flex flex-col items-center justify-center gap-8 p-8">
-          <div className="text-center">
-            <h2 className="text-white text-3xl font-bold mb-2">{targetUserName}</h2>
-            <p className="text-white/80 text-lg">Chọn loại cuộc gọi</p>
-          </div>
-
-          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20">
-            <img
-              src={targetUserAvatar || '/default_avatar.jpg'}
-              alt={targetUserName}
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          <div className="flex gap-6">
-            <button
-              onClick={handleInitiateAudioCall}
-              className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl
-                         bg-blue-500 hover:bg-blue-600 transition-all hover:scale-105
-                         shadow-xl"
-            >
-              <Mic className="w-12 h-12 text-white" />
-              <span className="text-white font-semibold text-lg">Gọi thoại</span>
-            </button>
-
-            <button
-              onClick={handleInitiateVideoCall}
-              className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl
-                         bg-green-500 hover:bg-green-600 transition-all hover:scale-105
-                         shadow-xl"
-            >
-              <Video className="w-12 h-12 text-white" />
-              <span className="text-white font-semibold text-lg">Gọi video</span>
-            </button>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="mt-4 px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600
-                       text-white transition-all"
-          >
-            Hủy
-          </button>
-        </div>
-      )}
     </div>
   );
+
+  // Render modal using Portal to body for true full screen
+  if (typeof window === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 };

@@ -374,7 +374,7 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
           {/* THỐNG KÊ TƯƠNG TÁC */}
           <div className="space-y-2 pt-3 border-t border-gray-200 dark:border-gray-700">
             <p className="font-semibold text-gray-900 dark:text-white">Thống kê tương tác:</p>
-            <div className="flex justify-around items-center text-sm py-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div className="flex justify-around items-center text-sm py-3 dark:bg-gray-700 rounded-lg">
               <div className="flex flex-col items-center">
                 <ThumbsUp className="w-5 h-5 text-blue-600 mb-1" />
                 <span className="font-bold text-blue-600">{pkg.likeCount}</span>

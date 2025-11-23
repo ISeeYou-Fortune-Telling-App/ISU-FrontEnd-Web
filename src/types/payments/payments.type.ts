@@ -28,4 +28,8 @@ export interface BookingPayment {
 export interface PaymentParams extends PagingParams {
   paymentMethod?: PaymentMethod;
   paymentStatus?: PaymentStatus;
+  searchName?: string;
+  userId?: string;
+  seerId?: string;
+  role?: string;
 }

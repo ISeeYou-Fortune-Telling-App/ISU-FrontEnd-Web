@@ -6,6 +6,15 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, DollarSign, Award, TrendingUp, Calendar, X } from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
 import { CustomerPotential } from '@/types/finance/finance.types';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -21,24 +30,98 @@ const getTierColor = (tier: string) => {
   return colors[tier] || 'bg-gray-300';
 };
 
+const RevenueChart: React.FC<{
+  data: any[];
+  formatValue?: (val: number) => string;
+}> = ({ data, formatValue = (val) => val.toLocaleString('vi-VN') }) => {
+  const months = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+
+  const dataMap = data.reduce((acc: any, item: any) => {
+    acc[item.label] = item.value;
+    return acc;
+  }, {});
+
+  const chartData = months.map((month, idx) => {
+    const monthKey = String(idx + 1);
+    return {
+      month,
+      value: dataMap[monthKey] !== undefined ? dataMap[monthKey] : 0,
+    };
+  });
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-400 dark:border-gray-700 shadow-lg">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {payload[0].payload.month}
+          </p>
+          <p className="text-sm text-indigo-600 dark:text-indigo-400">
+            Chi tiêu TB: <span className="font-bold">{formatValue(payload[0].value)}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="h-80 mt-4">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+          <XAxis
+            dataKey="month"
+            className="text-xs text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor' }}
+          />
+          <YAxis
+            className="text-xs text-gray-600 dark:text-gray-400"
+            tick={{ fill: 'currentColor' }}
+            tickFormatter={formatValue}
+            width={100}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#6366f1"
+            strokeWidth={3}
+            dot={{ fill: '#6366f1', r: 4 }}
+            activeDot={{ r: 6 }}
+            animationBegin={0}
+            animationDuration={800}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
 const CustomerDetailPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const customerId = params?.id as string;
 
-  const [customerData, setCustomerData] = useState<CustomerPotential | null >(null);
+  const [customerData, setCustomerData] = useState<CustomerPotential | null>(null);
   const [loading, setLoading] = useState(true);
+  const [avgSpendingData, setAvgSpendingData] = useState<any[]>([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     const fetchCustomerDetail = async () => {
       try {
         const currentDate = new Date();
-        const response = await ReportService.getCustomerPotential(
-          customerId,
-          currentDate.getMonth() + 1,
-          currentDate.getFullYear(),
-        );
-        setCustomerData(response.data);
+        const [customerResponse, avgSpendingResponse] = await Promise.all([
+          ReportService.getCustomerPotential(
+            customerId,
+            currentDate.getMonth() + 1,
+            currentDate.getFullYear(),
+          ),
+          ReportService.getChart('AVG_CUSTOMER_SPENDING', undefined, selectedYear),
+        ]);
+        setCustomerData(customerResponse.data);
+        setAvgSpendingData(avgSpendingResponse.data || []);
       } catch (error) {
         console.error('Error fetching customer detail:', error);
       } finally {
@@ -49,7 +132,7 @@ const CustomerDetailPage: React.FC = () => {
     if (customerId) {
       fetchCustomerDetail();
     }
-  }, [customerId]);
+  }, [customerId, selectedYear]);
 
   if (loading) {
     return (

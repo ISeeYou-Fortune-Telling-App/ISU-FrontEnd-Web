@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { KnowledgeDetailModal } from './KnowledgeDetailModal';
 import { Search, Eye, Trash2, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { KnowledgeService } from '@/services/knowledge/knowledge.service';
+import Swal from 'sweetalert2';
 import type {
   KnowledgeItem,
   KnowledgeCategory,
@@ -407,6 +408,57 @@ export const KnowledgeTable: React.FC = () => {
 
                     <button
                       title="Xóa bài viết"
+                      onClick={async () => {
+                        const result = await Swal.fire({
+                          title: 'Xác nhận xóa',
+                          text: `Bạn có chắc chắn muốn xóa bài viết "${k.title}"?`,
+                          icon: 'warning',
+                          showCancelButton: true,
+                          confirmButtonColor: '#ef4444',
+                          cancelButtonColor: '#6b7280',
+                          confirmButtonText: 'Xóa',
+                          cancelButtonText: 'Hủy',
+                          background: document.documentElement.classList.contains('dark')
+                            ? '#1f2937'
+                            : '#ffffff',
+                          color: document.documentElement.classList.contains('dark')
+                            ? '#f3f4f6'
+                            : '#111827',
+                        });
+
+                        if (result.isConfirmed) {
+                          try {
+                            await KnowledgeService.deleteKnowledgeItem(k.id);
+                            Swal.fire({
+                              title: 'Đã xóa!',
+                              text: 'Bài viết đã được xóa thành công.',
+                              icon: 'success',
+                              timer: 2000,
+                              showConfirmButton: false,
+                              background: document.documentElement.classList.contains('dark')
+                                ? '#1f2937'
+                                : '#ffffff',
+                              color: document.documentElement.classList.contains('dark')
+                                ? '#f3f4f6'
+                                : '#111827',
+                            });
+                            searchData();
+                          } catch (error) {
+                            console.error('Error deleting knowledge:', error);
+                            Swal.fire({
+                              title: 'Lỗi!',
+                              text: 'Không thể xóa bài viết. Vui lòng thử lại.',
+                              icon: 'error',
+                              background: document.documentElement.classList.contains('dark')
+                                ? '#1f2937'
+                                : '#ffffff',
+                              color: document.documentElement.classList.contains('dark')
+                                ? '#f3f4f6'
+                                : '#111827',
+                            });
+                          }
+                        }
+                      }}
                       className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 transition-colors"
                     >
                       <Trash2 className="w-5 h-5 inline-block" />
@@ -451,7 +503,11 @@ export const KnowledgeTable: React.FC = () => {
         </div>
       </div>
       {isModalOpen && selectedKnowledge && (
-        <KnowledgeDetailModal knowledge={selectedKnowledge} onClose={() => setIsModalOpen(false)} />
+        <KnowledgeDetailModal
+          knowledge={selectedKnowledge}
+          onClose={() => setIsModalOpen(false)}
+          onRefresh={searchData}
+        />
       )}
     </div>
   );
