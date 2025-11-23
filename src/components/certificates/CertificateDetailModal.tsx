@@ -37,6 +37,7 @@ export interface CertificateDetail {
   organization: string;
   description: string;
   fileName: string;
+  certificateUrl: string;
   approvalTime?: string;
   reviewerNote?: string;
 }
@@ -84,6 +85,32 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
     }
   };
 
+  const handleDownload = async () => {
+    if (!certificate.certificateUrl) return;
+
+    try {
+      // Fetch image as blob to bypass CORS restrictions
+      const response = await fetch(certificate.certificateUrl);
+      const blob = await response.blob();
+
+      // Create blob URL and download
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = certificate.fileName || 'certificate';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab if download fails
+      window.open(certificate.certificateUrl, '_blank');
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4"
@@ -114,14 +141,17 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 pt-3">
               Nộp bởi thầy{' '}
-              <button
-                onClick={handleViewAllCertificates}
-                disabled={!seerId || !onViewAllCertificates}
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium underline disabled:opacity-50 disabled:cursor-not-allowed"
-                title={`Xem tất cả chứng chỉ của ${certificate.seerName}`}
-              >
-                {certificate.seerName}
-              </button>{' '}
+              {seerId && onViewAllCertificates ? (
+                <button
+                  onClick={handleViewAllCertificates}
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium underline"
+                  title={`Xem tất cả chứng chỉ của ${certificate.seerName}`}
+                >
+                  {certificate.seerName}
+                </button>
+              ) : (
+                <span className="font-medium">{certificate.seerName}</span>
+              )}{' '}
               • {certificate.submissionDate}
             </p>
           </div>
@@ -132,7 +162,7 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
               <FileText className="w-4 h-4 mr-1" /> Ảnh chứng chỉ
             </p>
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-400 dark:border-gray-600">
-              {certificate.fileName?.toLowerCase().endsWith('.pdf') ? (
+              {certificate.certificateUrl?.toLowerCase().endsWith('.pdf') ? (
                 <div className="flex items-center justify-center py-8">
                   <FileText className="w-16 h-16 text-red-500 mb-2" />
                   <p className="text-sm text-gray-600 dark:text-gray-400 ml-3">
@@ -141,7 +171,10 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
                 </div>
               ) : (
                 <img
-                  src={certificate.fileName || 'https://via.placeholder.com/400x300?text=No+Image'}
+                  src={
+                    certificate.certificateUrl ||
+                    'https://via.placeholder.com/400x300?text=No+Image'
+                  }
                   alt={certificate.title}
                   className="w-full h-auto rounded border border-gray-400 dark:border-gray-600"
                   onError={(e) => {
@@ -151,7 +184,10 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
                 />
               )}
             </div>
-            <button className="w-full mt-2 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center text-sm font-medium">
+            <button
+              onClick={handleDownload}
+              className="w-full mt-2 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center text-sm font-medium"
+            >
               <Download className="w-4 h-4 mr-2" /> Tải xuống chứng chỉ
             </button>
           </div>

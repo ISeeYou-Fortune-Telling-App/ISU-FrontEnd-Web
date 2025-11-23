@@ -85,7 +85,48 @@ export const ReportsService = {
   },
 
   /**
-   * Xóa báo cáo (nếu API hỗ trợ)
+   * Xử lý vi phạm (WARNING, SUSPEND, BAN)
+   * POST /reports/{reportId}/violation-action
+   */
+  handleViolation: async (
+    reportId: string,
+    data: {
+      action: 'WARNING' | 'SUSPEND' | 'BAN';
+      actionReason: string;
+      suspendDays?: number;
+    },
+  ): Promise<Report> => {
+    const response = await apiFetch<SingleResponse<Report>>(
+      `/reports/${reportId}/violation-action`,
+      {
+        method: 'POST',
+        data,
+      },
+    );
+    return response.data;
+  },
+
+  /**
+   * Update report status (PENDING, NO_ACTION)
+   * PATCH /reports/{id}
+   */
+  updateReportStatus: async (
+    id: string,
+    data: {
+      status: 'PENDING' | 'NO_ACTION';
+      actionType: 'NO_ACTION';
+      note?: string;
+    },
+  ): Promise<Report> => {
+    const response = await apiFetch<SingleResponse<Report>>(`/reports/${id}`, {
+      method: 'PATCH',
+      data,
+    });
+    return response.data;
+  },
+
+  /**
+   * Xóa báo cáo
    * DELETE /reports/:id
    */
   deleteReport: async (id: string): Promise<void> => {

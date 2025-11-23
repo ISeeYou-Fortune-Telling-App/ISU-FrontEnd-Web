@@ -23,7 +23,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   if (!booking) return null;
 
   const isPendingConfirmation = booking.status === 'PENDING';
-  const isCancelled = booking.status === 'CANCELLED';
+  const isCancelled = booking.status === 'CANCELED';
 
   const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (event.target === event.currentTarget) {
@@ -70,7 +70,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Khách hàng</p>
                 <div className="flex items-center space-x-2">
                   <img
-                    src={booking.customer.avatarUrl}
+                    src={booking.customer.avatarUrl || '/default_avatar.jpg'}
                     alt={booking.customer.fullName}
                     className="w-8 h-8 rounded-full object-cover"
                   />
@@ -86,7 +86,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Nhà tiên tri</p>
                 <div className="flex items-center space-x-2">
                   <img
-                    src={booking.seer.avatarUrl}
+                    src={booking.seer.avatarUrl || '/default_avatar.jpg'}
                     alt={booking.seer.fullName}
                     className="w-8 h-8 rounded-full object-cover"
                   />
@@ -135,9 +135,12 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             {booking.servicePackage.packageContent && (
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Mô tả</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {booking.servicePackage.packageContent}
-                </p>
+                <div
+                  className="text-sm text-gray-700 dark:text-gray-300"
+                  dangerouslySetInnerHTML={{
+                    __html: booking.servicePackage.packageContent.replace(/\\n/g, '<br />'),
+                  }}
+                />
               </div>
             )}
           </div>

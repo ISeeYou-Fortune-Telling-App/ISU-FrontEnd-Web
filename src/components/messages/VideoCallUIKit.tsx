@@ -81,6 +81,18 @@ export const VideoCallUIKit: React.FC<VideoCallUIKitProps> = ({
       const callSettings = new CometChatCalls.CallSettingsBuilder()
         .enableDefaultLayout(true)
         .setIsAudioOnlyCall(isAudioOnly)
+        .showRecordingButton(true) // Show recording button in UI
+        .startRecordingOnCallStart(false) // Don't auto-start recording (user can click button)
+        .setCallListener(
+          new CometChatCalls.OngoingCallListener({
+            onRecordingStarted: () => {
+              console.log('🔴 Recording started');
+            },
+            onRecordingStopped: () => {
+              console.log('⏹️ Recording stopped');
+            },
+          }),
+        )
         .build();
 
       console.log('🎬 Ensuring CometChat Calls is initialized...');

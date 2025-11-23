@@ -1,17 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { X, Phone, PhoneOff } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { X, Phone, PhoneOff, Video, Mic } from 'lucide-react';
 import { CometChat } from '@cometchat/chat-sdk-javascript';
 import { CometChatCalls } from '@cometchat/calls-sdk-javascript';
 import { COMETCHAT_CONSTANTS } from '@/config/cometchat.config';
 
 interface VideoCallProps {
-  conversationId: string;
   currentUserId: string;
-  currentUserName: string;
-  currentUserAvatar?: string;
   targetUserId: string;
   targetUserName: string;
   targetUserAvatar?: string;
@@ -21,10 +18,7 @@ interface VideoCallProps {
 }
 
 export const VideoCall: React.FC<VideoCallProps> = ({
-  conversationId,
   currentUserId,
-  currentUserName,
-  currentUserAvatar,
   targetUserId,
   targetUserName,
   targetUserAvatar,
@@ -32,216 +26,245 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   isIncomingCall = false,
   incomingCallObject,
 }) => {
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isInCall, setIsInCall] = useState(false);
-  const [currentCall, setCurrentCall] = useState<any>(null);
-  const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(isIncomingCall);
+  const [loggedInUser, setLoggedInUser] = useState<CometChat.User | null>(null);
+  const [currentCall, setCurrentCall] = useState<any>(incomingCallObject || null);
+  const [showIncomingCallScreen, setShowIncomingCallScreen] = useState(isIncomingCall);
+  const [showOngoingCallScreen, setShowOngoingCallScreen] = useState(false);
+  const [showOutgoingCallScreen, setShowOutgoingCallScreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const callListenerRef = useRef<string>('');
+  const sessionIdRef = useRef<string>('');
 
-  // Set incoming call object when component mounts
+  // Initialize and get logged in user
+  useEffect(() => {
+    const initUser = async () => {
+      try {
+        const user = await CometChat.getLoggedinUser();
+        if (user) {
+          setLoggedInUser(user);
+          console.log('✅ Logged in user:', user.getName());
+        }
+      } catch (error) {
+        console.error('❌ Error getting logged in user:', error);
+      }
+    };
+    initUser();
+  }, []);
+
+  // Set incoming call
   useEffect(() => {
     if (incomingCallObject) {
-      console.log('✅ [VideoCall] Setting incoming call object:', incomingCallObject);
+      console.log('✅ Setting incoming call:', incomingCallObject);
       setCurrentCall(incomingCallObject);
-      setIsWaitingForAnswer(true);
+      setShowIncomingCallScreen(true);
     }
   }, [incomingCallObject]);
 
-  // Debug log
+  // Setup call listeners
   useEffect(() => {
-    console.log('🔍 [VideoCall] State:', {
-      isIncomingCall,
-      hasIncomingCallObject: !!incomingCallObject,
-      hasCurrentCall: !!currentCall,
-      isWaitingForAnswer,
-      isInCall,
-    });
-  }, [isIncomingCall, incomingCallObject, currentCall, isWaitingForAnswer, isInCall]);
+    const listenerId = `call_listener_${Date.now()}`;
+    callListenerRef.current = listenerId;
 
-  // Initialize CometChat
-  useEffect(() => {
-    const initCometChat = async () => {
-      try {
-        // Check if already initialized
-        let isAlreadyInit = false;
-        try {
-          const loggedInUser = await CometChat.getLoggedinUser();
-          if (loggedInUser) {
-            console.log('✅ CometChat already initialized, user:', loggedInUser.getName());
-            isAlreadyInit = true;
-          }
-        } catch (e) {
-          // Not initialized yet
-        }
+    CometChat.addCallListener(
+      listenerId,
+      new CometChat.CallListener({
+        onIncomingCallReceived: (call: any) => {
+          console.log('📞 Incoming call received:', call);
+          setCurrentCall(call);
+          setShowIncomingCallScreen(true);
+        },
+        onOutgoingCallAccepted: (call: any) => {
+          console.log('✅ Outgoing call accepted:', call);
+          setCurrentCall(call);
+          setShowOutgoingCallScreen(false);
+          setShowOngoingCallScreen(true);
 
-        if (!isAlreadyInit) {
-          const appSetting = new CometChat.AppSettingsBuilder()
-            .subscribePresenceForAllUsers()
-            .setRegion(COMETCHAT_CONSTANTS.REGION)
-            .autoEstablishSocketConnection(true)
-            .build();
-
-          await CometChat.init(COMETCHAT_CONSTANTS.APP_ID, appSetting);
-          console.log('✅ CometChat initialized successfully');
-
-          // Login user with Auth Key
-          try {
-            const user = await CometChat.login(currentUserId, COMETCHAT_CONSTANTS.AUTH_KEY);
-            console.log('✅ User logged in:', user.getName(), 'UID:', user.getUid());
-          } catch (loginError: any) {
-            if (loginError.code === 'USER_ALREADY_LOGGED_IN') {
-              console.log('✅ User already logged in');
-            } else {
-              throw loginError;
-            }
-          }
-
-          // Initialize Calls SDK (npm package API)
-          const callAppSettings = new CometChatCalls.CallAppSettingsBuilder()
-            .setAppId(COMETCHAT_CONSTANTS.APP_ID)
-            .setRegion(COMETCHAT_CONSTANTS.REGION)
-            .build();
-
-          await CometChatCalls.init(callAppSettings);
-          console.log('✅ CometChat Calls initialized');
-        }
-
-        setIsInitialized(true);
-
-        // Setup call listener FIRST
-        const listenerId = `call_listener_${Date.now()}`;
-        callListenerRef.current = listenerId;
-
-        CometChat.addCallListener(
-          listenerId,
-          new CometChat.CallListener({
-            onIncomingCallReceived: (call: any) => {
-              console.log('📞 [VideoCall] Incoming call received:', call);
-              setCurrentCall(call);
-              setIsWaitingForAnswer(true);
-            },
-            onOutgoingCallAccepted: (call: any) => {
-              console.log('✅ Outgoing call accepted:', call);
-              startCall(call);
-            },
-            onOutgoingCallRejected: (call: any) => {
-              console.log('❌ Outgoing call rejected:', call);
-              setCurrentCall(null);
-              setIsInCall(false);
-              setIsWaitingForAnswer(false);
-              onClose();
-            },
-            onIncomingCallCancelled: (call: any) => {
-              console.log('❌ Incoming call cancelled:', call);
-              setCurrentCall(null);
-              setIsInCall(false);
-              setIsWaitingForAnswer(false);
-              onClose();
-            },
-            onCallEnded: (call: any) => {
-              console.log('📴 Call ended:', call);
-              setCurrentCall(null);
-              setIsInCall(false);
-              setIsWaitingForAnswer(false);
-              onClose();
-            },
-          }),
-        );
-
-        // After setting up listener, try to fetch active call if this is incoming
-        if (isIncomingCall) {
-          console.log('🔍 [VideoCall] Fetching active incoming call...');
-          try {
-            const activeCall = await CometChat.getActiveCall();
-            if (activeCall) {
-              console.log('✅ [VideoCall] Found active call:', activeCall);
-              setCurrentCall(activeCall);
-            } else {
-              console.log('⚠️ [VideoCall] No active call found, waiting for listener...');
-            }
-          } catch (error) {
-            console.error('❌ [VideoCall] Error fetching active call:', error);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Failed to initialize CometChat:', error);
-      }
-    };
-
-    initCometChat();
+          // Đợi container được render rồi mới start call
+          setTimeout(() => {
+            startOngoingCall(call);
+          }, 500);
+        },
+        onOutgoingCallRejected: (call: any) => {
+          console.log('❌ Outgoing call rejected:', call);
+          setShowOutgoingCallScreen(false);
+          onClose();
+        },
+        onIncomingCallCancelled: (call: any) => {
+          console.log('❌ Incoming call cancelled:', call);
+          setShowIncomingCallScreen(false);
+          onClose();
+        },
+      }),
+    );
 
     return () => {
-      // Cleanup
       if (callListenerRef.current) {
         CometChat.removeCallListener(callListenerRef.current);
       }
-      if (currentCall) {
-        endCall();
-      }
     };
-  }, [currentUserId]);
+  }, [onClose]);
 
-  const startCall = async (call: any) => {
-    try {
-      if (!containerRef.current) {
-        console.error('❌ Container ref not ready');
-        return;
-      }
-
-      console.log('🎬 Starting call session...', {
-        sessionId: call.getSessionId(),
-        type: call.getType(),
-        container: containerRef.current,
-      });
-
-      setIsInCall(true);
-      setCurrentCall(call);
-      setIsWaitingForAnswer(false);
-
-      const sessionId = call.getSessionId();
+  const getCallBuilder = useCallback(
+    (call: any) => {
       const isAudioOnly = call.getType() === 'audio';
+      const sessionId = call.getSessionId();
 
-      // Build call settings
       const callSettings = new CometChatCalls.CallSettingsBuilder()
         .enableDefaultLayout(true)
         .setIsAudioOnlyCall(isAudioOnly)
+        .showRecordingButton(true) // Show recording button in UI
+        .startRecordingOnCallStart(false) // Don't auto-start recording (user can click button)
+        .setCallListener(
+          new CometChatCalls.OngoingCallListener({
+            onCallEnded: () => {
+              console.log('📴 Call ended');
+              CometChatCalls.endSession();
+              CometChat.clearActiveCall();
+              setShowOngoingCallScreen(false);
+              onClose();
+            },
+            onCallEndButtonPressed: () => {
+              console.log('🔴 End call button pressed');
+              CometChat.endCall(sessionId)
+                .then(() => {
+                  CometChatCalls.endSession();
+                  setShowOngoingCallScreen(false);
+                  onClose();
+                })
+                .catch((err) => {
+                  console.error('❌ Error ending call:', err);
+                });
+            },
+            onRecordingStarted: () => {
+              console.log('🔴 Recording started');
+            },
+            onRecordingStopped: () => {
+              console.log('⏹️ Recording stopped');
+            },
+            onError: (error: any) => {
+              console.error('❌ Call error:', error);
+            },
+          }),
+        )
         .build();
 
-      // Start the call session - SDK will handle token generation automatically
-      await CometChatCalls.startSession(sessionId, callSettings, containerRef.current);
-      console.log('✅ Call session started with UI', { isAudioOnly });
-    } catch (error: any) {
-      console.error('❌ Error starting call:', {
-        error,
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-      });
-      setIsInCall(false);
-      setIsWaitingForAnswer(false);
-    }
-  };
+      return callSettings;
+    },
+    [onClose],
+  );
 
-  const handleInitiateCall = async () => {
-    if (!isInitialized) {
-      console.error('CometChat not initialized');
-      return;
-    }
+  const startOngoingCall = useCallback(
+    (call: any) => {
+      try {
+        if (!containerRef.current) {
+          console.error('❌ Container ref not ready');
+          return;
+        }
 
+        const sessionId = call.getSessionId();
+        sessionIdRef.current = sessionId;
+
+        console.log('🎬 Starting ongoing call...', {
+          sessionId,
+          type: call.getType(),
+        });
+
+        // Get call settings
+        const callSettings = getCallBuilder(call);
+
+        // Get auth token and generate call token (exactly like CometChat UIKit)
+        if (loggedInUser) {
+          const authToken = loggedInUser.getAuthToken();
+          console.log('🔑 Generating call token with logged in user...');
+
+          CometChatCalls.generateToken(sessionId, authToken).then(
+            (res: any) => {
+              console.log('✅ Token generated:', res);
+              if (containerRef.current) {
+                CometChatCalls.startSession(res?.token, callSettings, containerRef.current);
+                console.log('✅ Call session started');
+              } else {
+                console.error('❌ Container still not ready after delay');
+              }
+            },
+            (err: any) => {
+              console.error('❌ Error generating token:', err);
+              setShowOngoingCallScreen(false);
+              onClose();
+            },
+          );
+        } else {
+          console.log('🔑 Getting logged in user first...');
+          CometChat.getLoggedinUser().then((user: any) => {
+            const authToken = user!.getAuthToken();
+            console.log('🔑 Generating call token...');
+
+            CometChatCalls.generateToken(sessionId, authToken).then(
+              (res: any) => {
+                console.log('✅ Token generated:', res);
+                if (containerRef.current) {
+                  CometChatCalls.startSession(res?.token, callSettings, containerRef.current);
+                  console.log('✅ Call session started');
+                } else {
+                  console.error('❌ Container still not ready after delay');
+                }
+              },
+              (err: any) => {
+                console.error('❌ Error generating token:', err);
+                setShowOngoingCallScreen(false);
+                onClose();
+              },
+            );
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error starting ongoing call:', error);
+        setShowOngoingCallScreen(false);
+        onClose();
+      }
+    },
+    [getCallBuilder, onClose, loggedInUser],
+  );
+
+  const handleInitiateVideoCall = async () => {
     try {
+      // Request permissions
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
       const callType = CometChat.CALL_TYPE.VIDEO;
       const receiverType = CometChat.RECEIVER_TYPE.USER;
-
       const call = new CometChat.Call(targetUserId, callType, receiverType);
 
-      console.log('📞 Initiating call to:', targetUserId);
+      console.log('📞 Initiating video call to:', targetUserId);
       const outgoingCall = await CometChat.initiateCall(call);
       console.log('✅ Call initiated:', outgoingCall);
 
       setCurrentCall(outgoingCall);
+      setShowOutgoingCallScreen(true);
     } catch (error) {
       console.error('❌ Failed to initiate call:', error);
+      alert('Không thể thực hiện cuộc gọi. Vui lòng kiểm tra quyền camera/microphone.');
+    }
+  };
+
+  const handleInitiateAudioCall = async () => {
+    try {
+      // Request permissions
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const callType = CometChat.CALL_TYPE.AUDIO;
+      const receiverType = CometChat.RECEIVER_TYPE.USER;
+      const call = new CometChat.Call(targetUserId, callType, receiverType);
+
+      console.log('📞 Initiating audio call to:', targetUserId);
+      const outgoingCall = await CometChat.initiateCall(call);
+      console.log('✅ Call initiated:', outgoingCall);
+
+      setCurrentCall(outgoingCall);
+      setShowOutgoingCallScreen(true);
+    } catch (error) {
+      console.error('❌ Failed to initiate call:', error);
+      alert('Không thể thực hiện cuộc gọi. Vui lòng kiểm tra quyền microphone.');
     }
   };
 
@@ -250,184 +273,189 @@ export const VideoCall: React.FC<VideoCallProps> = ({
       console.error('❌ No current call to accept');
       return;
     }
+
     try {
-      console.log('📞 Accepting call...', {
-        sessionId: currentCall.getSessionId(),
-        type: currentCall.getType(),
+      // Request permissions
+      const isVideoCall = currentCall.getType() === 'video';
+      await navigator.mediaDevices.getUserMedia({
+        video: isVideoCall,
+        audio: true,
       });
 
+      console.log('📞 Accepting call...');
       const acceptedCall = await CometChat.acceptCall(currentCall.getSessionId());
       console.log('✅ Call accepted:', acceptedCall);
 
-      // Small delay to ensure everything is ready
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Set state to show ongoing call screen FIRST (this will render the container)
+      setShowOngoingCallScreen(true);
+      setShowIncomingCallScreen(false);
+      setCurrentCall(acceptedCall);
 
-      await startCall(acceptedCall);
+      // Wait for container to be rendered and call to be fully accepted
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Now start the call (container should be ready now)
+      startOngoingCall(acceptedCall);
     } catch (error) {
       console.error('❌ Error accepting call:', error);
-      setIsWaitingForAnswer(false);
+      alert('Không thể chấp nhận cuộc gọi. Vui lòng kiểm tra quyền camera/microphone.');
+      setShowIncomingCallScreen(false);
     }
   };
 
   const handleRejectCall = async () => {
     if (!currentCall) return;
+
     try {
-      const status = CometChat.CALL_STATUS.REJECTED;
-      await CometChat.rejectCall(currentCall.getSessionId(), status);
+      await CometChat.rejectCall(currentCall.getSessionId(), CometChat.CALL_STATUS.REJECTED);
       console.log('✅ Call rejected');
-      setCurrentCall(null);
-      setIsWaitingForAnswer(false);
+      setShowIncomingCallScreen(false);
       onClose();
     } catch (error) {
       console.error('❌ Error rejecting call:', error);
+      onClose();
     }
   };
 
-  const endCall = async () => {
+  const handleCancelCall = async () => {
+    if (!currentCall) return;
+
     try {
-      if (currentCall) {
-        const sessionId = currentCall.getSessionId();
-        await CometChat.endCall(sessionId);
-        CometChatCalls.endSession();
-        console.log('✅ Call ended');
-      }
-      setCurrentCall(null);
-      setIsInCall(false);
-      setIsWaitingForAnswer(false);
+      await CometChat.rejectCall(currentCall.getSessionId(), CometChat.CALL_STATUS.CANCELLED);
+      console.log('✅ Call cancelled');
+      setShowOutgoingCallScreen(false);
+      onClose();
     } catch (error) {
-      console.error('❌ Error ending call:', error);
+      console.error('❌ Error cancelling call:', error);
+      onClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90vw] h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-400 dark:border-gray-700">
-          <div className="flex items-center gap-3">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+      {/* Ongoing Call Screen */}
+      {showOngoingCallScreen && (
+        <div className="w-full h-full relative">
+          <div ref={containerRef} className="w-full h-full" />
+          {/* Không hiển thị nút X khi đang trong cuộc gọi - phải bấm End Call trong giao diện CometChat */}
+        </div>
+      )}
+
+      {/* Incoming Call Screen */}
+      {showIncomingCallScreen && !showOngoingCallScreen && currentCall && (
+        <div className="flex flex-col items-center justify-center gap-8 p-8">
+          <div className="text-center">
+            <h2 className="text-white text-3xl font-bold mb-2">Cuộc gọi đến</h2>
+            <p className="text-white/80 text-xl">{targetUserName}</p>
+            <p className="text-white/60 text-sm mt-2">
+              {currentCall.getType() === 'audio' ? '📞 Cuộc gọi thoại' : '📹 Cuộc gọi video'}
+            </p>
+          </div>
+
+          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20">
             <img
               src={targetUserAvatar || '/default_avatar.jpg'}
               alt={targetUserName}
-              className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500"
+              className="w-full h-full object-cover"
             />
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {targetUserName}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {isInCall ? 'Đang gọi...' : 'Video Call'}
-              </p>
-            </div>
           </div>
-          <div className="flex gap-2">
-            {isInCall ? (
-              <button
-                onClick={() => {
-                  endCall();
-                  onClose();
-                }}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg transition flex items-center gap-2"
-              >
-                <PhoneOff className="w-5 h-5 text-white" />
-                <span className="text-white font-medium">Kết thúc</span>
-              </button>
-            ) : (
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
-            )}
+
+          <div className="flex gap-8">
+            <button
+              onClick={handleRejectCall}
+              className="w-20 h-20 rounded-full bg-red-500 hover:bg-red-600 
+                         flex items-center justify-center transition-all hover:scale-110
+                         shadow-2xl"
+            >
+              <PhoneOff className="w-10 h-10 text-white" />
+            </button>
+
+            <button
+              onClick={handleAcceptCall}
+              className="w-20 h-20 rounded-full bg-green-500 hover:bg-green-600 
+                         flex items-center justify-center transition-all hover:scale-110
+                         shadow-2xl animate-pulse"
+            >
+              <Phone className="w-10 h-10 text-white" />
+            </button>
           </div>
         </div>
+      )}
 
-        {/* Video Container */}
-        <div className="flex-1 bg-gray-900 relative">
-          {/* CometChat UI Container */}
-          <div
-            ref={containerRef}
-            className="w-full h-full"
-            style={{ display: isInCall ? 'block' : 'none' }}
-          ></div>
+      {/* Outgoing Call Screen */}
+      {showOutgoingCallScreen && !showOngoingCallScreen && currentCall && (
+        <div className="flex flex-col items-center justify-center gap-8 p-8">
+          <div className="text-center">
+            <h2 className="text-white text-3xl font-bold mb-2">{targetUserName}</h2>
+            <p className="text-white/80 text-xl">Đang gọi...</p>
+          </div>
 
-          {/* Floating End Call Button - Always visible during call */}
-          {isInCall && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
-              <button
-                onClick={() => {
-                  endCall();
-                  onClose();
-                }}
-                className="px-8 py-4 bg-red-500 hover:bg-red-600 rounded-full shadow-2xl
-                           flex items-center gap-3 transition-all hover:scale-105"
-              >
-                <PhoneOff className="w-6 h-6 text-white" />
-                <span className="text-white font-semibold text-lg">Kết thúc cuộc gọi</span>
-              </button>
-            </div>
-          )}
+          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20">
+            <img
+              src={targetUserAvatar || '/default_avatar.jpg'}
+              alt={targetUserName}
+              className="w-full h-full object-cover"
+            />
+          </div>
 
-          {/* Incoming Call - Show accept/reject buttons */}
-          {!isInCall && isWaitingForAnswer && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 z-10">
-              <div className="text-center">
-                <p className="text-white text-2xl font-semibold mb-2">Cuộc gọi đến</p>
-                <p className="text-white/80 text-lg">{targetUserName}</p>
-                {currentCall && (
-                  <p className="text-white/60 text-sm mt-2">
-                    {currentCall.getType() === 'audio' ? '📞 Cuộc gọi thoại' : '📹 Cuộc gọi video'}
-                  </p>
-                )}
-              </div>
-              {currentCall ? (
-                <div className="flex gap-6">
-                  <button
-                    onClick={handleRejectCall}
-                    className="px-8 py-4 text-xl font-semibold rounded-2xl bg-red-500 hover:bg-red-600
-                               text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all
-                               flex items-center gap-3"
-                  >
-                    <PhoneOff className="w-6 h-6" />
-                    Từ chối
-                  </button>
-                  <button
-                    onClick={handleAcceptCall}
-                    className="px-8 py-4 text-xl font-semibold rounded-2xl bg-green-500 hover:bg-green-600
-                               text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all
-                               flex items-center gap-3"
-                  >
-                    <Phone className="w-6 h-6" />
-                    Chấp nhận
-                  </button>
-                </div>
-              ) : (
-                <p className="text-white/60 text-sm">Đang tải thông tin cuộc gọi...</p>
-              )}
-            </div>
-          )}
-
-          {/* Call Button - Show when not in call and not waiting */}
-          {!isInCall && !isWaitingForAnswer && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-              <button
-                onClick={handleInitiateCall}
-                disabled={!isInitialized}
-                className="px-8 py-4 text-xl font-semibold rounded-2xl bg-gradient-to-r from-blue-500 to-green-400 
-                           text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all
-                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-                           flex items-center gap-3"
-              >
-                <Phone className="w-6 h-6" />
-                {!isInitialized ? 'Đang khởi tạo...' : 'Gọi Video'}
-              </button>
-              {currentCall && !isInCall && !isWaitingForAnswer && (
-                <p className="text-white/80 mt-4 text-sm">Đang gọi...</p>
-              )}
-            </div>
-          )}
+          <button
+            onClick={handleCancelCall}
+            className="w-20 h-20 rounded-full bg-red-500 hover:bg-red-600 
+                       flex items-center justify-center transition-all hover:scale-110
+                       shadow-2xl"
+          >
+            <PhoneOff className="w-10 h-10 text-white" />
+          </button>
         </div>
-      </div>
+      )}
+
+      {/* Initial Screen - Choose call type */}
+      {!showIncomingCallScreen && !showOutgoingCallScreen && !showOngoingCallScreen && (
+        <div className="flex flex-col items-center justify-center gap-8 p-8">
+          <div className="text-center">
+            <h2 className="text-white text-3xl font-bold mb-2">{targetUserName}</h2>
+            <p className="text-white/80 text-lg">Chọn loại cuộc gọi</p>
+          </div>
+
+          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20">
+            <img
+              src={targetUserAvatar || '/default_avatar.jpg'}
+              alt={targetUserName}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          <div className="flex gap-6">
+            <button
+              onClick={handleInitiateAudioCall}
+              className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl
+                         bg-blue-500 hover:bg-blue-600 transition-all hover:scale-105
+                         shadow-xl"
+            >
+              <Mic className="w-12 h-12 text-white" />
+              <span className="text-white font-semibold text-lg">Gọi thoại</span>
+            </button>
+
+            <button
+              onClick={handleInitiateVideoCall}
+              className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl
+                         bg-green-500 hover:bg-green-600 transition-all hover:scale-105
+                         shadow-xl"
+            >
+              <Video className="w-12 h-12 text-white" />
+              <span className="text-white font-semibold text-lg">Gọi video</span>
+            </button>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="mt-4 px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600
+                       text-white transition-all"
+          >
+            Hủy
+          </button>
+        </div>
+      )}
     </div>
   );
 };

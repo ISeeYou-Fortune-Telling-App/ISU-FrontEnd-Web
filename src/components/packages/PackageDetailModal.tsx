@@ -11,16 +11,21 @@ import {
   Star,
   Clock,
   DollarSign,
+  AlertTriangle,
+  Ban,
+  Clock as ClockIcon,
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { Badge } from '../common/Badge';
 import { ServicePackage } from '@/types/packages/package.type';
-import { getCategoryDisplay, getCategoryColorClass } from '@/utils/packageHelpers';
+import { ReportsService } from '@/services/reports/reports.service';
 
 interface PackageDetailModalProps {
   package: ServicePackage | null;
   onClose: () => void;
   onHide?: (id: string, reason: string) => void;
   onDelete?: (id: string) => void;
+  onActionComplete?: () => void;
 }
 
 export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
@@ -28,9 +33,10 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
   onClose,
   onHide,
   onDelete,
+  onActionComplete,
 }) => {
   const [hideReason, setHideReason] = useState('');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [suspendDays, setSuspendDays] = useState(7);
 
   // lock scroll khi modal mở
   const useScrollLock = (locked: boolean) => {
@@ -73,13 +79,161 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
     }
   };
 
+  const handleWarning = async (reportId: string) => {
+    const result = await Swal.fire({
+      title: 'Cảnh cáo người dùng',
+      input: 'textarea',
+      inputLabel: 'Lý do cảnh cáo',
+      inputPlaceholder: 'Nhập lý do cảnh cáo...',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Cảnh cáo',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      inputValidator: (value) => {
+        if (!value) return 'Vui lòng nhập lý do!';
+      },
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await ReportsService.handleViolation(reportId, {
+          action: 'WARNING',
+          actionReason: result.value,
+        });
+        await Swal.fire({
+          title: 'Thành công!',
+          text: 'Đã gửi cảnh cáo',
+          icon: 'success',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+        if (onActionComplete) onActionComplete();
+      } catch (error) {
+        Swal.fire({
+          title: 'Lỗi!',
+          text: 'Không thể gửi cảnh cáo',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
+    }
+  };
+
+  const handleSuspend = async (reportId: string) => {
+    const result = await Swal.fire({
+      title: 'Tạm khóa tài khoản',
+      html: `
+        <div class="text-left space-y-3">
+          <div>
+            <label class="block text-sm font-medium mb-1">Số ngày khóa:</label>
+            <input type="number" id="suspendDays" class="swal2-input" value="${suspendDays}" min="1" max="365" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Lý do:</label>
+            <textarea id="suspendReason" class="swal2-textarea" placeholder="Nhập lý do tạm khóa..."></textarea>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Tạm khóa',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      preConfirm: () => {
+        const days = (document.getElementById('suspendDays') as HTMLInputElement)?.value;
+        const reason = (document.getElementById('suspendReason') as HTMLTextAreaElement)?.value;
+        if (!reason) {
+          Swal.showValidationMessage('Vui lòng nhập lý do!');
+          return false;
+        }
+        return { days: parseInt(days), reason };
+      },
+    });
+
+    if (result.isConfirmed && result.value) {
+      try {
+        await ReportsService.handleViolation(reportId, {
+          action: 'SUSPEND',
+          actionReason: result.value.reason,
+          suspendDays: result.value.days,
+        });
+        await Swal.fire({
+          title: 'Thành công!',
+          text: `Đã tạm khóa ${result.value.days} ngày`,
+          icon: 'success',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+        if (onActionComplete) onActionComplete();
+      } catch (error) {
+        Swal.fire({
+          title: 'Lỗi!',
+          text: 'Không thể tạm khóa tài khoản',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
+    }
+  };
+
+  const handleBan = async (reportId: string) => {
+    const result = await Swal.fire({
+      title: 'Cấm vĩnh viễn',
+      input: 'textarea',
+      inputLabel: 'Lý do cấm',
+      inputPlaceholder: 'Nhập lý do cấm vĩnh viễn...',
+      showCancelButton: true,
+      confirmButtonColor: '#991b1b',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Cấm vĩnh viễn',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      inputValidator: (value) => {
+        if (!value) return 'Vui lòng nhập lý do!';
+      },
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await ReportsService.handleViolation(reportId, {
+          action: 'BAN',
+          actionReason: result.value,
+        });
+        await Swal.fire({
+          title: 'Thành công!',
+          text: 'Đã cấm tài khoản vĩnh viễn',
+          icon: 'success',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+        if (onActionComplete) onActionComplete();
+      } catch (error) {
+        Swal.fire({
+          title: 'Lỗi!',
+          text: 'Không thể cấm tài khoản',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-end"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4"
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full max-w-md h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col"
+        className="w-full max-w-lg max-h-[90vh] bg-white dark:bg-gray-800 shadow-2xl rounded-xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Content - Scrollable */}
@@ -104,7 +258,7 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Nhà tiên tri</p>
                 <div className="flex items-center space-x-2">
                   <img
-                    src={pkg.seer.avatarUrl}
+                    src={pkg.seer.avatarUrl || '/default_avatar.jpg'}
                     alt={pkg.seer.fullName}
                     className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
                   />
@@ -152,10 +306,20 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
             <div
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm 
                          bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 
-                         max-h-40 overflow-y-auto whitespace-pre-wrap"
-            >
-              {pkg.packageContent}
-            </div>
+                         max-h-40 overflow-y-auto prose prose-sm dark:prose-invert max-w-none
+                         prose-headings:font-bold prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
+                         prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+              dangerouslySetInnerHTML={{
+                __html: pkg.packageContent
+                  .replace(/\\n/g, '\n')
+                  .replace(/\n/g, '<br />')
+                  .replace(/#{3}\s+(.+?)(<br \/>|$)/g, '<h3>$1</h3>')
+                  .replace(/#{2}\s+(.+?)(<br \/>|$)/g, '<h2>$1</h2>')
+                  .replace(/#{1}\s+(.+?)(<br \/>|$)/g, '<h1>$1</h1>')
+                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.+?)\*/g, '<em>$1</em>'),
+              }}
+            />
           </div>
 
           {/* THÔNG TIN DỊCH VỤ */}
@@ -164,12 +328,10 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Danh mục</p>
-                <div
-                  className={`inline-block px-2 py-1 rounded-md text-xs ${getCategoryColorClass(
-                    pkg.category,
-                  )}`}
-                >
-                  {getCategoryDisplay(pkg.category)}
+                <div className="flex flex-wrap gap-1">
+                  {pkg.categories.map((cat) => (
+                    <Badge key={cat.id} type="expertise" value={cat.name} />
+                  ))}
                 </div>
               </div>
               <div>
@@ -232,83 +394,125 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
           </div>
 
           {/* LÝ DO ẨN (nếu đã ẩn) */}
-          {isHidden && (
+          {isHidden && pkg.rejectionReason && (
             <div className="space-y-1 pt-3 border-t border-gray-200 dark:border-gray-700">
               <p className="text-xs text-red-500 dark:text-red-400">Lý do ẩn bài viết</p>
               <p className="text-sm italic text-red-800 dark:text-red-200 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                {hideReason || 'Không có lý do cụ thể'}
+                {pkg.rejectionReason}
               </p>
             </div>
           )}
 
-          {/* NHẬP LÝ DO ẨN (khi chưa ẩn) */}
-          {isAvailable && (
+          {/* REPORTS (nếu có) */}
+          {pkg.reports && pkg.reports.length > 0 && (
             <div className="space-y-2 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Lý do ẩn bài viết (tùy chọn)
+              <p className="font-semibold text-gray-900 dark:text-white">
+                Báo cáo vi phạm ({pkg.reports.length}):
               </p>
-              <textarea
-                value={hideReason}
-                onChange={(e) => setHideReason(e.target.value)}
-                placeholder="Nhập lý do nếu muốn ẩn bài viết này..."
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm 
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                rows={3}
-              />
+              <div className="space-y-3">
+                {pkg.reports.map((report) => (
+                  <div
+                    key={report.id}
+                    className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <img
+                          src={report.reporter.avatarUrl || '/default_avatar.jpg'}
+                          alt={report.reporter.username}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {report.reporter.username}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Badge type="status" value={report.reportStatus} />
+                        <Badge type="expertise" value={report.reportType} />
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                      {report.reportDescription}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleWarning(report.id)}
+                        className="px-3 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center gap-1"
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                        Cảnh cáo
+                      </button>
+                      <button
+                        onClick={() => handleSuspend(report.id)}
+                        className="px-3 py-1 text-xs bg-orange-500 text-white rounded hover:bg-orange-600 flex items-center gap-1"
+                      >
+                        <ClockIcon className="w-3 h-3" />
+                        Tạm khóa
+                      </button>
+                      <button
+                        onClick={() => handleBan(report.id)}
+                        className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                      >
+                        <Ban className="w-3 h-3" />
+                        Cấm
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
         {/* FOOTER - Actions */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          {showDeleteConfirm ? (
-            // Confirmation Dialog
+          {isAvailable ? (
             <div className="space-y-3">
-              <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                ⚠️ Bạn có chắc chắn muốn xóa gói dịch vụ này?
-              </p>
+              {/* Input lý do khi ẩn */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                  Lý do ẩn bài viết (tùy chọn)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nhập lý do ẩn bài viết..."
+                  value={hideReason}
+                  onChange={(e) => setHideReason(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
+                            focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
+                            text-gray-900 dark:text-gray-200"
+                />
+              </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 
-                             rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600"
+                  onClick={handleHide}
+                  disabled={!hideReason.trim()}
+                  className={`flex-1 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2
+                    ${
+                      !hideReason.trim()
+                        ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
                 >
-                  Hủy
+                  <EyeOff className="w-5 h-5" />
+                  <span>Ẩn bài viết</span>
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
+                  className="flex-1 py-3 text-white font-semibold rounded-lg transition flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
                 >
-                  Xác nhận xóa
+                  <Trash2 className="w-5 h-5" />
+                  <span>Xóa</span>
                 </button>
               </div>
             </div>
           ) : (
-            // Normal Actions
-            <div className="flex space-x-3">
-              <button
-                onClick={handleHide}
-                disabled={!isAvailable || !hideReason.trim()}
-                className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center space-x-2
-                  ${
-                    !isAvailable || !hideReason.trim()
-                      ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                title={!isAvailable ? 'Gói đã ẩn' : !hideReason.trim() ? 'Cần nhập lý do' : ''}
-              >
-                <EyeOff className="w-4 h-4" />
-                <span>Ẩn bài viết</span>
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium 
-               hover:bg-red-700 flex items-center justify-center space-x-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Xóa</span>
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="w-full py-3 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+            >
+              Đóng
+            </button>
           )}
         </div>
       </div>

@@ -29,7 +29,15 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      await AuthService.login({ email, password, fcmToken: 'string' });
+      // Truyền rememberMe vào AuthService để xử lý storage
+      await AuthService.login({ email, password, fcmToken: 'string' }, rememberMe);
+
+      // Lưu email để auto-fill lần sau (tùy chọn)
+      if (rememberMe) {
+        localStorage.setItem('remembered_email', email);
+      } else {
+        localStorage.removeItem('remembered_email');
+      }
 
       await router.prefetch('/admin/dashboard');
       router.push('/admin/dashboard');

@@ -19,7 +19,8 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('accessToken');
+      // Lấy token từ localStorage hoặc sessionStorage
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -59,9 +60,12 @@ api.interceptors.response.use(
       typeof window !== 'undefined' &&
       !originalRequest._retry
     ) {
-      const refreshToken = localStorage.getItem('refreshToken');
+      // Lấy refresh token từ localStorage hoặc sessionStorage
+      const refreshToken =
+        localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
       if (!refreshToken) {
         localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('accessToken');
         window.location.href = '/auth/login';
         return Promise.reject(error);
       }
@@ -85,8 +89,13 @@ api.interceptors.response.use(
         });
 
         const { token, refreshToken: newRefreshToken } = res.data;
-        localStorage.setItem('accessToken', token);
-        localStorage.setItem('refreshToken', newRefreshToken);
+
+        // Lưu vào storage tương ứng với rememberMe
+        const rememberMe = localStorage.getItem('rememberMe') === 'true';
+        const storage = rememberMe ? localStorage : sessionStorage;
+
+        storage.setItem('accessToken', token);
+        storage.setItem('refreshToken', newRefreshToken);
 
         isRefreshing = false;
         onRefreshed(token);
@@ -95,8 +104,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         isRefreshing = false;
+        // Clear cả localStorage và sessionStorage
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
         window.location.href = '/auth/login';
         return Promise.reject(err);
       }

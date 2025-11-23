@@ -332,16 +332,16 @@ export const CertificateTable: React.FC = () => {
               <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Nhà tiên tri
               </th>
-              <th className="w-[160px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+              <th className="w-[150px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Danh mục
               </th>
-              <th className="w-[70px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+              <th className="w-[90px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Ngày cấp
               </th>
               <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Trạng thái
               </th>
-              <th className="w-[150px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+              <th className="w-[115px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Thao tác
               </th>
             </tr>
@@ -539,6 +539,10 @@ export const CertificateTable: React.FC = () => {
                 organization: selectedCertificate.issuedBy,
                 description: selectedCertificate.certificateDescription,
                 fileName: selectedCertificate.certificateUrl.split('/').pop() || 'certificate.pdf',
+<<<<<<< HEAD
+                certificateUrl: selectedCertificate.certificateUrl,
+=======
+>>>>>>> 9d110770aad6c6a3e20f1364af993a89d89d2741
                 approvalTime: selectedCertificate.decisionDate
                   ? new Date(selectedCertificate.decisionDate).toLocaleString('vi-VN')
                   : undefined,

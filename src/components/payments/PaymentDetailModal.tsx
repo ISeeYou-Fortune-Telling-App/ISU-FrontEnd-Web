@@ -11,6 +11,16 @@ interface Props {
 }
 
 export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
+  // Lock scroll khi modal mở
+  React.useEffect(() => {
+    if (payment) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [payment]);
+
   if (!payment) return null;
 
   const isRefund = payment.paymentStatus === 'REFUNDED';
@@ -49,19 +59,19 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
             <div>
               <p className="text-gray-500 text-xs">Khách hàng</p>
               <p className="flex items-center font-medium text-gray-900 dark:text-white">
-                <User className="w-4 h-4 mr-2" /> {payment.customer.fullName}
+                <User className="w-4 h-4 mr-2" /> {payment.customer?.fullName || 'N/A'}
               </p>
             </div>
             <div>
               <p className="text-gray-500 text-xs">Nhà tiên tri</p>
               <p className="flex items-center font-medium text-gray-900 dark:text-white">
-                <User className="w-4 h-4 mr-2" /> {payment.seer.fullName}
+                <User className="w-4 h-4 mr-2" /> {payment.seer?.fullName || 'N/A'}
               </p>
             </div>
             <div className="col-span-2">
               <p className="flex items-center text-gray-600 dark:text-gray-300 text-sm">
                 <Calendar className="w-4 h-4 mr-2" />{' '}
-                {new Date(payment.createdAt).toLocaleString('vi-VN')}
+                {payment.createdAt ? new Date(payment.createdAt).toLocaleString('vi-VN') : 'N/A'}
               </p>
             </div>
           </div>
@@ -69,12 +79,12 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
           {/* Thông tin thanh toán */}
           <div className="space-y-1 border rounded-lg p-4 text-sm dark:border-gray-600">
             <p>
-              Mã giao dịch: <span className="font-medium">{payment.transactionId}</span>
+              Mã giao dịch: <span className="font-medium">{payment.transactionId || 'N/A'}</span>
             </p>
-            <p>Dịch vụ: {payment.packageTitle}</p>
-            <p>Phương thức: {payment.paymentMethod}</p>
-            <p>Trạng thái: {payment.paymentStatus}</p>
-            <p>Giá tiền: {payment.amount.toLocaleString('vi-VN')}₫</p>
+            <p>Dịch vụ: {payment.packageTitle || 'N/A'}</p>
+            <p>Phương thức: {payment.paymentMethod || 'N/A'}</p>
+            <p>Trạng thái: {payment.paymentStatus || 'N/A'}</p>
+            <p>Giá tiền: {payment.amount?.toLocaleString('vi-VN') || '0'}₫</p>
           </div>
 
           {/* Lý do thất bại / hoàn tiền */}
@@ -92,19 +102,23 @@ export const PaymentDetailModal: React.FC<Props> = ({ payment, onClose }) => {
           {/* Tổng tiền chi tiết */}
           <div className="border rounded-lg p-4 dark:border-gray-600">
             <p className="flex items-center text-sm font-medium text-gray-900 dark:text-white mb-3">
-              <CreditCard className="w-4 h-4 mr-2" /> {payment.paymentMethod}
+              <CreditCard className="w-4 h-4 mr-2" /> {payment.paymentMethod || 'N/A'}
             </p>
             <div className="flex justify-between text-sm mb-1">
               <span>Tổng tiền</span>
-              <span>{payment.amount.toLocaleString('vi-VN')}₫</span>
+              <span>{payment.amount?.toLocaleString('vi-VN') || '0'}₫</span>
             </div>
             <div className="flex justify-between text-sm mb-1">
               <span>Phí nền tảng (10%)</span>
-              <span>{Math.round(payment.amount * 0.1).toLocaleString('vi-VN')}₫</span>
+              <span>
+                {payment.amount ? Math.round(payment.amount * 0.1).toLocaleString('vi-VN') : '0'}₫
+              </span>
             </div>
             <div className="flex justify-between text-sm font-bold text-green-600 dark:text-green-400">
               <span>{isRefund ? 'Khách hàng nhận lại' : 'Nhà tiên tri nhận được'}</span>
-              <span>{Math.round(payment.amount * 0.9).toLocaleString('vi-VN')}₫</span>
+              <span>
+                {payment.amount ? Math.round(payment.amount * 0.9).toLocaleString('vi-VN') : '0'}₫
+              </span>
             </div>
           </div>
         </div>

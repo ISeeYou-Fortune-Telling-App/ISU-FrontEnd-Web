@@ -213,7 +213,7 @@ export const ReportService = {
     action: CustomerAction,
     amount?: number,
   ): Promise<boolean> => {
-    const res = await apiFetch<boolean>('/statistic-report/customer-action', {
+    const res = await apiFetch<SingleResponse<boolean>>('/statistic-report/customer-action', {
       method: 'POST',
       params: {
         customerId,
@@ -221,11 +221,11 @@ export const ReportService = {
         amount,
       },
     });
-    return res;
+    return res.data;
   },
 
   seerAction: async (seerId: string, action: SeerAction, amount?: number): Promise<boolean> => {
-    const res = await apiFetch<boolean>('/statistic-report/seer-action', {
+    const res = await apiFetch<SingleResponse<boolean>>('/statistic-report/seer-action', {
       method: 'POST',
       params: {
         seerId,
@@ -233,7 +233,7 @@ export const ReportService = {
         amount,
       },
     });
-    return res;
+    return res.data;
   },
 
   payBonus: async (

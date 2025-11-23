@@ -79,12 +79,12 @@ export interface SeerPerformanceParams extends PagingParams {
 export interface CustomerPotential {
   id: string;
   customerId: string;
-  fullName: string; 
-  avatarUrl: string; 
+  fullName: string;
+  avatarUrl: string;
   month: number;
   year: number;
   potentialPoint: number;
-  potentialTier: 'CASUAL' | 'STANDARD' | 'PREMIUM' | 'VIP'; 
+  potentialTier: 'CASUAL' | 'STANDARD' | 'PREMIUM' | 'VIP';
   ranking: number;
   totalBookingRequests: number;
   totalSpending: number;
@@ -141,7 +141,9 @@ export type ChartType =
   | 'TOTAL_REVENUE'
   | 'TOTAL_BOOKING_REQUESTS'
   | 'TOTAL_BOOKING_COMPLETED'
-  | 'TOTAL_PACKAGES';
+  | 'TOTAL_PACKAGES'
+  | 'AVG_SEER_REVENUE'
+  | 'AVG_CUSTOMER_SPENDING';
 
 export type CustomerAction = 'BOOKING' | 'SPENDING' | 'CANCELLING';
 export type SeerAction =

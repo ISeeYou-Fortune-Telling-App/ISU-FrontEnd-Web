@@ -7,7 +7,6 @@ import {
   PackageInteractionRequest,
   PackageInteractionResponse,
   PackageStatsResponse,
-  ServiceCategoryEnum,
   ServicePackageResponse,
   ServiceReviewRequest,
   ServiceReviewResponse,
@@ -34,7 +33,7 @@ export const PackageService = {
   },
 
   getByCategory: async (
-    category: ServiceCategoryEnum,
+    category: string,
     params?: GetPackagesParams,
   ): Promise<GetPackagesResponse> => {
     const res = await apiFetch<GetPackagesResponse>(`/service-packages/by-category/${category}`, {
@@ -179,5 +178,3 @@ export const PackageService = {
     return res;
   },
 };
-
-

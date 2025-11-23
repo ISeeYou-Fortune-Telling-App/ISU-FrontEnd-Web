@@ -15,6 +15,8 @@ const ITEMS_PER_PAGE = 10;
 export const MessageTable: React.FC = () => {
   const [conversations, setConversations] = useState<ConversationSession[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [messageMode, setMessageMode] = useState<'group' | 'individual'>('individual');
@@ -30,14 +32,14 @@ export const MessageTable: React.FC = () => {
     targetUserAvatar?: string;
     callObject: any;
   } | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // 1. Ref để theo dõi container cuộn của danh sách hội thoại
   const conversationListRef = useRef<HTMLDivElement | null>(null);
   // Ref để lưu vị trí cuộn trước đó
   const scrollPositionRef = useRef(0);
-  // Ref cho spinner element để detect khi nó hiện ra
+  // Ref để track trạng thái đang load (tránh trigger nhiều lần)
+  const isLoadingNextPageRef = useRef(false);
+  // Ref để observe khi scroll đến cuối (trigger load more)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -77,22 +79,37 @@ export const MessageTable: React.FC = () => {
   }, [messageMode]);
 
   const fetchConversations = async () => {
-    // LƯU vị trí cuộn trước khi tải (để tránh nhấp nháy khi fetch)
-    if (conversationListRef.current) {
-      scrollPositionRef.current = conversationListRef.current.scrollTop;
+    // Nếu không còn data thì return
+    if (!hasMore) return;
+
+    // Nếu đang fetch rồi thì không fetch nữa (dùng ref thay vì state)
+    if (isLoadingNextPageRef.current) return;
+
+    // Đánh dấu đang fetch
+    isLoadingNextPageRef.current = true;
+
+    // Trang đầu thì dùng loading, trang sau dùng loadingMore
+    if (page === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
     }
 
-    setLoading(true);
+    // LƯU vị trí scroll CHÍNH XÁC trước khi load
+    const container = conversationListRef.current;
+    const scrollTopBefore = container?.scrollTop || 0;
+
     setError(null);
     try {
+      // Tạo params object mới (không frozen)
       const params: ConversationParams = {
-        page,
+        page: page,
         limit: ITEMS_PER_PAGE,
         sortBy: 'sessionStartTime',
         participantName: debouncedSearch || undefined,
         type: 'ADMIN_CHAT',
       };
-      const res = await MessagesService.getSearchConversations(params);
+      const res = await MessagesService.getSearchConversations({ ...params });
 
       // Lấy adminId từ localStorage
       const adminId = localStorage.getItem('userId');
@@ -115,29 +132,51 @@ export const MessageTable: React.FC = () => {
         unreadForAdmin: c.adminUnreadCount > 0,
       }));
 
-      // Check if there are more pages
-      setHasMore(formatted.length === ITEMS_PER_PAGE);
-      setConversations(formatted);
+      // Check nếu không còn data
+      if (formatted.length < ITEMS_PER_PAGE) {
+        setHasMore(false);
+      }
+
+      // Nếu là trang đầu, replace toàn bộ
+      // Nếu là trang tiếp theo, append thêm vào
+      if (page === 1) {
+        setConversations(formatted);
+        setHasMore(formatted.length >= ITEMS_PER_PAGE);
+      } else {
+        setConversations((prev) => [...prev, ...formatted]);
+      }
     } catch (err: any) {
       setError(err.message || 'Lỗi khi tải danh sách hội thoại.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      // Reset flag sau khi load xong
+      isLoadingNextPageRef.current = false;
+
+      // Giữ vị trí scroll sau khi render (chỉ cho trang > 1)
+      // Khi append thêm data, scrollHeight tăng lên, nhưng ta giữ nguyên scrollTop
+      // → thumb giữ nguyên vị trí, chỉ có track dài ra
+      if (page > 1 && container) {
+        requestAnimationFrame(() => {
+          container.scrollTop = scrollTopBefore;
+        });
+      }
     }
   };
 
   // Intersection Observer để detect khi scroll đến cuối
   useEffect(() => {
-    if (!loadMoreTriggerRef.current || !hasMore || isLoadingMore || loading) return;
+    if (!loadMoreTriggerRef.current || !hasMore || loadingMore || loading) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const target = entries[0];
-        if (target.isIntersecting && !isLoadingMore && hasMore) {
+        if (target.isIntersecting && !loadingMore && hasMore) {
           // Khi spinner hiện ra, set loading state và setTimeout 2s
-          setIsLoadingMore(true);
+          setLoadingMore(true);
           setTimeout(() => {
             setPage((prev) => prev + 1);
-            setIsLoadingMore(false);
+            setLoadingMore(false);
           }, 2000);
         }
       },
@@ -150,21 +189,59 @@ export const MessageTable: React.FC = () => {
     observer.observe(loadMoreTriggerRef.current);
 
     return () => observer.disconnect();
-  }, [hasMore, isLoadingMore, loading]);
+  }, [hasMore, loadingMore, loading]);
+
+  useEffect(() => {
+    // Reset page về 1 và hasMore khi search thay đổi
+    setPage(1);
+    setHasMore(true);
+    // Reset flag khi search thay đổi
+    isLoadingNextPageRef.current = false;
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchConversations();
   }, [page, debouncedSearch]);
 
-  // 2. useEffect để khôi phục vị trí cuộn sau khi conversations được cập nhật
+  // 2. useEffect để khôi phục vị trí cuộn khi có tin nhắn mới
   useEffect(() => {
-    if (conversationListRef.current && !loading) {
-      // Chỉ khôi phục vị trí cuộn khi KHÔNG ở trang đầu và KHÔNG đang tìm kiếm
-      if (page > 1 || debouncedSearch || scrollPositionRef.current > 0) {
+    if (conversationListRef.current && !loading && scrollPositionRef.current > 0) {
+      // Chỉ khôi phục khi có tin nhắn mới (không phải khi load more)
+      if (!loadingMore) {
         conversationListRef.current.scrollTop = scrollPositionRef.current;
       }
     }
-  }, [conversations, loading]);
+  }, [conversations, loading, loadingMore]);
+
+  // 3. Infinite scroll - Detect khi scroll đến spinner
+  useEffect(() => {
+    const container = conversationListRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // Khi scroll đến gần cuối (còn 50px) - tức là đã thấy spinner
+      if (
+        scrollHeight - scrollTop - clientHeight < 50 &&
+        !loading &&
+        !loadingMore &&
+        hasMore &&
+        !isLoadingNextPageRef.current
+      ) {
+        // Bắt đầu hiển thị spinner xoay
+        setLoadingMore(true);
+        // Đợi 2 giây rồi mới tăng page
+        setTimeout(() => {
+          setPage((prev) => prev + 1);
+        }, 2000);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [loading, loadingMore, hasMore]);
 
   const { socketConnected, getMessages, joinConversation, sendMessage, clearMessages } =
     useAdminChat({
@@ -246,9 +323,7 @@ export const MessageTable: React.FC = () => {
       {/* Video Call Modal */}
       {showIncomingCall && adminId && incomingCallData && (
         <VideoCall
-          conversationId={selectedConvId || ''}
           currentUserId={adminId}
-          currentUserName="Admin"
           targetUserId={incomingCallData.targetUserId}
           targetUserName={incomingCallData.targetUserName}
           targetUserAvatar={incomingCallData.targetUserAvatar}
@@ -324,7 +399,7 @@ export const MessageTable: React.FC = () => {
               ref={conversationListRef}
               className="flex-grow overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-500 dark:scrollbar-track-gray-800"
             >
-              {conversations.length === 0 ? (
+              {conversations.length === 0 && !loading ? (
                 <p className="text-center text-gray-500">Không có hội thoại nào.</p>
               ) : (
                 <>
@@ -388,15 +463,20 @@ export const MessageTable: React.FC = () => {
                     </div>
                   ))}
 
-                  {/* Spinner ở cuối danh sách - trigger infinite scroll */}
-                  {hasMore && (
-                    <div ref={loadMoreTriggerRef} className="flex justify-center items-center py-4">
+                  {/* Spinner luôn hiện ở cuối nếu còn data */}
+                  {hasMore && conversations.length > 0 && (
+                    <div ref={loadMoreTriggerRef} className="flex justify-center py-4">
                       <div
-                        className={`w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full ${
-                          isLoadingMore ? 'animate-spin' : ''
+                        className={`rounded-full h-8 w-8 border-b-2 border-indigo-600 ${
+                          loadingMore ? 'animate-spin' : ''
                         }`}
-                      />
+                      ></div>
                     </div>
+                  )}
+
+                  {/* Thông báo hết data */}
+                  {!hasMore && conversations.length > 0 && (
+                    <p className="text-center text-gray-400 text-sm py-4">Đã hiển thị tất cả</p>
                   )}
                 </>
               )}

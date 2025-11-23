@@ -267,6 +267,9 @@ export const AccountTable: React.FC = () => {
                         src={user.avatarUrl || '/default_avatar.jpg'}
                         alt={user.fullName}
                         className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-400 dark:border-gray-700"
+                        onError={(e) => {
+                          e.currentTarget.src = '/default_avatar.jpg';
+                        }}
                       />
                       <span
                         className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[140px]"

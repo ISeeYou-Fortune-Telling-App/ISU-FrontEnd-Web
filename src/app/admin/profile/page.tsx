@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { AccountService } from '@/services/account/account.service';
+import { handleImageError } from '@/utils/imageHelpers';
 import {
   Camera,
   Loader2,
@@ -31,15 +32,15 @@ export default function AdminProfilePage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const data = await AccountService.getCurrentUser();
-      setUser(data);
+      const response = await AccountService.getCurrentUser();
+      setUser(response.data);
       setFormData({
-        fullName: data.data.fullName ?? '',
-        phone: data.data.phone ?? '',
-        gender: data.data.gender ?? '',
-        birthDate: data.data.birthDate ?? '',
-        profileDescription: data.data.profileDescription ?? '',
-        status: data.data.status ?? '',
+        fullName: response.data.fullName ?? '',
+        phone: response.data.phone ?? '',
+        gender: response.data.gender ?? '',
+        birthDate: response.data.birthDate ?? '',
+        profileDescription: response.data.profileDescription ?? '',
+        status: response.data.status ?? '',
       });
     };
     loadProfile();
@@ -54,8 +55,8 @@ export default function AdminProfilePage() {
     try {
       if (type === 'avatar') await AccountService.uploadAvatar(file);
       else await AccountService.uploadCover(file);
-      const updated = await AccountService.getCurrentUser();
-      setUser(updated);
+      const response = await AccountService.getCurrentUser();
+      setUser(response.data);
     } catch (err) {
       console.error('Upload error:', err);
     } finally {
@@ -67,9 +68,9 @@ export default function AdminProfilePage() {
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
-      await AccountService.updateProfile?.(formData);
-      const updated = await AccountService.getCurrentUser();
-      setUser(updated);
+      await AccountService.updateProfile(formData);
+      const response = await AccountService.getCurrentUser();
+      setUser(response.data);
       setShowModal(false);
     } catch (err) {
       console.error('Update failed:', err);
@@ -88,6 +89,9 @@ export default function AdminProfilePage() {
           src={user.coverUrl || '/default_cover.jpg'}
           alt="Cover"
           className="w-full h-full object-cover pointer-events-none"
+          onError={(e) => {
+            e.currentTarget.src = '/default_cover.jpg';
+          }}
         />
         <label className="absolute bottom-3 right-3 z-10 bg-black/60 hover:bg-black/80 text-white px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center space-x-1 transition">
           <Camera className="w-4 h-4" />
@@ -105,9 +109,10 @@ export default function AdminProfilePage() {
       <div className="relative -mt-12 flex flex-col items-center text-center px-6 pb-6">
         <div className="relative">
           <img
-            src={user.avatarUrl || '/default_avatar.png'}
+            src={user.avatarUrl || '/default_avatar.jpg'}
             alt="Avatar"
             className="w-28 h-28 rounded-full border-4 border-white dark:border-gray-800 object-cover shadow-lg"
+            onError={handleImageError}
           />
           <label className="absolute bottom-0 right-0 bg-cyan-500 hover:bg-cyan-400 text-white p-1.5 rounded-full cursor-pointer shadow-md">
             {isUploading ? (

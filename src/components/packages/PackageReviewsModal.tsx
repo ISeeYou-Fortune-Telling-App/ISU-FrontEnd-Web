@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { X, MessageCircle, ChevronRight, Send, Edit2, Trash2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { PackageService } from '@/services/packages/package.service';
 import { ServiceReview } from '@/types/packages/package.type';
 
@@ -75,7 +76,11 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
 
     if (!parentId) {
       console.error('Không thể phản hồi: Bình luận gốc không có ID.', selectedReview);
-      alert('Lỗi: Không tìm thấy ID của bình luận gốc.');
+      Swal.fire({
+        title: 'Lỗi!',
+        text: 'Không tìm thấy ID của bình luận gốc.',
+        icon: 'error',
+      });
       return;
     }
 
@@ -86,12 +91,16 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
         parentReviewId: parentId, // Dùng ID đã lưu
       });
 
-      setReplyText(''); // Tải lại danh sách replies 
+      setReplyText(''); // Tải lại danh sách replies
 
       loadReplies(parentId);
     } catch (err) {
       console.error('Error sending reply:', err);
-      alert('Không thể gửi phản hồi');
+      Swal.fire({
+        title: 'Lỗi!',
+        text: 'Không thể gửi phản hồi',
+        icon: 'error',
+      });
     }
   };
 
@@ -112,12 +121,28 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
       }
     } catch (err) {
       console.error('Error editing review:', err);
-      alert('Không thể cập nhật bình luận');
+      Swal.fire({
+        title: 'Lỗi!',
+        text: 'Không thể cập nhật bình luận',
+        icon: 'error',
+      });
     }
   };
 
   const handleDeleteReview = async (reviewId: string) => {
-    if (!confirm('Xác nhận xóa bình luận? Tất cả phản hồi cũng sẽ bị xóa.')) return;
+    const result = await Swal.fire({
+      title: 'Xác nhận xóa',
+      text: 'Xác nhận xóa bình luận? Tất cả phản hồi cũng sẽ bị xóa.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       await PackageService.deleteReview(reviewId);
@@ -136,7 +161,11 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
       }
     } catch (err) {
       console.error('Error deleting review:', err);
-      alert('Không thể xóa bình luận');
+      Swal.fire({
+        title: 'Lỗi!',
+        text: 'Không thể xóa bình luận',
+        icon: 'error',
+      });
     }
   };
 
@@ -188,7 +217,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-2">
                         <img
-                          src={review.user.avatarUrl}
+                          src={review.user.avatarUrl || '/default_avatar.jpg'}
                           alt={review.user.fullName}
                           className="w-8 h-8 rounded-full"
                         />
@@ -220,7 +249,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-start space-x-3">
                     <img
-                      src={selectedReview.user.avatarUrl}
+                      src={selectedReview.user.avatarUrl || '/default_avatar.jpg'}
                       alt={selectedReview.user.fullName}
                       className="w-10 h-10 rounded-full"
                     />
@@ -298,7 +327,7 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
                       >
                         <div className="flex items-start space-x-2">
                           <img
-                            src={reply.user.avatarUrl}
+                            src={reply.user.avatarUrl || '/default_avatar.jpg'}
                             alt={reply.user.fullName}
                             className="w-8 h-8 rounded-full"
                           />

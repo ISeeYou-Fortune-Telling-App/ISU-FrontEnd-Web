@@ -8,12 +8,13 @@ export enum PackageStatusEnum {
   HIDDEN = 'HIDDEN',
 }
 
-export enum ServiceCategoryEnum {
-  TAROT = 'TAROT',
-  PALM_READING = 'PALM_READING',
-  CONSULTATION = 'CONSULTATION',
-  PHYSIOGNOMY = 'PHYSIOGNOMY',
-}
+// Removed - Categories are now fetched from API
+// export enum ServiceCategoryEnum {
+//   TAROT = 'TAROT',
+//   PALM_READING = 'PALM_READING',
+//   CONSULTATION = 'CONSULTATION',
+//   PHYSIOGNOMY = 'PHYSIOGNOMY',
+// }
 
 export enum InteractionTypeEnum {
   LIKE = 'LIKE',
@@ -36,9 +37,27 @@ export interface UserInfo {
 }
 
 export interface CategoryInfo {
-  id: string; 
+  id: string;
   name: string;
   description: string;
+}
+
+// Report Info
+export interface ReportInfo {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  reportType: string;
+  reportDescription: string;
+  targetReportType: string;
+  reportStatus: string;
+  actionType: string;
+  note: string | null;
+  reporter: {
+    id: string;
+    username: string;
+    avatarUrl: string;
+  };
 }
 
 // Service Package
@@ -50,9 +69,9 @@ export interface ServicePackage {
   imageUrl: string;
   durationMinutes: number;
   price: number;
-  categories: CategoryInfo[]; 
+  categories: CategoryInfo[];
   status: string;
-  rejectionReason: string | null; 
+  rejectionReason: string | null;
   likeCount: number;
   dislikeCount: number;
   isLike: boolean;
@@ -61,9 +80,10 @@ export interface ServicePackage {
   totalReviews: number;
   createdAt: string;
   updatedAt: string;
+  reports?: ReportInfo[];
 }
 
-// REVIEWS 
+// REVIEWS
 export interface ServiceReview {
   reviewId: string;
   user: UserInfo;
@@ -78,7 +98,7 @@ export interface ServiceReview {
 
 // PackageInteractionRequest từ backend
 export interface PackageInteractionRequest {
-  interactionType: InteractionTypeEnum  // Backend validate: "LIKE|DISLIKE"
+  interactionType: InteractionTypeEnum; // Backend validate: "LIKE|DISLIKE"
 }
 
 export interface ServiceReviewRequest {
@@ -142,11 +162,11 @@ export interface ServiceReviewResponse {
 export interface GetPackagesParams extends PagingParams {
   minPrice: number;
   maxPrice: number;
-  category?: ServiceCategoryEnum;
+  searchText?: string; // Search text for package title
+  category?: string; // Category ID from knowledge categories
   status?: PackageStatusEnum;
   seerId?: string;
 }
-
 
 // Dữ liệu thống kê
 export interface PackageStats {
