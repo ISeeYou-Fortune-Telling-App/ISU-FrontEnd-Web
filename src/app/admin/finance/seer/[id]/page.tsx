@@ -57,25 +57,25 @@ const PayBonusModal: React.FC<{
     try {
       const bonusAmount = parseFloat(amount);
       const currentDate = new Date();
-      
+
       console.log('=== BẮT ĐẦU THANH TOÁN BONUS ===');
       console.log('Seer ID:', seer.seerId);
       console.log('Bonus amount:', bonusAmount);
       console.log('Bonus hiện tại:', seer.bonus);
       console.log('Bonus mong đợi:', seer.bonus + bonusAmount);
-      
+
       const paymentResult = await ReportService.payBonus(seer.seerId, bonusAmount, reason);
       console.log('✅ Payment thành công:', paymentResult);
-      
+
       const actionResult = await ReportService.seerAction(seer.seerId, 'EARNING', bonusAmount);
       console.log('✅ SeerAction result:', actionResult);
-      
+
       const verifyResponse = await ReportService.getSeerPerformance(
         seer.seerId,
         currentDate.getMonth() + 1,
-        currentDate.getFullYear()
+        currentDate.getFullYear(),
       );
-      
+
       if (verifyResponse.data.bonus >= seer.bonus + bonusAmount) {
         console.log('✅ SERVER ĐÃ CẬP NHẬT THÀNH CÔNG!');
         alert('Thanh toán bonus thành công!');
@@ -89,7 +89,7 @@ const PayBonusModal: React.FC<{
         alert('Thanh toán bonus thành công!');
         onSuccess(optimisticUpdate);
       }
-      
+
       onClose();
     } catch (err: any) {
       console.error('❌ LỖI:', err);
@@ -233,12 +233,12 @@ const SeerDetailPage: React.FC = () => {
     console.log('🔄 Bắt đầu refresh dữ liệu...');
     setLoading(true);
     const currentDate = new Date();
-    
+
     try {
       const response = await ReportService.getSeerPerformance(
-        seerId, 
-        currentDate.getMonth() + 1, 
-        currentDate.getFullYear()
+        seerId,
+        currentDate.getMonth() + 1,
+        currentDate.getFullYear(),
       );
       console.log('✅ Refresh thành công:', response.data);
       setSeerData(response.data);
@@ -280,7 +280,7 @@ const SeerDetailPage: React.FC = () => {
               <TrendingUp className="w-4 h-4" />
               <span>Làm mới</span>
             </button>
-            
+
             <button
               onClick={() => setShowPayModal(true)}
               className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center space-x-2"
@@ -323,9 +323,7 @@ const SeerDetailPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Performance Point
-              </p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Điểm hiệu suất</p>
               <Award className="w-5 h-5 text-indigo-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -363,7 +361,7 @@ const SeerDetailPage: React.FC = () => {
             <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <Package className="w-5 h-5 text-indigo-500" />
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Packages</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Tổng gói dịch vụ</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
                   {seerData?.totalPackages}
                 </p>
@@ -373,7 +371,7 @@ const SeerDetailPage: React.FC = () => {
             <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <Calendar className="w-5 h-5 text-purple-500" />
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Bookings</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Tổng lịch hẹn</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
                   {seerData?.totalBookings}
                 </p>
