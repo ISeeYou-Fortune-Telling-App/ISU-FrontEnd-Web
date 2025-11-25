@@ -4,7 +4,7 @@ import React, { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Users, MessageSquare, CreditCard, Award } from 'lucide-react';
 
-import StatCardDashboard from '../../../components/dashboard/StatCardDashboard';
+import { FinanceStats } from '../../../components/dashboard/StatCardDashboard';
 
 // Lazy load các components nặng
 const ServiceDistributionCard = dynamic(
@@ -62,32 +62,7 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCardDashboard
-          title="Tổng doanh thu"
-          value="72.5M"
-          trend="+12.5% so với tháng trước"
-          icon={CreditCard}
-        />
-        <StatCardDashboard
-          title="Người dùng hoạt động"
-          value="2,817"
-          trend="+8.2% trong 30 ngày qua"
-          icon={Users}
-        />
-        <StatCardDashboard
-          title="Phiên tư vấn"
-          value="1,354"
-          trend="+0.5% tháng này"
-          icon={MessageSquare}
-        />
-        <StatCardDashboard
-          title="Tỷ lệ hài lòng"
-          value="76.8%"
-          trend="-2.1% đánh giá trung bình"
-          icon={Award}
-        />
-      </div>
+      <FinanceStats/>
 
       <Suspense
         fallback={
@@ -119,16 +94,6 @@ export default function AdminDashboardPage() {
           <ServiceDistributionCard />
         </Suspense>
       </div>
-
-      <Suspense
-        fallback={
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-          </div>
-        }
-      >
-        <RecentActivityCard />
-      </Suspense>
     </div>
   );
 }

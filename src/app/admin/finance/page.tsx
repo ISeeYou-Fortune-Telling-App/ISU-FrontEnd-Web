@@ -533,7 +533,8 @@ const FinanceDashboard: React.FC = () => {
           }
 
           const mappedSeers = allSeersData.map((seer: any) => ({
-            id: seer.seerId,
+            id: seer.id,
+            seerId: seer.seerId,
             name: seer.fullName || 'N/A',
             avatar: seer.avatarUrl || `https://i.pravatar.cc/150?u=${seer.seerId}`,
             performance: seer.performancePoint,
