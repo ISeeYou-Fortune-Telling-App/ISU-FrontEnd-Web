@@ -1,6 +1,6 @@
 import { apiFetch } from '@/services/api-core';
 import { ListResponse, SingleResponse } from '@/types/response.type';
-import { BookingResponse, BookingParams, BookingStats } from '@/types/booking/booking.type';
+import { BookingResponse, BookingParams, BookingStats, PaymentParams } from '@/types/booking/booking.type';
 
 export const BookingService = {
   getBookings: (params: BookingParams) =>
@@ -30,4 +30,10 @@ export const BookingService = {
     // Trả về message (data) từ SingleResponse<string>
     return res.data;
   },
+
+  getPayments: (params: PaymentParams) =>
+    apiFetch<ListResponse<PaymentResponse>>('/bookings/payments', {
+      method: 'GET',
+      params,
+    }),
 };

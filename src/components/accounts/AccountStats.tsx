@@ -11,7 +11,7 @@ interface StatCardAccountProps {
 }
 
 const StatCardAccount: React.FC<StatCardAccountProps> = ({ value, label, colorClass }) => {
-  let displayValue: string = value.toLocaleString('vi-VN');
+  const displayValue: string = value.toLocaleString('vi-VN');
 
   return (
     <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">

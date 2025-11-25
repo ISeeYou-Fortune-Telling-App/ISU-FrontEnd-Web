@@ -51,6 +51,17 @@ export interface BookingParams extends PagingParams {
   status?: BookingStatus;
 }
 
+export interface PaymentParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortType?: 'asc' | 'desc';
+  seerId?: string;
+  userId?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+}
+
 export interface BookingStats {
   totalBookings: number;
   completedBookings: number;

@@ -143,7 +143,8 @@ export type ChartType =
   | 'TOTAL_BOOKING_COMPLETED'
   | 'TOTAL_PACKAGES'
   | 'AVG_SEER_REVENUE'
-  | 'AVG_CUSTOMER_SPENDING';
+  | 'AVG_CUSTOMER_SPENDING'
+  | 'AVG_RATING_SEER';  
 
 export type CustomerAction = 'BOOKING' | 'SPENDING' | 'CANCELLING';
 export type SeerAction =

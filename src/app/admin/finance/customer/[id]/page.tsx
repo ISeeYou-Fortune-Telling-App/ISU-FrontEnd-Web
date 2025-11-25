@@ -3,8 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, DollarSign, Award, TrendingUp, Calendar, X } from 'lucide-react';
+import { ArrowLeft, DollarSign, Award, TrendingUp, Calendar, X, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
+import { BookingService } from '@/services/booking/booking.service';
 import { CustomerPotential } from '@/types/finance/finance.types';
 import {
   LineChart,
@@ -28,6 +29,64 @@ const getTierColor = (tier: string) => {
     CASUAL: 'bg-gray-300',
   };
   return colors[tier] || 'bg-gray-300';
+};
+
+const getPaymentMethodBadge = (method: string) => {
+  const colors: Record<string, string> = {
+    PAYPAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    VNPAY: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    MOMO: 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
+  };
+  return colors[method] || 'bg-gray-100 text-gray-800';
+};
+
+const getStatusBadge = (status: string) => {
+  const colors: Record<string, string> = {
+    COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    FAILED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  };
+  return colors[status] || 'bg-gray-100 text-gray-800';
+};
+
+const PaymentHistoryRow: React.FC<{ payment: any }> = ({ payment }) => {
+  return (
+    <div className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+      <div className="flex items-center space-x-4 flex-1 min-w-0">
+        <img
+          src={payment.seer.avatarUrl || '/default_avatar.jpg'}
+          alt={payment.seer.fullName}
+          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+            {payment.seer.fullName}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {payment.packageTitle}
+          </p>
+          <div className="flex items-center space-x-2 mt-1">
+            <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(payment.paymentStatus)}`}>
+              {payment.paymentStatus}
+            </span>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${getPaymentMethodBadge(payment.paymentMethod)}`}>
+              {payment.paymentMethod}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center space-x-4 flex-shrink-0">
+        <div className="text-right">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            {formatCurrency(payment.amount)}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {new Date(payment.createdAt).toLocaleDateString('vi-VN')}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const RevenueChart: React.FC<{
@@ -107,6 +166,13 @@ const CustomerDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [avgSpendingData, setAvgSpendingData] = useState<any[]>([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  
+  // Payment history states
+  const [payments, setPayments] = useState<any[]>([]);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentTotal, setPaymentTotal] = useState(0);
+  const [paymentTotalPages, setPaymentTotalPages] = useState(0);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   useEffect(() => {
     const fetchCustomerDetail = async () => {
@@ -133,6 +199,35 @@ const CustomerDetailPage: React.FC = () => {
       fetchCustomerDetail();
     }
   }, [customerId, selectedYear]);
+
+  // Fetch payment history
+  useEffect(() => {
+    const fetchPayments = async () => {
+      setLoadingPayments(true);
+      try {
+        const response = await BookingService.getPayments({
+          page: paymentPage,
+          limit: 10,
+          sortBy: 'createdAt',
+          sortType: 'desc',
+          userId: customerId,
+        });
+        
+        setPayments(response.data || []);
+        setPaymentTotal(response.paging?.total || 0);
+        setPaymentTotalPages(response.paging?.totalPages || 0);
+      } catch (error) {
+        console.error('Error fetching payments:', error);
+        setPayments([]);
+      } finally {
+        setLoadingPayments(false);
+      }
+    };
+
+    if (customerId) {
+      fetchPayments();
+    }
+  }, [customerId, paymentPage]);
 
   if (loading) {
     return (
@@ -182,7 +277,7 @@ const CustomerDetailPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-start space-x-4">
             <img
-              src={customerData?.avatarUrl || `https://i.pravatar.cc/150?u=${customerId}`} // Dùng avatarUrl, nếu không có mới dùng placeholder
+              src={customerData?.avatarUrl || `https://i.pravatar.cc/150?u=${customerId}`}
               alt={customerData?.fullName || 'Customer Avatar'}
               className="w-20 h-20 rounded-full object-cover"
             />
@@ -307,6 +402,60 @@ const CustomerDetailPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Payment History Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+              <CreditCard className="w-5 h-5 text-indigo-500" />
+              <span>Lịch sử giao dịch</span>
+            </h2>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Tổng: {paymentTotal} giao dịch
+            </span>
+          </div>
+
+          {loadingPayments ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">Đang tải...</p>
+            </div>
+          ) : payments.length > 0 ? (
+            <>
+              <div className="space-y-1">
+                {payments.map((payment) => (
+                  <PaymentHistoryRow key={payment.id} payment={payment} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Trang {paymentPage} / {paymentTotalPages}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setPaymentPage((p) => Math.max(1, p - 1))}
+                    disabled={paymentPage === 1}
+                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setPaymentPage((p) => Math.min(paymentTotalPages, p + 1))}
+                    disabled={paymentPage >= paymentTotalPages}
+                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">Chưa có giao dịch nào</p>
+            </div>
+          )}
         </div>
 
         {/* Period Info */}
