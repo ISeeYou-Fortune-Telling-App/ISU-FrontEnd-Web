@@ -160,12 +160,16 @@ export interface ServiceReviewResponse {
 
 // ==================== PARAMS ====================
 export interface GetPackagesParams extends PagingParams {
-  minPrice: number;
-  maxPrice: number;
   searchText?: string; // Search text for package title
-  category?: string; // Category ID from knowledge categories
-  status?: PackageStatusEnum;
-  seerId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  packageCategoryIds?: string[]; // Package category IDs filter (multiple values supported)
+  seerSpecialityIds?: string[]; // Seer speciality IDs filter (multiple values supported)
+  minTime?: number; // Minimum duration in minutes
+  maxTime?: number; // Maximum duration in minutes
+  seerId?: string; // Seer Id to filter packages by a specific seer
+  status?: string; // Package status filter (AVAILABLE, REJECTED, HAVE_REPORT, HIDDEN)
+  onlyAvailable?: boolean; // Filter only packages available RIGHT NOW (true: only show packages that are open at current time and day of week)
 }
 
 // Dữ liệu thống kê

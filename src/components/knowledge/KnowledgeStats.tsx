@@ -1,17 +1,17 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 
-import { AccountService } from '../../services/account/account.service';
-import type { AccountStats as AccountStatsInterface } from '../../types/account/account.type';
+import { KnowledgeService } from '@/services/knowledge/knowledge.service';
+import type { KnowledgeItemStats } from '@/types/knowledge/knowledge.type';
 
-interface StatCardAccountProps {
+interface StatCardProps {
   value: number;
   label: string;
   colorClass: string;
 }
 
-const StatCardAccount: React.FC<StatCardAccountProps> = ({ value, label, colorClass }) => {
-  let displayValue: string = value.toLocaleString('vi-VN');
+const StatCard: React.FC<StatCardProps> = ({ value, label, colorClass }) => {
+  const displayValue = value.toLocaleString('vi-VN');
 
   return (
     <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
@@ -27,32 +27,32 @@ interface StatItem {
   colorClass: string;
 }
 
-const mapStatsToCards = (stats: AccountStatsInterface): StatItem[] => {
+const mapKnowledgeStatsToCards = (stats: KnowledgeItemStats): StatItem[] => {
   return [
     {
-      label: 'Tài khoản Khách hàng',
-      value: stats.customerAccounts,
-      colorClass: 'text-blue-600',
-    },
-    {
-      label: 'Tài khoản Nhà tiên tri',
-      value: stats.seerAccounts,
+      label: 'Bài viết đã xuất bản',
+      value: stats.publishedItems,
       colorClass: 'text-green-600',
     },
     {
-      label: 'Tài khoản chờ duyệt',
-      value: stats.pendingAccounts,
+      label: 'Bài viết nháp',
+      value: stats.draftItems,
       colorClass: 'text-yellow-600',
     },
     {
-      label: 'Tài khoản bị khóa',
-      value: stats.blockedAccounts,
+      label: 'Bài viết ẩn',
+      value: stats.hiddenItems,
       colorClass: 'text-red-600',
+    },
+    {
+      label: 'Tổng lượt xem',
+      value: stats.totalViewCount,
+      colorClass: 'text-blue-600',
     },
   ];
 };
 
-export const AccountStats: React.FC = () => {
+export const KnowledgeStats: React.FC = () => {
   const [stats, setStats] = useState<StatItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +60,11 @@ export const AccountStats: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await AccountService.getAccountStats();
-        const mappedStats = mapStatsToCards(response.data);
+        const data = await KnowledgeService.getKnowledgeStats();
+        const mappedStats = mapKnowledgeStatsToCards(data);
         setStats(mappedStats);
       } catch (err) {
-        setError('Không thể tải dữ liệu thống kê tài khoản.');
+        setError('Không thể tải dữ liệu thống kê tri thức.');
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -74,10 +74,9 @@ export const AccountStats: React.FC = () => {
     fetchStats();
   }, []);
 
-  // --- RENDER LOGIC ---
+  // ----- RENDER -----
 
   if (isLoading) {
-    // Hiển thị skeleton loading
     return (
       <>
         {Array(4)
@@ -93,7 +92,6 @@ export const AccountStats: React.FC = () => {
   }
 
   if (error) {
-    // Chiếm toàn bộ không gian 4 cột nếu có lỗi
     return (
       <div className="lg:col-span-4 p-4 text-center text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900 rounded-lg">
         {error}
@@ -104,12 +102,7 @@ export const AccountStats: React.FC = () => {
   return (
     <>
       {stats.map((stat, index) => (
-        <StatCardAccount
-          key={index}
-          value={stat.value}
-          label={stat.label}
-          colorClass={stat.colorClass}
-        />
+        <StatCard key={index} value={stat.value} label={stat.label} colorClass={stat.colorClass} />
       ))}
     </>
   );

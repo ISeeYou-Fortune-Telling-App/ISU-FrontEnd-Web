@@ -243,56 +243,59 @@ export const MessageTable: React.FC = () => {
     };
   }, [loading, loadingMore, hasMore]);
 
+  // Callback để xử lý tin nhắn mới
+  const handleNewMessage = useCallback(
+    (msg: any) => {
+      console.log('📨 New message received:', msg);
+      const currentUserId = localStorage.getItem('userId');
+      const isMyMessage = msg.senderId === currentUserId;
+
+      // Lưu vị trí cuộn hiện tại
+      if (conversationListRef.current) {
+        scrollPositionRef.current = conversationListRef.current.scrollTop;
+      }
+
+      setConversations((prev) => {
+        const idx = prev.findIndex(
+          (c) => c.conversationId === msg.conversationId || c.id === msg.conversationId,
+        );
+
+        if (idx !== -1) {
+          // Conversation đã tồn tại trong list
+          const isActive = selectedConvId === msg.conversationId || selectedConvId === msg.id;
+          const updated = {
+            ...prev[idx],
+            lastMessageContent: msg.textContent,
+            lastMessageTime: msg.createdAt,
+            // Cập nhật unread count
+            adminUnreadCount: isActive
+              ? 0
+              : isMyMessage
+              ? prev[idx].adminUnreadCount
+              : (prev[idx].adminUnreadCount || 0) + 1,
+            unreadForAdmin: isActive ? false : isMyMessage ? prev[idx].unreadForAdmin : true,
+          };
+
+          const newList = [...prev];
+          // Luôn đẩy lên đầu khi có tin nhắn mới
+          newList.splice(idx, 1);
+          newList.unshift(updated);
+
+          return newList;
+        } else {
+          // Conversation mới - reload để lấy data đầy đủ
+          console.log('🆕 Conversation mới, đang reload...');
+          setTimeout(() => fetchConversations(), 500);
+          return prev;
+        }
+      });
+    },
+    [selectedConvId],
+  );
+
   const { socketConnected, getMessages, joinConversation, sendMessage, clearMessages } =
     useAdminChat({
-      onNewMessage: (msg) => {
-        // ⭐ BẮT ĐẦU PHẦN CHỈNH SỬA LOGIC DỊCH CHUYỂN SCROLL
-        const currentUserId = localStorage.getItem('userId');
-        const isMyMessage = msg.senderId === currentUserId;
-
-        // 3. Khi nhận tin nhắn mới, lưu vị trí cuộn hiện tại trước khi cập nhật state
-        if (conversationListRef.current) {
-          scrollPositionRef.current = conversationListRef.current.scrollTop;
-        }
-
-        setConversations((prev) => {
-          const idx = prev.findIndex(
-            (c) => c.conversationId === msg.conversationId || c.id === msg.conversationId,
-          );
-
-          if (idx !== -1) {
-            const isActive = selectedConvId === msg.conversationId || selectedConvId === msg.id;
-            const updated = {
-              ...prev[idx],
-              lastMessageContent: msg.textContent,
-              lastMessageTime: msg.createdAt,
-              // Cập nhật unread count dựa trên người gửi
-              adminUnreadCount: isActive
-                ? 0
-                : isMyMessage
-                ? prev[idx].adminUnreadCount
-                : (prev[idx].adminUnreadCount || 0) + 1,
-              unreadForAdmin: isActive ? false : isMyMessage ? prev[idx].unreadForAdmin : true,
-            };
-
-            const newList = [...prev];
-
-            // ⭐ LOGIC QUYẾT ĐỊNH VỊ TRÍ:
-            if (!isMyMessage) {
-              // Tin nhắn từ Khách hàng: Cập nhật và ĐẨY lên đầu
-              newList.splice(idx, 1);
-              newList.unshift(updated);
-            } else {
-              // Tin nhắn từ Admin (bản thân): Cập nhật tại chỗ (GIỮ nguyên vị trí)
-              newList[idx] = updated;
-            }
-
-            return newList;
-          }
-          return prev;
-        });
-        // ⭐ KẾT THÚC PHẦN CHỈNH SỬA
-      },
+      onNewMessage: handleNewMessage,
     });
 
   const handleSelectConversation = (convId: string) => {
@@ -443,7 +446,7 @@ export const MessageTable: React.FC = () => {
                             {conv.customerName || conv.seerName || '(Không rõ tên)'}
                           </p>
                           <p
-                            className={`text-xs truncate max-w-[150px] ${
+                            className={`text-sm truncate max-w-[150px] ${
                               conv.unreadForAdmin
                                 ? 'text-indigo-600 dark:text-indigo-400 font-medium'
                                 : 'text-gray-500 dark:text-gray-400'

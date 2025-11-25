@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Image as ImageIcon, X, Video, Phone } from 'lucide-react';
+import { Send, Image as ImageIcon, X, Video, Phone, MoreVertical } from 'lucide-react';
 import { MessagesService } from '@/services/messages/messages.service';
 import type { Message, ConversationSession } from '@/types/messages/messages.type';
 import { VideoCall } from './VideoCall';
+import Swal from 'sweetalert2';
 
 interface Props {
   conversationId: string | null;
@@ -43,13 +44,52 @@ export const MessageDetailPanel: React.FC<Props> = ({
   const [adminId, setAdminId] = useState<string | null>(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('video');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setAdminId(localStorage.getItem('userId'));
   }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleDeleteMessage = async (messageId: string) => {
+    const result = await Swal.fire({
+      title: 'Xóa tin nhắn?',
+      text: 'Bạn có chắc chắn muốn xóa tin nhắn này không?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await MessagesService.deleteMessage(messageId);
+        setDbMessages((prev) => prev.filter((m) => m.id !== messageId));
+        setOpenMenuId(null);
+        Swal.fire('Đã xóa!', 'Tin nhắn đã được xóa.', 'success');
+      } catch (error) {
+        console.error('Error deleting message:', error);
+        Swal.fire('Lỗi!', 'Không thể xóa tin nhắn.', 'error');
+      }
+    }
+  };
 
   // Mở modal khi có incoming call từ parent
   useEffect(() => {
@@ -166,7 +206,12 @@ export const MessageDetailPanel: React.FC<Props> = ({
         setSendingMedia(false);
       }
 
-      if (conversationId) {
+      if (messageMode === 'group' && selectedConversations.size > 0) {
+        // Gửi tin nhắn cho nhiều người
+        const conversationIds = Array.from(selectedConversations);
+        sendMessage(text || imagePath || videoPath, conversationIds);
+      } else if (conversationId) {
+        // Gửi tin nhắn cho 1 người
         sendMessage(text || imagePath || videoPath);
       }
     } catch (err) {
@@ -288,7 +333,15 @@ export const MessageDetailPanel: React.FC<Props> = ({
                 return (
                   <div
                     key={msg.id || msg.createdAt}
-                    className={`flex items-end gap-2 ${isAdmin ? 'justify-end' : 'justify-start'}`}
+                    className={`flex items-end gap-2 group relative ${
+                      isAdmin ? 'justify-end' : 'justify-start'
+                    }`}
+                    onMouseLeave={() => {
+                      // Đóng menu khi hover ra khỏi tin nhắn
+                      if (openMenuId === msg.id) {
+                        setOpenMenuId(null);
+                      }
+                    }}
                   >
                     {!isAdmin && (
                       <img
@@ -298,49 +351,118 @@ export const MessageDetailPanel: React.FC<Props> = ({
                       />
                     )}
 
-                    <div
-                      className={`max-w-[70%] px-3 py-2 rounded-2xl ${
-                        isAdmin
-                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-br-none'
-                          : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none shadow'
-                      }`}
-                    >
-                      {isImage ? (
-                        <img
-                          src={msg.textContent}
-                          alt="media"
-                          className="max-w-[250px] max-h-[180px] rounded-lg cursor-pointer border border-gray-400 dark:border-gray-600"
-                          onLoad={() => {
-                            // Scroll xuống khi ảnh load xong
-                            if (scrollContainerRef.current) {
-                              scrollContainerRef.current.scrollTop =
-                                scrollContainerRef.current.scrollHeight;
+                    <div className="relative flex items-center gap-2">
+                      {/* Menu 3 chấm và Timestamp cho admin - bên trái */}
+                      {isAdmin && (
+                        <div
+                          className={`flex items-center gap-1 transition-opacity ${
+                            openMenuId === msg.id
+                              ? 'opacity-100'
+                              : 'opacity-0 group-hover:opacity-100'
+                          }`}
+                        >
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(openMenuId === msg.id ? null : msg.id);
+                              }}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                              title="Tùy chọn"
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+
+                            {openMenuId === msg.id && (
+                              <div
+                                ref={menuRef}
+                                className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 min-w-[150px]"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteMessage(msg.id);
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                >
+                                  Xóa tin nhắn
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <span
+                            className="text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                            title={
+                              msg.createdAt ? new Date(msg.createdAt).toLocaleString('vi-VN') : ''
                             }
-                          }}
-                          onClick={() => {
-                            setPreview(msg.textContent);
-                            setFile(null);
-                          }}
-                        />
-                      ) : isVideo ? (
-                        <video
-                          controls
-                          className="max-w-[250px] max-h-[180px] rounded-lg border border-gray-400 dark:border-gray-600"
-                          src={msg.textContent}
-                          onLoadedMetadata={() => {
-                            // Scroll xuống khi video metadata load xong
-                            if (scrollContainerRef.current) {
-                              scrollContainerRef.current.scrollTop =
-                                scrollContainerRef.current.scrollHeight;
-                            }
-                          }}
-                        />
-                      ) : (
-                        <p className="text-sm">{msg.textContent}</p>
+                          >
+                            {msg.createdAt
+                              ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : ''}
+                          </span>
+                        </div>
                       )}
 
-                      <div className="text-[10px] mt-1 opacity-80 text-right space-x-1">
-                        <span>
+                      {/* Message bubble */}
+                      <div
+                        className={`px-3 py-2 rounded-2xl ${
+                          isAdmin
+                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-br-none'
+                            : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none shadow'
+                        }`}
+                      >
+                        {isImage ? (
+                          <img
+                            src={msg.textContent}
+                            alt="media"
+                            className="max-w-[250px] max-h-[180px] rounded-lg cursor-pointer border border-gray-400 dark:border-gray-600"
+                            onLoad={() => {
+                              if (scrollContainerRef.current) {
+                                scrollContainerRef.current.scrollTop =
+                                  scrollContainerRef.current.scrollHeight;
+                              }
+                            }}
+                            onClick={() => {
+                              setPreview(msg.textContent);
+                              setFile(null);
+                            }}
+                          />
+                        ) : isVideo ? (
+                          <video
+                            controls
+                            className="max-w-[250px] max-h-[180px] rounded-lg border border-gray-400 dark:border-gray-600"
+                            src={msg.textContent}
+                            onLoadedMetadata={() => {
+                              if (scrollContainerRef.current) {
+                                scrollContainerRef.current.scrollTop =
+                                  scrollContainerRef.current.scrollHeight;
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm">{msg.textContent}</p>
+                            {isAdmin && (
+                              <span className="text-[10px] opacity-80">
+                                {msg.status === 'READ' ? '✓✓' : '✓'}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Timestamp cho user - bên phải */}
+                      {!isAdmin && (
+                        <span
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                          title={
+                            msg.createdAt ? new Date(msg.createdAt).toLocaleString('vi-VN') : ''
+                          }
+                        >
                           {msg.createdAt
                             ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
                                 hour: '2-digit',
@@ -348,7 +470,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
                               })
                             : ''}
                         </span>
-                      </div>
+                      )}
                     </div>
 
                     {isAdmin && (

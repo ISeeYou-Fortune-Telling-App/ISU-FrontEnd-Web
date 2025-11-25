@@ -181,7 +181,7 @@ export const PaymentTable: React.FC = () => {
           </div>
         ) : (
           <table
-            className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed"
+            className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed"
             style={{ tableLayout: 'fixed', width: '100%' }}
           >
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -212,7 +212,7 @@ export const PaymentTable: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
               {filteredPayments.map((p) => (
                 <tr
                   key={p.id}

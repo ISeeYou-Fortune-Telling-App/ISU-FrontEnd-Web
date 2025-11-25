@@ -474,8 +474,9 @@ export const KnowledgeTable: React.FC = () => {
       {/* --- PAGINATION --- */}
       <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          Trang {currentPage}/{totalPages}
+          Trang {currentPage}/{totalPages} • {knowledges.length} bài viết
         </span>
+
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

@@ -13,6 +13,7 @@ import {
   ThumbsDown,
   MessageCircle,
   ChevronDown,
+  Loader2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
@@ -40,6 +41,26 @@ export const PackageTable: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Helper function to reload data
+  const reloadData = async () => {
+    try {
+      const res = await PackageService.getAll({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        sortType: 'desc',
+        sortBy: 'createdAt',
+        searchText: searchTerm || undefined,
+        status: selectedFilter !== 'Tất cả' ? selectedFilter : undefined,
+        packageCategoryIds: selectedCategory ? [selectedCategory] : undefined,
+      });
+      setPackages(res.data);
+      setTotalItems(res.paging?.total || 0);
+    } catch (err) {
+      console.error('❌ Lỗi khi tải danh sách gói:', err);
+    }
+  };
 
   // Fetch categories from API
   useEffect(() => {
@@ -59,7 +80,7 @@ export const PackageTable: React.FC = () => {
     })();
   }, []);
 
-  // 🧠 Gọi API
+  // 🧠 Gọi API - Initial load
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -71,11 +92,9 @@ export const PackageTable: React.FC = () => {
           limit: ITEMS_PER_PAGE,
           sortType: 'desc',
           sortBy: 'createdAt',
-          minPrice: 0,
-          maxPrice: 10000000,
           searchText: searchTerm || undefined,
-          status: selectedFilter !== 'Tất cả' ? (selectedFilter as any) : undefined,
-          category: selectedCategory || undefined,
+          status: selectedFilter !== 'Tất cả' ? selectedFilter : undefined,
+          packageCategoryIds: selectedCategory ? [selectedCategory] : undefined,
         });
         setPackages(res.data);
         setTotalItems(res.paging?.total || 0);
@@ -87,6 +106,36 @@ export const PackageTable: React.FC = () => {
       }
     };
     fetchData();
+  }, []);
+
+  // Refresh when filters change
+  useEffect(() => {
+    if (!loading) {
+      const fetchData = async () => {
+        try {
+          setIsRefreshing(true);
+          setError(null);
+
+          const res = await PackageService.getAll({
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            sortType: 'desc',
+            sortBy: 'createdAt',
+            searchText: searchTerm || undefined,
+            status: selectedFilter !== 'Tất cả' ? selectedFilter : undefined,
+            packageCategoryIds: selectedCategory ? [selectedCategory] : undefined,
+          });
+          setPackages(res.data);
+          setTotalItems(res.paging?.total || 0);
+        } catch (err) {
+          console.error('❌ Lỗi khi tải danh sách gói:', err);
+          setError('Không thể tải danh sách gói dịch vụ');
+        } finally {
+          setIsRefreshing(false);
+        }
+      };
+      fetchData();
+    }
   }, [currentPage, selectedCategory, selectedFilter, searchTerm]);
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
@@ -139,19 +188,7 @@ export const PackageTable: React.FC = () => {
           color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
         });
         // Reload data
-        const res = await PackageService.getAll({
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-          sortType: 'desc',
-          sortBy: 'createdAt',
-          minPrice: 0,
-          maxPrice: 10000000,
-          searchText: searchTerm || undefined,
-          status: selectedFilter !== 'Tất cả' ? (selectedFilter as any) : undefined,
-          category: selectedCategory || undefined,
-        });
-        setPackages(res.data);
-        setTotalItems(res.paging?.total || 0);
+        await reloadData();
       } catch (err: any) {
         console.error('❌ Lỗi khi xóa gói:', err);
         Swal.fire({
@@ -284,7 +321,13 @@ export const PackageTable: React.FC = () => {
       )}
 
       {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-gray-400 dark:border-gray-700">
+      <div className="overflow-hidden rounded-lg border border-gray-400 dark:border-gray-700 relative">
+        {isRefreshing && (
+          <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none z-10">
+            <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
+          </div>
+        )}
+
         <table
           className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed"
           style={{ tableLayout: 'fixed', width: '100%' }}
@@ -466,29 +509,31 @@ export const PackageTable: React.FC = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+      <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          Trang {currentPage} / {totalPages || 1}
+          Trang {currentPage}/{totalPages || 1} • {totalItems} gói dịch vụ
         </span>
+
         <div className="flex items-center space-x-2">
           <button
             onClick={goToPrevPage}
-            disabled={currentPage === 1}
-            className={`p-1 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors ${
-              currentPage === 1
-                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                : 'text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            disabled={currentPage <= 1 || isRefreshing}
+            className={`p-2 rounded-md transition ${
+              currentPage <= 1 || isRefreshing
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
+
           <button
             onClick={goToNextPage}
-            disabled={currentPage >= totalPages}
-            className={`p-1 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors ${
-              currentPage >= totalPages
-                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                : 'text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            disabled={currentPage >= totalPages || isRefreshing}
+            className={`p-2 rounded-md transition ${
+              currentPage >= totalPages || isRefreshing
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronRight className="w-4 h-4" />
@@ -503,19 +548,7 @@ export const PackageTable: React.FC = () => {
           onClose={() => setSelectedPackage(null)}
           onActionComplete={async () => {
             // Reload data after action
-            const res = await PackageService.getAll({
-              page: currentPage,
-              limit: ITEMS_PER_PAGE,
-              sortType: 'desc',
-              sortBy: 'createdAt',
-              minPrice: 0,
-              maxPrice: 10000000,
-              searchText: searchTerm || undefined,
-              status: selectedFilter !== 'Tất cả' ? (selectedFilter as any) : undefined,
-              category: selectedCategory || undefined,
-            });
-            setPackages(res.data);
-            setTotalItems(res.paging?.total || 0);
+            await reloadData();
           }}
           onHide={async (id, reason) => {
             const result = await Swal.fire({
@@ -555,19 +588,7 @@ export const PackageTable: React.FC = () => {
                 });
                 setSelectedPackage(null);
                 // Reload data
-                const res = await PackageService.getAll({
-                  page: currentPage,
-                  limit: ITEMS_PER_PAGE,
-                  sortType: 'desc',
-                  sortBy: 'createdAt',
-                  minPrice: 0,
-                  maxPrice: 10000000,
-                  searchText: searchTerm || undefined,
-                  status: selectedFilter !== 'Tất cả' ? (selectedFilter as any) : undefined,
-                  category: selectedCategory || undefined,
-                });
-                setPackages(res.data);
-                setTotalItems(res.paging?.total || 0);
+                await reloadData();
               } catch (err: any) {
                 console.error('❌ Lỗi khi ẩn bài viết:', err);
                 Swal.fire({
@@ -620,19 +641,7 @@ export const PackageTable: React.FC = () => {
                 });
                 setSelectedPackage(null);
                 // Reload data
-                const res = await PackageService.getAll({
-                  page: currentPage,
-                  limit: ITEMS_PER_PAGE,
-                  sortType: 'desc',
-                  sortBy: 'createdAt',
-                  minPrice: 0,
-                  maxPrice: 10000000,
-                  searchText: searchTerm || undefined,
-                  status: selectedFilter !== 'Tất cả' ? (selectedFilter as any) : undefined,
-                  category: selectedCategory || undefined,
-                });
-                setPackages(res.data);
-                setTotalItems(res.paging?.total || 0);
+                await reloadData();
               } catch (err: any) {
                 console.error('❌ Lỗi khi xóa bài viết:', err);
                 Swal.fire({

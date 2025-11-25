@@ -25,13 +25,6 @@ export interface KnowledgeItem {
   viewCount: number;
 }
 
-export interface KnowledgeItemStats {
-  publishedItems: number;
-  draftItems: number;
-  hiddenItems: number;
-  totalViewCount: number;
-}
-
 export interface KnowledgeItemSearchParams extends PagingParams {
   title?: string;
   categoryIds?: string[];
@@ -55,6 +48,13 @@ export interface UpdateKnowledgeItemRequest {
   categoryIds?: string[];
   status?: KnowledgeStatus;
   imageFile?: File;
+}
+
+export interface KnowledgeItemStats {
+  publishedItems: number;
+  draftItems: number;
+  hiddenItems: number;
+  totalViewCount: number;
 }
 
 export type GetKnowledgeCategoriesResponse = ListResponse<KnowledgeCategory> | SimpleResponse;

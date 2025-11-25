@@ -43,4 +43,26 @@ export const BookingPaymentService = {
 
     throw new Error('Không nhận được dữ liệu chi tiết thanh toán hợp lệ.');
   },
+
+  getPaymentStats: async (): Promise<{
+    totalRevenue: number;
+    successfulTransactions: number;
+    canceledTransactions: number;
+    totalRefundedAmount: number;
+  }> => {
+    const response = await apiFetch<
+      SingleResponse<{
+        totalRevenue: number;
+        successfulTransactions: number;
+        canceledTransactions: number;
+        totalRefundedAmount: number;
+      }>
+    >('/bookings/payment/stats', {
+      method: 'GET',
+    });
+
+    if (isSingleResponse(response)) return response.data;
+
+    throw new Error('Không nhận được dữ liệu thống kê thanh toán hợp lệ.');
+  },
 };

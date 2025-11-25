@@ -1,5 +1,6 @@
 import React from 'react';
 import { ReportsTable } from '@/components/reports/ReportsTable';
+import { ReportsStats } from '@/components/reports/ReportsStats';
 
 export default function ReportsPage() {
   return (
@@ -13,6 +14,9 @@ export default function ReportsPage() {
         </p>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <ReportsStats />
+      </div>
       <ReportsTable />
     </div>
   );

@@ -7,83 +7,36 @@ import { PaymentTable } from '../../../components/payments/PaymentTable';
 import { BookingPaymentService } from '@/services/payments/payments.service';
 
 interface PaymentStats {
-  platformRevenue: number;
+  totalRevenue: number;
   successfulTransactions: number;
-  canceledTransactions: number; // Sẽ map với FAILED
-  totalRefunded: number;
+  canceledTransactions: number;
+  totalRefundedAmount: number;
 }
 
 export default function PaymentsPage() {
-
   const [stats, setStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAndCalculateStats = async () => {
+    const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await BookingPaymentService.getPayments({
-          page: 1,
-          limit: 99999, // Lấy nhiều nhất có thể để tính toán
-        });
-
-        const payments = response.data;
-
-        // 2. Tự tính toán 4 con số
-        let calculatedStats: PaymentStats = {
-          platformRevenue: 0,
-          successfulTransactions: 0,
-          canceledTransactions: 0,
-          totalRefunded: 0,
-        };
-
-        // Dùng reduce để tính toán
-        calculatedStats = payments.reduce(
-          (acc, payment) => {
-            
-            // === SỬA LOGIC THEO STATUS MỚI ===
-            switch (payment.paymentStatus) {
-              case 'COMPLETED': // 'Giao dịch thành công'
-                acc.successfulTransactions += 1;
-                // Chỉ tính doanh thu (phí nền tảng) khi giao dịch COMPLETED
-                acc.platformRevenue += (payment.amount * 0.1) || 0; 
-                break;
-              case 'FAILED': // 'Giao dịch bị hủy'
-                acc.canceledTransactions += 1;
-                break;
-              case 'REFUNDED': // 'Đã hoàn tiền'
-                // Chỉ tính tổng hoàn tiền khi status là REFUNDED
-                acc.totalRefunded += (payment.amount - (payment.amount * 0.1)) || 0; 
-                break;
-              // Bỏ qua PENDING
-              case 'PENDING':
-              default:
-                break;
-            }
-            // === KẾT THÚC SỬA LOGIC ===
-
-            return acc;
-          },
-          calculatedStats,
-        );
-        
-        // 3. Cập nhật state
-        setStats(calculatedStats);
-
+        const response = await BookingPaymentService.getPaymentStats();
+        setStats(response);
       } catch (error) {
-        console.error('Lỗi khi tải và tính toán thống kê:', error);
+        console.error('Lỗi khi tải thống kê thanh toán:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAndCalculateStats();
+    fetchStats();
   }, []);
 
   const paymentStats = [
     {
       label: 'Doanh thu (phí nền tảng)',
-      value: loading ? '...' : stats?.platformRevenue ?? 0,
+      value: loading ? '...' : stats?.totalRevenue ?? 0,
       colorClass: 'text-green-500',
       moneyType: 'vnđ' as const,
     },
@@ -93,13 +46,13 @@ export default function PaymentsPage() {
       colorClass: 'text-green-500',
     },
     {
-      label: 'Giao dịch bị hủy', // Sẽ lấy từ status FAILED
+      label: 'Giao dịch bị hủy',
       value: loading ? '...' : stats?.canceledTransactions ?? 0,
       colorClass: 'text-yellow-500',
     },
     {
       label: 'Đã hoàn tiền',
-      value: loading ? '...' : stats?.totalRefunded ?? 0,
+      value: loading ? '...' : stats?.totalRefundedAmount ?? 0,
       colorClass: 'text-yellow-500',
       moneyType: '₫' as const,
     },

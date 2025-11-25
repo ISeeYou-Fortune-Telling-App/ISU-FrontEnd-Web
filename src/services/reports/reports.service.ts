@@ -4,6 +4,7 @@ import type {
   GetReportsResponse,
   GetReportTypesResponse,
   Report,
+  ReportsStats,
 } from '@/types/reports/reports.type';
 import type { SingleResponse, SimpleResponse } from '@/types/response.type';
 
@@ -106,6 +107,11 @@ export const ReportsService = {
     return response.data;
   },
 
+  getReportsStats: async (): Promise<ReportsStats> => {
+    const res = await apiFetch<SingleResponse<ReportsStats>>('/reports/stats', { method: 'GET' });
+    return res.data;
+  },
+
   /**
    * Update report status (PENDING, NO_ACTION)
    * PATCH /reports/{id}
@@ -131,5 +137,61 @@ export const ReportsService = {
    */
   deleteReport: async (id: string): Promise<void> => {
     await apiFetch<SimpleResponse>(`/reports/${id}`, { method: 'DELETE' });
+  },
+
+  /**
+   * Lấy lịch sử báo cáo của một người dùng (người báo cáo)
+   * GET /reports/reporter/:reporterId
+   */
+  getReportsByReporter: async (
+    reporterId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+      sortType?: 'asc' | 'desc';
+      sortBy?: 'createdAt';
+    },
+  ): Promise<GetReportsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
+    if (params?.sortType) queryParams.append('sortType', params.sortType);
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+
+    const url = `/reports/reporter/${reporterId}${
+      queryParams.toString() ? `?${queryParams.toString()}` : ''
+    }`;
+    const response = await apiFetch<GetReportsResponse>(url, { method: 'GET' });
+
+    return response;
+  },
+
+  /**
+   * Lấy lịch sử bị báo cáo của một người dùng
+   * GET /reports/reported-user/:reportedUserId
+   */
+  getReportsByReportedUser: async (
+    reportedUserId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+      sortType?: 'asc' | 'desc';
+      sortBy?: 'createdAt';
+    },
+  ): Promise<GetReportsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
+    if (params?.sortType) queryParams.append('sortType', params.sortType);
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+
+    const url = `/reports/reported-user/${reportedUserId}${
+      queryParams.toString() ? `?${queryParams.toString()}` : ''
+    }`;
+    const response = await apiFetch<GetReportsResponse>(url, { method: 'GET' });
+
+    return response;
   },
 };

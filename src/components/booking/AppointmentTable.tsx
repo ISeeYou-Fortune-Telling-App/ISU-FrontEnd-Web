@@ -308,30 +308,29 @@ export const BookingTable: React.FC = () => {
       {/* Pagination */}
       <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
-          {startIndex + 1}-{endIndex} of {totalItems}
+          Trang {currentPage}/{totalPages} • {totalItems} lịch hẹn
         </span>
+
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-700 dark:text-gray-300">
-            {currentPage}/{totalPages}
-          </span>
           <button
             onClick={goToPrevPage}
-            disabled={currentPage === 1}
-            className={`p-1 border border-gray-300 dark:border-gray-600 rounded-lg ${
-              currentPage === 1
+            disabled={currentPage <= 1 || isLoading}
+            className={`p-2 rounded-md transition ${
+              currentPage <= 1 || isLoading
                 ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
+
           <button
             onClick={goToNextPage}
-            disabled={currentPage === totalPages}
-            className={`p-1 border border-gray-300 dark:border-gray-600 rounded-lg ${
-              currentPage === totalPages
+            disabled={currentPage >= totalPages || isLoading}
+            className={`p-2 rounded-md transition ${
+              currentPage >= totalPages || isLoading
                 ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronRight className="w-4 h-4" />

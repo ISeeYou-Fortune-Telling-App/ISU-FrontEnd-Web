@@ -51,6 +51,13 @@ export interface ReportsPaging {
   totalPages: number;
 }
 
+export interface ReportsStats {
+  totalReports: number;
+  newReportsThisMonth: number;
+  resolvedReports: number;
+  unresolvedReports: number;
+}
+
 export interface GetReportsResponse {
   statusCode: number;
   message: string;

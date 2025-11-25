@@ -33,6 +33,7 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
   onActionComplete,
 }) => {
   const [suspendDays] = useState(7);
+  const [markingAsViewed, setMarkingAsViewed] = useState(false);
 
   // Lock scroll khi modal mở
   React.useEffect(() => {
@@ -45,6 +46,36 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
   }, [report]);
 
   if (!report) return null;
+
+  const handleMarkAsViewed = async () => {
+    try {
+      setMarkingAsViewed(true);
+      await ReportsService.updateReport(report.id, {
+        reportStatus: 'VIEWED',
+      });
+      await Swal.fire({
+        title: 'Thành công!',
+        text: 'Đã đánh dấu là đã xem',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+      onActionComplete();
+      onClose();
+    } catch (error) {
+      Swal.fire({
+        title: 'Lỗi!',
+        text: 'Không thể cập nhật trạng thái',
+        icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } finally {
+      setMarkingAsViewed(false);
+    }
+  };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
@@ -338,7 +369,25 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-gray-400 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="p-4 border-t border-gray-400 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-3">
+          {/* Nút đánh dấu đã xem cho PENDING */}
+          {report.reportStatus === 'PENDING' && (
+            <button
+              onClick={handleMarkAsViewed}
+              disabled={markingAsViewed}
+              className="w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {markingAsViewed ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Đang xử lý...</span>
+                </>
+              ) : (
+                <span>Đánh dấu đã xem</span>
+              )}
+            </button>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={handleWarning}

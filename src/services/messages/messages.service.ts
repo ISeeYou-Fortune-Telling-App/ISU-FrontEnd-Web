@@ -29,14 +29,20 @@ export const MessagesService = {
   },
 
   getSearchConversations: async (params: ConversationParams): Promise<ConversationSession[]> => {
+    // Tạo object mới để tránh modify params frozen
+    const queryParams = {
+      page: params.page,
+      limit: params.limit,
+      sortBy: 'lastMessageTime',
+      sortType: params.sortType,
+      participantName: params.participantName,
+      type: 'ADMIN_CHAT',
+      status: 'ACTIVE',
+    };
+
     const response = await apiFetch<GetSearchConversationsResponse>('/admin/conversations/search', {
       method: 'GET',
-      params: {
-        ...params,
-        sortBy: 'lastMessageTime',
-        type: 'ADMIN_CHAT',
-        status: 'ACTIVE',
-      },
+      params: queryParams,
     });
 
     if (isListResponse<ConversationSession>(response)) {
@@ -74,6 +80,31 @@ export const MessagesService = {
     }
 
     throw new Error('Không nhận được dữ liệu hội thoại hợp lệ từ server.');
+  },
+
+  sendMessage: async (data: {
+    conversationId: string;
+    textContent?: string;
+    imagePath?: string;
+    videoPath?: string;
+  }): Promise<any> => {
+    const formData = new FormData();
+    formData.append('conversationId', data.conversationId);
+    if (data.textContent) formData.append('textContent', data.textContent);
+    if (data.imagePath) formData.append('imagePath', data.imagePath);
+    if (data.videoPath) formData.append('videoPath', data.videoPath);
+
+    const response = await apiFetch<{
+      statusCode: number;
+      message: string;
+      data: any;
+    }>('/chat/messages', {
+      method: 'POST',
+      data: formData,
+    });
+
+    if (response?.data) return response.data;
+    throw new Error('Không thể gửi tin nhắn.');
   },
 
   uploadChatFile: async (
@@ -126,6 +157,17 @@ export const MessagesService = {
 
     if (response.statusCode !== 1073741824) {
       throw new Error(response.message || 'Không thể gia hạn phiên chat');
+    }
+  },
+
+  deleteMessage: async (messageId: string): Promise<void> => {
+    const response = await apiFetch<{ statusCode: number; message: string }>(
+      `/chat/messages/${messageId}`,
+      { method: 'DELETE' },
+    );
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || 'Không thể xóa tin nhắn');
     }
   },
 };

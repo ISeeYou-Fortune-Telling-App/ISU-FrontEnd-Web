@@ -39,13 +39,14 @@ export default function LoginPage() {
         localStorage.removeItem('remembered_email');
       }
 
+      // Giữ spinner xoay cho đến khi redirect xong
       await router.prefetch('/admin/dashboard');
       router.push('/admin/dashboard');
+      // Không set isLoading = false ở đây để spinner tiếp tục xoay
     } catch (err: any) {
       console.error('Login failed:', err);
       setError('Đăng nhập thất bại. Vui lòng kiểm tra lại Email và Mật khẩu.');
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Chỉ tắt spinner khi có lỗi
     }
   };
 
@@ -172,7 +173,7 @@ export default function LoginPage() {
                            {' '}
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin-slow" />
                   <span>Đang xử lý...</span>
                 </>
               ) : (

@@ -9,10 +9,12 @@ import type {
   ReportStatus,
   ReportTypeItem,
   GetReportsParams,
+  ReportUser,
 } from '@/types/reports/reports.type';
 import { Badge } from '@/components/common/Badge';
 import { useDebounce } from '@/hooks/useDebounce';
 import { ReportDetailModal } from './ReportDetailModal';
+import { ReportHistoryModal } from './ReportHistoryModal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -42,32 +44,32 @@ export function ReportsTable() {
   const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | ReportStatus>('Tất cả');
   const [selectedType, setSelectedType] = useState<'Tất cả' | string>('Tất cả');
 
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [historyModal, setHistoryModal] = useState<{
+    userId: string;
+    username: string;
+    type: 'reporter' | 'reported';
+  } | null>(null);
 
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
   const typeDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
-        setIsStatusDropdownOpen(false);
-      }
       if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
         setIsTypeDropdownOpen(false);
       }
     };
-    if (isStatusDropdownOpen || isTypeDropdownOpen) {
+    if (isTypeDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isStatusDropdownOpen, isTypeDropdownOpen]);
+  }, [isTypeDropdownOpen]);
 
   // Fetch report types
   useEffect(() => {
@@ -133,23 +135,30 @@ export function ReportsTable() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const getReportTypeLabel = (name: string) => {
     const type = reportTypes.find((t) => t.name === name);
     return type ? type.description : name;
   };
 
   const handleViewDetail = (report: Report) => {
+    // Chỉ mở modal nếu chưa xử lý xong
+    if (report.reportStatus === 'RESOLVED' || report.reportStatus === 'REJECTED') {
+      return;
+    }
     setSelectedReport(report);
+  };
+
+  const handleUserClick = (
+    user: ReportUser,
+    type: 'reporter' | 'reported',
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+    setHistoryModal({
+      userId: user.id,
+      username: user.username,
+      type,
+    });
   };
 
   const handleDelete = async (report: Report, e: React.MouseEvent) => {
@@ -211,22 +220,8 @@ export function ReportsTable() {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
-      {/* Search + Type Dropdown + Status Dropdown */}
+      {/* Type Dropdown */}
       <div className="flex gap-4 items-center mb-4">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm người báo cáo, người bị báo cáo..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPaging((prev) => ({ ...prev, page: 1 }));
-            }}
-          />
-        </div>
-
         <div className="relative flex-shrink-0" ref={typeDropdownRef}>
           <button
             onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
@@ -285,52 +280,27 @@ export function ReportsTable() {
             </div>
           )}
         </div>
+      </div>
 
-        <div className="relative flex-shrink-0" ref={statusDropdownRef}>
-          <button
-            onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
-                       dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
-                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
-          >
-            <span>
-              {selectedStatus === 'Tất cả'
-                ? 'Trạng thái'
-                : STATUS_LABELS[selectedStatus as ReportStatus]}
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 ml-1 transition-transform ${
-                isStatusDropdownOpen ? 'rotate-180' : ''
+      {/* Filter Status Tabs */}
+      <div className="flex space-x-2 mb-4">
+        <div className="flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
+          {[['Tất cả', 'Tất cả'], ...Object.entries(STATUS_LABELS)].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => {
+                setSelectedStatus(key as any);
+                setPaging((prev) => ({ ...prev, page: 1 }));
+              }}
+              className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors ${
+                selectedStatus === key
+                  ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
-            />
-          </button>
-
-          {isStatusDropdownOpen && (
-            <div
-              className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 
-                         ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-20 animate-fadeIn"
             >
-              <div className="py-1">
-                {[['Tất cả', 'Tất cả'], ...Object.entries(STATUS_LABELS)].map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setSelectedStatus(key as any);
-                      setIsStatusDropdownOpen(false);
-                      setPaging((prev) => ({ ...prev, page: 1 }));
-                    }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                      selectedStatus === key
-                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -354,19 +324,19 @@ export function ReportsTable() {
               <th className="w-[12%] text-start px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Người bị báo cáo
               </th>
-              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[11%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Loại vi phạm
               </th>
-              <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Đối tượng
               </th>
               <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Trạng thái
               </th>
-              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thời gian
               </th>
-              <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[6%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thao tác
               </th>
             </tr>
@@ -395,9 +365,12 @@ export function ReportsTable() {
                         alt={report.reporter.username}
                         className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                       />
-                      <span className="text-sm text-gray-900 dark:text-white truncate">
+                      <button
+                        onClick={(e) => handleUserClick(report.reporter, 'reporter', e)}
+                        className="text-sm text-gray-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                      >
                         {report.reporter.username}
-                      </span>
+                      </button>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -407,9 +380,12 @@ export function ReportsTable() {
                         alt={report.reported.username}
                         className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                       />
-                      <span className="text-sm text-gray-900 dark:text-white truncate">
+                      <button
+                        onClick={(e) => handleUserClick(report.reported, 'reported', e)}
+                        className="text-sm text-gray-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                      >
                         {report.reported.username}
-                      </span>
+                      </button>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -428,19 +404,29 @@ export function ReportsTable() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatDate(report.createdAt)}
-                    </span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {new Date(report.createdAt).toLocaleDateString('vi-VN')}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(report.createdAt).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-center space-x-2">
-                      <button
-                        onClick={() => handleViewDetail(report)}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors"
-                        title="Xem chi tiết"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
+                    <div className="flex justify-end space-x-2">
+                      {report.reportStatus !== 'RESOLVED' && report.reportStatus !== 'REJECTED' && (
+                        <button
+                          onClick={() => handleViewDetail(report)}
+                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors"
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => handleDelete(report, e)}
                         disabled={deletingId === report.id}
@@ -463,41 +449,34 @@ export function ReportsTable() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between mt-4">
-        <div className="text-sm text-gray-700 dark:text-gray-300">
-          Hiển thị{' '}
-          <span className="font-medium">
-            {Math.min((paging.page - 1) * ITEMS_PER_PAGE + 1, paging.total)}
-          </span>{' '}
-          -{' '}
-          <span className="font-medium">
-            {Math.min(paging.page * ITEMS_PER_PAGE, paging.total)}
-          </span>{' '}
-          trong tổng số <span className="font-medium">{paging.total}</span> báo cáo
-        </div>
+      <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          Trang {paging.page}/{paging.totalPages} • {paging.total} báo cáo
+        </span>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center space-x-2">
           <button
             onClick={goToPrevPage}
-            disabled={paging.page === 1 || isRefreshing}
-            className="p-2 rounded-lg border border-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-gray-700 dark:text-gray-300"
+            disabled={paging.page <= 1 || isRefreshing}
+            className={`p-2 rounded-md transition ${
+              paging.page <= 1 || isRefreshing
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
-
-          <div className="flex items-center gap-1">
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              Trang {paging.page} / {paging.totalPages}
-            </span>
-            {isRefreshing && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
-          </div>
 
           <button
             onClick={goToNextPage}
             disabled={paging.page >= paging.totalPages || isRefreshing}
-            className="p-2 rounded-lg border border-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-gray-700 dark:text-gray-300"
+            className={`p-2 rounded-md transition ${
+              paging.page >= paging.totalPages || isRefreshing
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -511,6 +490,16 @@ export function ReportsTable() {
             setSelectedReport(null);
             await fetchReports(paging.page, false);
           }}
+        />
+      )}
+
+      {/* History Modal */}
+      {historyModal && (
+        <ReportHistoryModal
+          userId={historyModal.userId}
+          username={historyModal.username}
+          type={historyModal.type}
+          onClose={() => setHistoryModal(null)}
         />
       )}
     </div>

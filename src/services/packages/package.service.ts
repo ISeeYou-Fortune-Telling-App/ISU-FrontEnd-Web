@@ -22,12 +22,21 @@ const defaultParams = {
 
 export const PackageService = {
   getAll: async (params?: GetPackagesParams): Promise<GetPackagesResponse> => {
+    // Clean up params - remove undefined values
+    const cleanParams: any = { ...defaultParams };
+
+    if (params) {
+      Object.keys(params).forEach((key) => {
+        const value = (params as any)[key];
+        if (value !== undefined && value !== null && value !== '') {
+          cleanParams[key] = value;
+        }
+      });
+    }
+
     const res = await apiFetch<GetPackagesResponse>('/service-packages/admin', {
       method: 'GET',
-      params: {
-        ...defaultParams,
-        ...params,
-      },
+      params: cleanParams,
     });
     return res;
   },
