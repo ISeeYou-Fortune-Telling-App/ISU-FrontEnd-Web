@@ -9,7 +9,7 @@ import {
 import type { PageResponse } from '@/types/paging.type';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_REPORT_SERVICE_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_DEPLOY + '/report',
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,9 +1,9 @@
-import { io, Socket } from 'socket.io-client';
+import * as io from 'socket.io-client';
 
-const SOCKET_URL = `${process.env.NEXT_PUBLIC_SOCKET_URL}/chat`;
+const SOCKET_URL = `${process.env.NEXT_PUBLIC_GATEWAY_DEPLOY}/socket`;
 
-export const createChatSocket = (userId: string): Socket => {
-  const socket = io(SOCKET_URL, {
+export const createChatSocket = (userId: string): SocketIOClient.Socket => {
+  const socket = io.connect(SOCKET_URL, {
     query: { userId }, // truyền userId của admin
     transports: ['websocket'],
     reconnection: true,

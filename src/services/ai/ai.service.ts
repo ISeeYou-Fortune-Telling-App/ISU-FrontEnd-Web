@@ -5,7 +5,7 @@ export interface ChatEvent {
   data?: any;
 }
 
-const API_URL = 'http://localhost:8000/api/vanna/v2/chat_sse';
+const API_URL = process.env.NEXT_PUBLIC_GATEWAY_DEPLOY + '/ai-analysis/api/vanna/v2/chat_sse';
 
 export async function sendVannaMessageV2(
   message: string,

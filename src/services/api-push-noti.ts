@@ -8,7 +8,7 @@ import {
 } from '@/types/response.type';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PUSH_NOTI_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_DEPLOY + '/notification',
   headers: {
     'Content-Type': 'application/json',
   },
