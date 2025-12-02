@@ -9,6 +9,12 @@ import { TopSeerChartData } from '@/types/dashboard/dashboard.type';
 
 const YEARS = [2025, 2024];
 
+// Helper function to remove title prefix (Thầy/Cô)
+const removeTitle = (fullName: string): string => {
+  if (!fullName) return 'N/A';
+  return fullName.replace(/^(Thầy|Cô|Thay|Co)\s+/i, '').trim();
+};
+
 const TopSeerPerformanceChart: React.FC = () => {
   const [chartData, setChartData] = useState<TopSeerChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +37,7 @@ const TopSeerPerformanceChart: React.FC = () => {
           if (!seerMap.has(seerId)) {
             seerMap.set(seerId, {
               seerId,
-              name: record.fullName || `Seer ${seerId.slice(-4)}`,
+              fullName: record.fullName || `Seer ${seerId.slice(-4)}`,
               totalRevenue: 0,
               totalSessions: 0,
               totalRating: 0,
@@ -50,7 +56,8 @@ const TopSeerPerformanceChart: React.FC = () => {
 
         // Convert to array and calculate averages
         const aggregatedData = Array.from(seerMap.values()).map((seer) => ({
-          name: seer.name,
+          name: removeTitle(seer.fullName),
+          fullName: seer.fullName,
           revenue: seer.totalRevenue,
           sessions: seer.totalSessions,
           rating: seer.ratingCount > 0 ? seer.totalRating / seer.ratingCount : 0,
@@ -88,7 +95,9 @@ const TopSeerPerformanceChart: React.FC = () => {
       const data = payload[0].payload;
       return (
         <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">{data.name}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            {data.fullName}
+          </p>
           <div className="space-y-1 text-xs">
             <p className="text-purple-600 dark:text-purple-400">
               Doanh thu:{' '}
@@ -112,8 +121,23 @@ const TopSeerPerformanceChart: React.FC = () => {
     return null;
   };
 
+  const CustomYAxisTick = ({ x, y, payload }: any) => {
+    return (
+      <text
+        x={x}
+        y={y}
+        dy={4}
+        textAnchor="end"
+        fill="currentColor"
+        className="text-[11px] text-gray-700 dark:text-gray-300"
+      >
+        {payload.value}
+      </text>
+    );
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-400 dark:border-gray-700 h-full flex flex-col">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center space-x-2">
@@ -177,7 +201,7 @@ const TopSeerPerformanceChart: React.FC = () => {
       ) : (
         <div className="flex-1 mt-4">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="vertical">
+            <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
               <CartesianGrid
                 strokeDasharray="3 3"
                 className="stroke-gray-200 dark:stroke-gray-700"
@@ -185,16 +209,15 @@ const TopSeerPerformanceChart: React.FC = () => {
               />
               <XAxis
                 type="number"
-                className="text-xs text-gray-600 dark:text-gray-400"
+                className="text-[11px] text-gray-600 dark:text-gray-400"
                 tick={{ fill: 'currentColor' }}
                 tickFormatter={formatCurrency}
               />
               <YAxis
                 type="category"
                 dataKey="name"
-                className="text-xs text-gray-600 dark:text-gray-400"
-                tick={{ fill: 'currentColor' }}
-                width={100}
+                tick={<CustomYAxisTick />}
+                width={160}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar
