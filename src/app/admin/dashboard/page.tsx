@@ -53,65 +53,6 @@ const TopSeerPerformanceChart = dynamic(
 );
 
 export default function AdminDashboardPage() {
-  const [totalRevenue, setTotalRevenue] = React.useState<number | null>(null);
-  const [activeUsers, setActiveUsers] = React.useState<number | null>(null);
-  const [loadingStats, setLoadingStats] = React.useState(true);
-
-  React.useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoadingStats(true);
-
-        // Fetch tổng doanh thu từ finance API
-        const financeRes = await fetch(
-          `${process.env.NEXT_PUBLIC_REPORT_API_URL}/finance-statistic`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            },
-          },
-        );
-        const financeData = await financeRes.json();
-        setTotalRevenue(financeData.data?.totalRevenue || 0);
-
-        // Fetch người dùng hoạt động từ monthly users API
-        const currentYear = new Date().getFullYear();
-        const usersRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL_HEHE}/statistics/users/monthly?year=${currentYear}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            },
-          },
-        );
-        const usersData = await usersRes.json();
-
-        // Tính tổng người dùng trong năm
-        const monthlyData = usersData.data || {};
-        const totalUsers = Object.values(monthlyData).reduce(
-          (sum: number, count) => sum + (count as number),
-          0,
-        );
-        setActiveUsers(totalUsers);
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const formatCurrency = (value: number) => {
-    if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)}K`;
-    }
-    return value.toLocaleString('vi-VN');
-  };
-
   return (
     <div className="space-y-6">
       <div className="space-y-2">
