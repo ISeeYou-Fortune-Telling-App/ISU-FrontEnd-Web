@@ -1,8 +1,23 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
+import dynamic from 'next/dynamic';
 import { MessagesStats } from '../../../components/messages/MessagesStats';
-import { MessageTable } from '../../../components/messages/MessageTable';
+
+const MessageTable = dynamic(
+  () =>
+    import('../../../components/messages/MessageTable').then((mod) => ({
+      default: mod.MessageTable,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-96 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      </div>
+    ),
+  },
+);
 
 export default function ChatHistoryPage() {
   return (
