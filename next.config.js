@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 
 module.exports = {
+  // Environment variables
+  env: {
+    NEXT_PUBLIC_GATEWAY_DEPLOY: process.env.NEXT_PUBLIC_GATEWAY_DEPLOY,
+    NEXT_PUBLIC_COMETCHAT_APP_ID: process.env.NEXT_PUBLIC_COMETCHAT_APP_ID,
+    NEXT_PUBLIC_COMETCHAT_AUTH_KEY: process.env.NEXT_PUBLIC_COMETCHAT_AUTH_KEY,
+    NEXT_PUBLIC_COMETCHAT_REGION: process.env.NEXT_PUBLIC_COMETCHAT_REGION,
+  },
+
   // Compress responses
   compress: true,
 

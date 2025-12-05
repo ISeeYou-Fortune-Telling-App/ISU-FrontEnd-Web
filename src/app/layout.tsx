@@ -20,8 +20,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="vi" suppressHydrationWarning>
       <head>
         {/* Preconnect to API */}
-        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
-        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL} />
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_GATEWAY_DEPLOY} />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_GATEWAY_DEPLOY} />
       </head>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

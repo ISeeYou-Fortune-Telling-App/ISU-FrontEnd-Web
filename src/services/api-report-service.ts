@@ -9,11 +9,11 @@ import {
 import type { PageResponse } from '@/types/paging.type';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_GATEWAY_DEPLOY + '/report',
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_API_URL + '/report',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  withCredentials: false,
 });
 
 // Thêm accessToken vào mỗi request
@@ -60,6 +60,11 @@ api.interceptors.response.use(
       typeof window !== 'undefined' &&
       !originalRequest._retry
     ) {
+      // Nếu đang ở trang login thì không redirect
+      if (window.location.pathname === '/auth/login') {
+        return Promise.reject(error);
+      }
+
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) {
         localStorage.removeItem('accessToken');
@@ -81,12 +86,9 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_REPORT_SERVICE_API_URL}/auth/refresh`,
-          {
-            headers: { Authorization: `Bearer ${refreshToken}` },
-          },
-        );
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_GATEWAY_API_URL}/auth/refresh`, {
+          headers: { Authorization: `Bearer ${refreshToken}` },
+        });
 
         const { token, refreshToken: newRefreshToken } = res.data;
         localStorage.setItem('accessToken', token);

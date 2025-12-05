@@ -7,12 +7,15 @@ import {
   ValidationErrorResponse,
 } from '@/types/response.type';
 
+// Debug env variable
+console.log('🔍 NEXT_PUBLIC_GATEWAY_DEPLOY:', process.env.NEXT_PUBLIC_GATEWAY_DEPLOY);
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_GATEWAY_DEPLOY + '/core',
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_API_URL + '/core',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  withCredentials: false,
 });
 
 // Thêm accessToken vào mỗi request
@@ -60,6 +63,11 @@ api.interceptors.response.use(
       typeof window !== 'undefined' &&
       !originalRequest._retry
     ) {
+      // Nếu đang ở trang login thì không redirect, throw error để login page xử lý
+      if (window.location.pathname === '/auth/login') {
+        return Promise.reject(error);
+      }
+
       // Lấy refresh token từ localStorage hoặc sessionStorage
       const refreshToken =
         localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
@@ -84,9 +92,12 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
-          headers: { Authorization: `Bearer ${refreshToken}` },
-        });
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_GATEWAY_API_URL}/core/auth/refresh`,
+          {
+            headers: { Authorization: `Bearer ${refreshToken}` },
+          },
+        );
 
         const { token, refreshToken: newRefreshToken } = res.data;
 

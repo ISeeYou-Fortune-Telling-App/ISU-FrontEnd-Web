@@ -29,16 +29,20 @@ export const MessagesService = {
   },
 
   getSearchConversations: async (params: ConversationParams): Promise<ConversationSession[]> => {
-    // Tạo object mới để tránh modify params frozen
-    const queryParams = {
+    // Tạo object mới với JSON parse/stringify để tránh frozen object
+    const queryParams: Record<string, any> = {
       page: params.page,
       limit: params.limit,
       sortBy: 'lastMessageTime',
       sortType: params.sortType,
-      participantName: params.participantName,
       type: 'ADMIN_CHAT',
       status: 'ACTIVE',
     };
+
+    // Chỉ thêm participantName nếu có giá trị
+    if (params.participantName) {
+      queryParams.participantName = params.participantName;
+    }
 
     const response = await apiFetch<GetSearchConversationsResponse>('/admin/conversations/search', {
       method: 'GET',
