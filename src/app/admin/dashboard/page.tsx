@@ -2,25 +2,12 @@
 
 import React, { Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { Users, MessageSquare, CreditCard, Award } from 'lucide-react';
 
 import { FinanceStats } from '../../../components/dashboard/StatCardDashboard';
 
 // Lazy load các components nặng
 const ServiceDistributionCard = dynamic(
   () => import('../../../components/dashboard/ServiceDistributionCard'),
-  {
-    loading: () => (
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-      </div>
-    ),
-    ssr: false,
-  },
-);
-
-const RecentActivityCard = dynamic(
-  () => import('../../../components/dashboard/RecentActivityCard'),
   {
     loading: () => (
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
