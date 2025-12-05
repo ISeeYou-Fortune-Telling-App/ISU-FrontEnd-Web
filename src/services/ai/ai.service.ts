@@ -1,11 +1,34 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import axios from 'axios';
+
 export interface ChatEvent {
   type: 'text' | 'dataframe' | 'chart' | 'status' | 'html' | 'image' | 'error' | 'unknown';
   content?: string;
   data?: any;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_GATEWAY_DEPLOY + '/ai-analysis/api/vanna/v2/chat_sse';
+const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_API_URL + '/ai-analysis',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: false,
+});
+
+// Thêm accessToken vào mỗi request
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
 export async function sendVannaMessageV2(
   message: string,
@@ -21,13 +44,12 @@ export async function sendVannaMessageV2(
     payload.request_id = requestId;
   }
 
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+  const res = await api.post('/api/vanna/v2/chat_sse', payload, {
+    responseType: 'stream',
+    adapter: 'fetch',
   });
 
-  const reader = res.body?.getReader();
+  const reader = res.data?.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
 

@@ -67,10 +67,7 @@ export default function AdminSidebarNav() {
   } | null>(null);
 
   useEffect(() => {
-    const role = localStorage.getItem('userRole');
-    setIsAdmin(role === 'ADMIN');
-
-    // Load user info from API
+    // Load user info from /me API ngay khi component mount
     const loadUserInfo = async () => {
       try {
         const { AccountService } = await import('@/services/account/account.service');
@@ -80,14 +77,13 @@ export default function AdminSidebarNav() {
           avatarUrl: response.data.avatarUrl,
           role: response.data.role,
         });
+        setIsAdmin(response.data.role === 'ADMIN');
       } catch (error) {
         console.error('Failed to load user info:', error);
       }
     };
 
-    if (role) {
-      loadUserInfo();
-    }
+    loadUserInfo();
   }, []);
 
   // Tối ưu: Memoize logout handler
@@ -188,45 +184,43 @@ export default function AdminSidebarNav() {
       </nav>
 
       {/* Profile — fixed bottom */}
-      {isAdmin && (
-        <div className="border-t border-gray-400 dark:border-gray-700 p-3">
-          <div className="flex items-center justify-between">
-            <button onClick={handleProfile} className="flex items-center space-x-2 group">
-              <img
-                src={userInfo?.avatarUrl || '/default_avatar.jpg'}
-                alt="User Avatar"
-                className="w-8 h-8 rounded-full object-cover border border-gray-400 dark:border-gray-600 group-hover:scale-105 transition-transform"
-                onError={handleImageError}
-              />
-              <div className="text-left">
-                <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:underline">
-                  {userInfo?.fullName || 'Đang tải...'}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {userInfo?.role || 'Hồ sơ cá nhân'}
-                </p>
-              </div>
-            </button>
-
-            <div className="flex items-center space-x-2">
-              <button
-                title="Đăng xuất"
-                onClick={handleLogout}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-              <button
-                title="Cài đặt"
-                onClick={handleSettings}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
+      <div className="border-t border-gray-400 dark:border-gray-700 p-3">
+        <div className="flex items-center justify-between">
+          <button onClick={handleProfile} className="flex items-center space-x-2 group">
+            <img
+              src={userInfo?.avatarUrl || '/default_avatar.jpg'}
+              alt="User Avatar"
+              className="w-8 h-8 rounded-full object-cover border border-gray-400 dark:border-gray-600 group-hover:scale-105 transition-transform"
+              onError={handleImageError}
+            />
+            <div className="text-left">
+              <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:underline">
+                {userInfo?.fullName || 'Đang tải...'}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {userInfo?.role || 'Hồ sơ cá nhân'}
+              </p>
             </div>
+          </button>
+
+          <div className="flex items-center space-x-2">
+            <button
+              title="Đăng xuất"
+              onClick={handleLogout}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+            <button
+              title="Cài đặt"
+              onClick={handleSettings}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

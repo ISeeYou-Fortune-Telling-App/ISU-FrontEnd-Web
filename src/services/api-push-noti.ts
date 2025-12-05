@@ -19,7 +19,8 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('accessToken');
+      // Thử lấy token từ localStorage trước, sau đó sessionStorage
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -64,9 +65,11 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken =
+        localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
       if (!refreshToken) {
         localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('accessToken');
         window.location.href = '/auth/login';
         return Promise.reject(error);
       }
@@ -93,8 +96,11 @@ api.interceptors.response.use(
         );
 
         const { token, refreshToken: newRefreshToken } = res.data;
-        localStorage.setItem('accessToken', token);
-        localStorage.setItem('refreshToken', newRefreshToken);
+        // Lưu vào storage phù hợp (localStorage hoặc sessionStorage)
+        const storage =
+          localStorage.getItem('rememberMe') === 'true' ? localStorage : sessionStorage;
+        storage.setItem('accessToken', token);
+        storage.setItem('refreshToken', newRefreshToken);
 
         isRefreshing = false;
         onRefreshed(token);
@@ -105,6 +111,8 @@ api.interceptors.response.use(
         isRefreshing = false;
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
         window.location.href = '/auth/login';
         return Promise.reject(err);
       }
