@@ -30,8 +30,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+const formatCurrency = (value: number | null | undefined) => {
+  const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(safeValue);
 };
 
 const getTierColor = (tier: string) => {
@@ -79,10 +80,18 @@ const PaymentHistoryRow: React.FC<{ payment: any }> = ({ payment }) => {
             {payment.packageTitle}
           </p>
           <div className="flex items-center space-x-2 mt-1">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(payment.paymentStatus)}`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(
+                payment.paymentStatus,
+              )}`}
+            >
               {payment.paymentStatus}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getPaymentMethodBadge(payment.paymentMethod)}`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${getPaymentMethodBadge(
+                payment.paymentMethod,
+              )}`}
+            >
               {payment.paymentMethod}
             </span>
           </div>
@@ -260,7 +269,7 @@ const SeerDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showPayModal, setShowPayModal] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  
+
   // Payment history states
   const [payments, setPayments] = useState<any[]>([]);
   const [paymentPage, setPaymentPage] = useState(1);
@@ -272,12 +281,38 @@ const SeerDetailPage: React.FC = () => {
     const fetchSeerDetail = async () => {
       try {
         const currentDate = new Date();
+
+        // WORKAROUND: Gateway đang ăn mất field 'data', gọi trực tiếp backend service
+        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        const directBackendUrl = `http://localhost:8080/report/seer-performance?seerId=${seerId}&month=${
+          currentDate.getMonth() + 1
+        }&year=${currentDate.getFullYear()}`;
+
+        const testResponse = await fetch(directBackendUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const testData = await testResponse.json();
+        console.log('🧪 Direct backend response:', testData);
+
         const seerResponse = await ReportService.getSeerPerformance(
           seerId,
           currentDate.getMonth() + 1,
           currentDate.getFullYear(),
         );
-        setSeerData(seerResponse.data);
+        console.log('🔍 Service response:', seerResponse);
+
+        // Backend trả về {statusCode, message, data}, nhưng service chỉ trả về {statusCode, message}
+        // Có thể apiFetch đã xử lý sai. Tạm thời dùng direct fetch data
+        if (testData && testData.data) {
+          setSeerData(testData.data);
+        } else {
+          // Fallback: nếu seerResponse.data tồn tại thì dùng, không thì dùng toàn bộ seerResponse
+          const actualData = seerResponse.data || seerResponse;
+          setSeerData(actualData);
+        }
       } catch (error) {
         console.error('Error fetching seer detail:', error);
       } finally {
@@ -302,7 +337,7 @@ const SeerDetailPage: React.FC = () => {
           sortType: 'desc',
           seerId: seerId,
         });
-        
+
         setPayments(response.data || []);
         setPaymentTotal(response.paging?.total || 0);
         setPaymentTotalPages(response.paging?.totalPages || 0);
@@ -419,7 +454,7 @@ const SeerDetailPage: React.FC = () => {
               <Award className="w-5 h-5 text-indigo-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {seerData?.performancePoint}
+              {seerData?.performancePoint ?? 0}
             </p>
           </div>
 
@@ -429,7 +464,7 @@ const SeerDetailPage: React.FC = () => {
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {formatCurrency(seerData?.totalRevenue)}
+              {formatCurrency(seerData?.totalRevenue || 0)}
             </p>
           </div>
 
@@ -439,7 +474,7 @@ const SeerDetailPage: React.FC = () => {
               <Star className="w-5 h-5 text-yellow-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {seerData?.avgRating.toFixed(1)}/5 ⭐
+              {(seerData?.avgRating || 0).toFixed(1)}/5 ⭐
             </p>
           </div>
         </div>
@@ -455,7 +490,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng gói dịch vụ</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData?.totalPackages}
+                  {seerData?.totalPackages ?? 0}
                 </p>
               </div>
             </div>
@@ -465,7 +500,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Lịch hẹn</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData?.totalBookings}
+                  {seerData?.totalBookings ?? 0}
                 </p>
               </div>
             </div>
@@ -475,7 +510,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Hoàn thành</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData?.completedBookings}
+                  {seerData?.completedBookings ?? 0}
                 </p>
               </div>
             </div>
@@ -485,7 +520,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng đánh giá</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData?.totalRates}
+                  {seerData?.totalRates ?? 0}
                 </p>
               </div>
             </div>
@@ -495,7 +530,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Đã hủy</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {seerData?.cancelledBySeer}
+                  {seerData?.cancelledBySeer ?? 0}
                 </p>
               </div>
             </div>
@@ -505,7 +540,7 @@ const SeerDetailPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tiền thưởng</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {formatCurrency(seerData?.bonus)}
+                  {formatCurrency(seerData?.bonus || 0)}
                 </p>
               </div>
             </div>
@@ -579,7 +614,9 @@ const SeerDetailPage: React.FC = () => {
             <div>
               <p className="text-gray-500 dark:text-gray-400">Ngày tạo</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {seerData?.createdAt ? new Date(seerData.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
+                {seerData?.createdAt
+                  ? new Date(seerData.createdAt).toLocaleDateString('vi-VN')
+                  : 'N/A'}
               </p>
             </div>
             <div>

@@ -8,6 +8,21 @@ import { dashboardService } from '@/services/dashboard/dashboard.service';
 import { TopSeerChartData } from '@/types/dashboard/dashboard.type';
 
 const YEARS = [2025, 2024];
+const MONTHS = [
+  { value: 0, label: 'Tất cả' },
+  { value: 1, label: 'Tháng 1' },
+  { value: 2, label: 'Tháng 2' },
+  { value: 3, label: 'Tháng 3' },
+  { value: 4, label: 'Tháng 4' },
+  { value: 5, label: 'Tháng 5' },
+  { value: 6, label: 'Tháng 6' },
+  { value: 7, label: 'Tháng 7' },
+  { value: 8, label: 'Tháng 8' },
+  { value: 9, label: 'Tháng 9' },
+  { value: 10, label: 'Tháng 10' },
+  { value: 11, label: 'Tháng 11' },
+  { value: 12, label: 'Tháng 12' },
+];
 
 // Helper function to remove title prefix (Thầy/Cô)
 const removeTitle = (fullName: string): string => {
@@ -20,13 +35,19 @@ const TopSeerPerformanceChart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState(2025);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(0);
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
+  const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await dashboardService.getTopSeerPerformance(selectedYear, 100);
+        const response = await dashboardService.getTopSeerPerformance(
+          selectedYear,
+          100,
+          selectedMonth > 0 ? selectedMonth : undefined
+        );
 
         // Group by seerId and aggregate data
         const seerMap = new Map<string, any>();
@@ -81,7 +102,7 @@ const TopSeerPerformanceChart: React.FC = () => {
     };
 
     fetchData();
-  }, [selectedYear]);
+  }, [selectedYear, selectedMonth]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -95,10 +116,10 @@ const TopSeerPerformanceChart: React.FC = () => {
       const data = payload[0].payload;
       return (
         <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {data.fullName}
           </p>
-          <div className="space-y-1 text-xs">
+          <div className="space-y-1 text-sm">
             <p className="text-purple-600 dark:text-purple-400">
               Doanh thu:{' '}
               <span className="font-bold">
@@ -129,7 +150,7 @@ const TopSeerPerformanceChart: React.FC = () => {
         dy={4}
         textAnchor="end"
         fill="currentColor"
-        className="text-[11px] text-gray-700 dark:text-gray-300"
+        className="text-sm font-medium text-gray-700 dark:text-gray-300"
       >
         {payload.value}
       </text>
@@ -149,40 +170,80 @@ const TopSeerPerformanceChart: React.FC = () => {
           </p>
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <span>Năm {selectedYear}</span>
-            <ChevronDown
-              className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+        <div className="flex items-center space-x-2">
+          {/* Month Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <span>{MONTHS.find((m) => m.value === selectedMonth)?.label}</span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
 
-          {isDropdownOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-              <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden">
-                {YEARS.map((year) => (
-                  <button
-                    key={year}
-                    onClick={() => {
-                      setSelectedYear(year);
-                      setIsDropdownOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-sm text-left transition-colors ${
-                      selectedYear === year
-                        ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    Năm {year}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+            {isMonthDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsMonthDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden max-h-60 overflow-y-auto">
+                  {MONTHS.map((month) => (
+                    <button
+                      key={month.value}
+                      onClick={() => {
+                        setSelectedMonth(month.value);
+                        setIsMonthDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-sm text-left transition-colors ${
+                        selectedMonth === month.value
+                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {month.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Year Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <span>Năm {selectedYear}</span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isYearDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsYearDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden">
+                  {YEARS.map((year) => (
+                    <button
+                      key={year}
+                      onClick={() => {
+                        setSelectedYear(year);
+                        setIsYearDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-sm text-left transition-colors ${
+                        selectedYear === year
+                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Năm {year}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -200,35 +261,37 @@ const TopSeerPerformanceChart: React.FC = () => {
         </div>
       ) : (
         <div className="flex-1 mt-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                className="stroke-gray-200 dark:stroke-gray-700"
-                horizontal={false}
-              />
-              <XAxis
-                type="number"
-                className="text-[11px] text-gray-600 dark:text-gray-400"
-                tick={{ fill: 'currentColor' }}
-                tickFormatter={formatCurrency}
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={<CustomYAxisTick />}
-                width={160}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar
-                dataKey="revenue"
-                fill="#a855f7"
-                radius={[0, 8, 8, 0]}
-                animationBegin={0}
-                animationDuration={800}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ height: '450px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 5, bottom: 5, left: 10 }}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-gray-200 dark:stroke-gray-700"
+                  horizontal={false}
+                />
+                <XAxis
+                  type="number"
+                  className="text-xs text-gray-600 dark:text-gray-400"
+                  tick={{ fill: 'currentColor', fontSize: 12 }}
+                  tickFormatter={formatCurrency}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={<CustomYAxisTick />}
+                  width={180}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar
+                  dataKey="revenue"
+                  fill="#a855f7"
+                  radius={[0, 8, 8, 0]}
+                  animationBegin={0}
+                  animationDuration={800}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { PieChart as PieChartIcon } from 'lucide-react';
+import { PieChart as PieChartIcon, ChevronDown } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { dashboardService } from '@/services/dashboard/dashboard.service';
 import { ServiceDistributionData } from '@/types/dashboard/dashboard.type';
@@ -13,6 +13,23 @@ const COLORS: Record<string, string> = {
   'Chỉ Tay': '#ef4444',
   Khác: '#9ca3af',
 };
+
+const YEARS = [2025, 2024, 2023];
+const MONTHS = [
+  { value: 0, label: 'Tất cả' },
+  { value: 1, label: 'Tháng 1' },
+  { value: 2, label: 'Tháng 2' },
+  { value: 3, label: 'Tháng 3' },
+  { value: 4, label: 'Tháng 4' },
+  { value: 5, label: 'Tháng 5' },
+  { value: 6, label: 'Tháng 6' },
+  { value: 7, label: 'Tháng 7' },
+  { value: 8, label: 'Tháng 8' },
+  { value: 9, label: 'Tháng 9' },
+  { value: 10, label: 'Tháng 10' },
+  { value: 11, label: 'Tháng 11' },
+  { value: 12, label: 'Tháng 12' },
+];
 
 const ServiceLegendItem: React.FC<{
   color: string;
@@ -38,12 +55,19 @@ const ServiceDistributionCard: React.FC = () => {
   const [chartData, setChartData] = useState<ServiceDistributionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState(2025);
+  const [selectedMonth, setSelectedMonth] = useState(0);
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
+  const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await dashboardService.getCategoryDistribution();
+        const response = await dashboardService.getCategoryDistribution(
+          selectedYear,
+          selectedMonth > 0 ? selectedMonth : undefined
+        );
 
         const data: ServiceDistributionData[] = Object.entries(response.data).map(
           ([name, value]) => ({
@@ -64,7 +88,7 @@ const ServiceDistributionCard: React.FC = () => {
     };
 
     fetchData();
-  }, []);
+  }, [selectedYear, selectedMonth]);
 
   const totalValue = chartData.reduce((sum, item) => sum + item.value, 0);
 
@@ -99,6 +123,82 @@ const ServiceDistributionCard: React.FC = () => {
             Phân bố theo loại hình tư vấn
           </p>
         </div>
+
+        <div className="flex items-center space-x-2">
+          {/* Month Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <span>{MONTHS.find((m) => m.value === selectedMonth)?.label}</span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isMonthDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsMonthDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden max-h-60 overflow-y-auto">
+                  {MONTHS.map((month) => (
+                    <button
+                      key={month.value}
+                      onClick={() => {
+                        setSelectedMonth(month.value);
+                        setIsMonthDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-sm text-left transition-colors ${
+                        selectedMonth === month.value
+                          ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {month.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Year Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <span>Năm {selectedYear}</span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isYearDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsYearDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden">
+                  {YEARS.map((year) => (
+                    <button
+                      key={year}
+                      onClick={() => {
+                        setSelectedYear(year);
+                        setIsYearDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-sm text-left transition-colors ${
+                        selectedYear === year
+                          ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Năm {year}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {loading ? (
@@ -110,8 +210,8 @@ const ServiceDistributionCard: React.FC = () => {
           <p className="text-red-500 dark:text-red-400">{error}</p>
         </div>
       ) : (
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          <div className="w-full md:w-1/2 h-64">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-full max-w-xs h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -134,7 +234,7 @@ const ServiceDistributionCard: React.FC = () => {
             </ResponsiveContainer>
           </div>
 
-          <div className="w-full md:w-1/2 flex flex-col space-y-1">
+          <div className="w-full flex flex-col space-y-1">
             {chartData.map((item, index) => (
               <ServiceLegendItem
                 key={index}
