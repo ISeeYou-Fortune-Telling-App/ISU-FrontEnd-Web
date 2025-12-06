@@ -219,7 +219,7 @@ npm run test         # Run tests (if configured)
 1. Navigate to [http://localhost:3000/auth/login](http://localhost:3000/auth/login)
 2. Use admin credentials:
    - **Email**: `admin@iseeyou.com`
-   - **Password**: `P@sswd123`
+   - **Password**: `Passwordexample`
 3. Check "Remember me" to save credentials in localStorage (optional)
 
 ### Dashboard Navigation
