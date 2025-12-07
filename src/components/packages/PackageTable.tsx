@@ -4,6 +4,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   Search,
   Eye,
@@ -31,6 +32,7 @@ export const PackageTable: React.FC = () => {
   // ==================== STATE ====================
   const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 1000);
   const [selectedFilter, setSelectedFilter] = useState<StatusFilterType>('Tất cả');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,7 +57,7 @@ export const PackageTable: React.FC = () => {
         limit: ITEMS_PER_PAGE,
         sortType: 'desc',
         sortBy: 'createdAt',
-        searchText: searchTerm || undefined,
+        searchText: debouncedSearch || undefined,
         status: selectedFilter !== 'Tất cả' ? selectedFilter : undefined,
         packageCategoryIds: selectedCategory ? [selectedCategory] : undefined,
       });
@@ -96,7 +98,7 @@ export const PackageTable: React.FC = () => {
           limit: ITEMS_PER_PAGE,
           sortType: 'desc',
           sortBy: 'createdAt',
-          searchText: searchTerm || undefined,
+          searchText: debouncedSearch || undefined,
           status: selectedFilter !== 'Tất cả' ? selectedFilter : undefined,
           packageCategoryIds: selectedCategory ? [selectedCategory] : undefined,
         });
@@ -125,7 +127,7 @@ export const PackageTable: React.FC = () => {
             limit: ITEMS_PER_PAGE,
             sortType: 'desc',
             sortBy: 'createdAt',
-            searchText: searchTerm || undefined,
+            searchText: debouncedSearch || undefined,
             status: selectedFilter !== 'Tất cả' ? selectedFilter : undefined,
             packageCategoryIds: selectedCategory ? [selectedCategory] : undefined,
           });
@@ -140,7 +142,7 @@ export const PackageTable: React.FC = () => {
       };
       fetchData();
     }
-  }, [currentPage, selectedCategory, selectedFilter, searchTerm]);
+  }, [currentPage, selectedCategory, selectedFilter, debouncedSearch]);
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
 
@@ -331,7 +333,10 @@ export const PackageTable: React.FC = () => {
       <div className="overflow-hidden rounded-lg border border-gray-400 dark:border-gray-700 relative">
         {isRefreshing && (
           <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none z-10">
-            <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
+            <div
+              className="h-6 w-6 rounded-full border-b-2 border-indigo-600 animate-spin"
+              style={{ animationDuration: '1s' }}
+            ></div>
           </div>
         )}
 
@@ -368,8 +373,13 @@ export const PackageTable: React.FC = () => {
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
             {loading ? (
               <tr>
-                <td colSpan={7} className="text-center py-10 text-gray-500 dark:text-gray-400">
-                  ⏳ Đang tải dữ liệu...
+                <td colSpan={7} className="text-center py-10">
+                  <div className="flex justify-center items-center">
+                    <div
+                      className="h-6 w-6 rounded-full border-b-2 border-indigo-600 animate-spin"
+                      style={{ animationDuration: '1s' }}
+                    ></div>
+                  </div>
                 </td>
               </tr>
             ) : packages.length === 0 ? (

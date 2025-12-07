@@ -15,7 +15,7 @@ type PaymentStatusFilterType = 'Tất cả' | PaymentStatus;
 
 export const BookingTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 500);
+  const debouncedSearch = useDebounce(searchTerm, 1000);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilterType>('Tất cả');
   const [selectedPaymentStatus, setSelectedPaymentStatus] =
     useState<PaymentStatusFilterType>('Tất cả');
@@ -250,9 +250,12 @@ export const BookingTable: React.FC = () => {
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-500 dark:text-gray-400">
+                <td colSpan={8} className="text-center py-10">
                   <div className="flex justify-center items-center">
-                    <Loader2 className="animate-spin w-5 h-5 mr-2" /> Đang tải dữ liệu...
+                    <div
+                      className="h-6 w-6 rounded-full border-b-2 border-indigo-600 animate-spin"
+                      style={{ animationDuration: '1s' }}
+                    ></div>
                   </div>
                 </td>
               </tr>

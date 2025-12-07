@@ -15,6 +15,7 @@ import type {
 import { Badge } from '@/components/common/Badge';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ReportDetailModal } from './ReportDetailModal';
 import { ReportHistoryModal } from './ReportHistoryModal';
 
@@ -41,7 +42,7 @@ export function ReportsTable() {
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
 
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 500);
+  const debouncedSearch = useDebounce(searchTerm, 1000);
 
   const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | ReportStatus>('Tất cả');
   const [selectedType, setSelectedType] = useState<'Tất cả' | string>('Tất cả');
@@ -230,11 +231,7 @@ export function ReportsTable() {
   };
 
   if (loading) {
-    return (
-      <div className="text-center text-gray-500 dark:text-gray-400 py-10">
-        Đang tải danh sách báo cáo...
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -411,7 +408,10 @@ export function ReportsTable() {
       <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative">
         {isRefreshing && (
           <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none z-10">
-            <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
+            <div
+              className="h-6 w-6 rounded-full border-b-2 border-indigo-600 animate-spin"
+              style={{ animationDuration: '1s' }}
+            ></div>
           </div>
         )}
 

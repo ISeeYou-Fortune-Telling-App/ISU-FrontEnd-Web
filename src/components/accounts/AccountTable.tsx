@@ -10,6 +10,7 @@ import { Badge } from '../common/Badge';
 import { AccountDetailModal } from './AccountDetailModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
+import { LoadingSpinner } from '../common/LoadingSpinner';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -18,7 +19,7 @@ export const AccountTable: React.FC = () => {
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
   const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 500);
+  const debouncedSearch = useDebounce(searchTerm, 1000);
 
   const [selectedRole, setSelectedRole] = useState<'Tất cả' | Role>('Tất cả');
   const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | Status>('Tất cả');
@@ -106,11 +107,7 @@ export const AccountTable: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="text-center text-gray-500 dark:text-gray-400 py-10">
-        Đang tải danh sách tài khoản...
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -206,7 +203,10 @@ export const AccountTable: React.FC = () => {
       <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative">
         {isRefreshing && (
           <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none">
-            <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
+            <div
+              className="h-6 w-6 rounded-full border-b-2 border-indigo-600 animate-spin"
+              style={{ animationDuration: '1s' }}
+            ></div>
           </div>
         )}
 

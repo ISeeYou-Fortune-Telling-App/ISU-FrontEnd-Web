@@ -5,12 +5,13 @@ import { Badge } from '../common/Badge';
 import { PaymentDetailModal } from './PaymentDetailModal';
 import { BookingPaymentService } from '@/services/payments/payments.service';
 import type { BookingPayment, PaymentStatus, PaymentMethod } from '@/types/payments/payments.type';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const ITEMS_PER_PAGE = 10;
 
 export const PaymentTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 1000);
   const [selectedStatus, setSelectedStatus] = useState<PaymentStatus | 'ALL'>('ALL');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | 'ALL'>('ALL');
   const [isMethodDropdownOpen, setIsMethodDropdownOpen] = useState(false);
@@ -33,14 +34,10 @@ export const PaymentTable: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMethodDropdownOpen]);
 
-  // Debounce search term
+  // Reset page when search changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      setCurrentPage(1); // Reset về trang 1 khi search
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+    setCurrentPage(1);
+  }, [debouncedSearch]);
 
   // ================== Fetch API ==================
   useEffect(() => {
@@ -176,8 +173,11 @@ export const PaymentTable: React.FC = () => {
       {/* Table */}
       <div className="rounded-lg border border-gray-400 dark:border-gray-700 relative overflow-hidden">
         {isLoading ? (
-          <div className="flex justify-center items-center py-10 text-gray-500 dark:text-gray-400">
-            <Loader2 className="animate-spin w-5 h-5 mr-2" /> Đang tải dữ liệu...
+          <div className="flex justify-center items-center py-10">
+            <div
+              className="h-6 w-6 rounded-full border-b-2 border-indigo-600 animate-spin"
+              style={{ animationDuration: '1s' }}
+            ></div>
           </div>
         ) : (
           <table

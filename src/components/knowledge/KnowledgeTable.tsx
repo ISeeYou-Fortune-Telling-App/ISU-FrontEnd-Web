@@ -13,6 +13,7 @@ import type {
 import { useDebounce } from '@/hooks/useDebounce';
 import { Badge } from '@/components/common/Badge';
 import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -21,7 +22,7 @@ export const KnowledgeTable: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 500);
+  const debouncedSearch = useDebounce(searchTerm, 1000);
 
   const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | KnowledgeStatus>('Tất cả');
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả');
@@ -146,12 +147,7 @@ export const KnowledgeTable: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (loading)
-    return (
-      <div className="text-center text-gray-500 dark:text-gray-400 py-10">
-        Đang tải danh sách bài viết...
-      </div>
-    );
+  if (loading) return <LoadingSpinner />;
 
   return (
     <div
@@ -264,7 +260,10 @@ export const KnowledgeTable: React.FC = () => {
       <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative">
         {refreshing && (
           <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none">
-            <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
+            <div
+              className="h-6 w-6 rounded-full border-b-2 border-indigo-600 animate-spin"
+              style={{ animationDuration: '1s' }}
+            ></div>
           </div>
         )}
 

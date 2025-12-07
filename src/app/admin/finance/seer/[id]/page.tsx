@@ -436,7 +436,7 @@ const SeerDetailContent: React.FC = () => {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <div className="flex items-start space-x-4">
             <img
               src={seerData?.avatarUrl || `https://i.pravatar.cc/150?u=${seerId}`}
@@ -465,7 +465,7 @@ const SeerDetailContent: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Điểm hiệu suất</p>
               <Award className="w-5 h-5 text-indigo-500" />
@@ -475,7 +475,7 @@ const SeerDetailContent: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng doanh thu</p>
               <DollarSign className="w-5 h-5 text-green-500" />
@@ -485,7 +485,7 @@ const SeerDetailContent: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Đánh giá TB</p>
               <Star className="w-5 h-5 text-yellow-500" />
@@ -497,7 +497,7 @@ const SeerDetailContent: React.FC = () => {
         </div>
 
         {/* Detailed Info */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Thông tin chi tiết
           </h2>
@@ -565,7 +565,7 @@ const SeerDetailContent: React.FC = () => {
         </div>
 
         {/* Payment History Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
               <CreditCard className="w-5 h-5 text-indigo-500" />
@@ -627,7 +627,7 @@ const SeerDetailContent: React.FC = () => {
         </div>
 
         {/* Period Info */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Kỳ báo cáo</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>

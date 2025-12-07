@@ -22,7 +22,11 @@ export const CertificateService = {
     if (params?.status) {
       queryParams.append('status', params.status);
     }
-    if (params?.seerName) {
+    // Use 'name' param (search by certificate name or seer name)
+    if (params?.name) {
+      queryParams.append('name', params.name);
+    } else if (params?.seerName) {
+      // Fallback for backward compatibility
       queryParams.append('seerName', params.seerName);
     }
 

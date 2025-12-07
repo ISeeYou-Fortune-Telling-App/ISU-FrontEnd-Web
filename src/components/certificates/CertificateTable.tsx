@@ -24,6 +24,8 @@ import { CertificateService } from '@/services/certificates/certificates.service
 import { Certificate } from '@/types/certificates/certificates.type';
 import { KnowledgeService } from '@/services/knowledge/knowledge.service';
 import { KnowledgeCategory } from '@/types/knowledge/knowledge.type';
+import { useDebounce } from '@/hooks/useDebounce';
+import { LoadingSpinner } from '../common/LoadingSpinner';
 
 type StatusFilterType = 'Tất cả' | 'Chờ duyệt' | 'Đã duyệt' | 'Đã từ chối';
 const ITEMS_PER_PAGE = 10;
@@ -37,6 +39,7 @@ const STATUS_MAP: Record<StatusFilterType, string | undefined> = {
 
 export const CertificateTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 1000);
   const [selectedFilter, setSelectedFilter] = useState<StatusFilterType>('Tất cả');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,7 +65,7 @@ export const CertificateTable: React.FC = () => {
         page: currentPage,
         limit: ITEMS_PER_PAGE,
         status: STATUS_MAP[selectedFilter] as any,
-        seerName: searchTerm || undefined,
+        name: debouncedSearch || undefined, // Search by certificate name or seer name
       };
 
       let response;
@@ -100,7 +103,7 @@ export const CertificateTable: React.FC = () => {
 
   useEffect(() => {
     fetchCertificates();
-  }, [selectedCategory, currentPage, selectedFilter, searchTerm]);
+  }, [selectedCategory, currentPage, selectedFilter, debouncedSearch]);
 
   const goToNextPage = () => {
     if (currentPage < paging.totalPages && !loading) {
@@ -232,7 +235,7 @@ export const CertificateTable: React.FC = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo tên Nhà tiên tri..."
+            placeholder="Tìm kiếm theo tên chứng chỉ hoặc tên Seer..."
             className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
             value={searchTerm}
             onChange={(e) => {
@@ -356,8 +359,13 @@ export const CertificateTable: React.FC = () => {
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
             {loading ? (
               <tr>
-                <td colSpan={6} className="text-center py-6 text-gray-500 dark:text-gray-400">
-                  Đang tải dữ liệu...
+                <td colSpan={6} className="text-center py-10">
+                  <div className="flex justify-center items-center">
+                    <div
+                      className="h-6 w-6 rounded-full border-b-2 border-indigo-600 animate-spin"
+                      style={{ animationDuration: '1s' }}
+                    ></div>
+                  </div>
                 </td>
               </tr>
             ) : certificates.length === 0 ? (

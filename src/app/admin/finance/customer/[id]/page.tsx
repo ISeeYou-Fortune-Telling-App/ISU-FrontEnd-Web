@@ -67,7 +67,7 @@ const PaymentHistoryRow: React.FC<{ payment: any; index: number }> = ({ payment,
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.15, delay: index * 0.02 }}
-      className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+      className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-400 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
     >
       <div className="flex items-center space-x-4 flex-1 min-w-0">
         <img
@@ -153,7 +153,7 @@ const RevenueChart: React.FC<{
     <div className="h-80 mt-4">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-400 dark:stroke-gray-700" />
           <XAxis
             dataKey="month"
             className="text-xs text-gray-600 dark:text-gray-400"
@@ -318,7 +318,7 @@ const CustomerDetailContent: React.FC = () => {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <div className="flex items-start space-x-4">
             <img
               src={customerData?.avatarUrl || `https://i.pravatar.cc/150?u=${customerId}`}
@@ -347,7 +347,7 @@ const CustomerDetailContent: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Potential Point
@@ -359,7 +359,7 @@ const CustomerDetailContent: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng chi tiêu</p>
               <DollarSign className="w-5 h-5 text-green-500" />
@@ -369,7 +369,7 @@ const CustomerDetailContent: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng Bookings</p>
               <Calendar className="w-5 h-5 text-blue-500" />
@@ -381,12 +381,12 @@ const CustomerDetailContent: React.FC = () => {
         </div>
 
         {/* Detailed Info */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Thông tin chi tiết
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg">
               <Award className="w-5 h-5 text-purple-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Điểm tiềm năng</p>
@@ -396,7 +396,7 @@ const CustomerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg">
               <TrendingUp className="w-5 h-5 text-indigo-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Xếp hạng</p>
@@ -406,7 +406,7 @@ const CustomerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg">
               <DollarSign className="w-5 h-5 text-green-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Chi tiêu</p>
@@ -416,7 +416,7 @@ const CustomerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg">
               <Calendar className="w-5 h-5 text-blue-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Booking requests</p>
@@ -426,7 +426,7 @@ const CustomerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg">
               <X className="w-5 h-5 text-red-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Đã hủy</p>
@@ -436,7 +436,7 @@ const CustomerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg">
               <Award className="w-5 h-5 text-yellow-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tier hiện tại</p>
@@ -449,7 +449,7 @@ const CustomerDetailContent: React.FC = () => {
         </div>
 
         {/* Payment History Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
               <CreditCard className="w-5 h-5 text-indigo-500" />
@@ -511,7 +511,7 @@ const CustomerDetailContent: React.FC = () => {
         </div>
 
         {/* Period Info */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Kỳ báo cáo</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>

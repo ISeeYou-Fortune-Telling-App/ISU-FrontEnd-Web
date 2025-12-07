@@ -22,7 +22,7 @@ export const MessageTable: React.FC = () => {
   const [messageMode, setMessageMode] = useState<'group' | 'individual'>('individual');
   const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 400);
+  const debouncedSearch = useDebounce(searchTerm, 1000);
   const [page, setPage] = useState(1);
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const [adminId, setAdminId] = useState<string | null>(null);
@@ -420,7 +420,10 @@ export const MessageTable: React.FC = () => {
           {/* Danh sách hội thoại */}
           {loading ? (
             <div className="flex justify-center items-center py-10">
-              <div className="rounded-full h-8 w-8 border-b-2 border-indigo-600 animate-spin"></div>
+              <div
+                className="rounded-full h-8 w-8 border-b-2 border-indigo-600 animate-spin"
+                style={{ animationDuration: '1s' }}
+              ></div>
             </div>
           ) : error ? (
             <p className="text-center text-red-500">{error}</p>
@@ -501,6 +504,7 @@ export const MessageTable: React.FC = () => {
                         className={`rounded-full h-8 w-8 border-b-2 border-indigo-600 ${
                           loadingMore ? 'animate-spin' : ''
                         }`}
+                        style={{ animationDuration: '1s' }}
                       ></div>
                     </div>
                   )}

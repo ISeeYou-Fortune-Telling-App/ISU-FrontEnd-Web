@@ -9,6 +9,7 @@ import { ChatHistoryModal } from './ChatHistoryModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Badge } from '@/components/common/Badge';
 import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import Swal from 'sweetalert2';
 
 const ITEMS_PER_PAGE = 10;
@@ -39,7 +40,7 @@ const ChatHistoryTable: React.FC = () => {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
 
-  const debouncedSearch = useDebounce(searchTerm, 500);
+  const debouncedSearch = useDebounce(searchTerm, 1000);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement | null>(null);
 
@@ -195,11 +196,7 @@ const ChatHistoryTable: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="text-center text-gray-500 dark:text-gray-400 py-10">
-        Đang tải danh sách hội thoại...
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (

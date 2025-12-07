@@ -63,5 +63,6 @@ export interface CertificateQueryParams {
   sortType?: 'asc' | 'desc';
   sortBy?: string;
   status?: CertificateStatus;
-  seerName?: string;
+  seerName?: string; // Deprecated: use 'name' instead
+  name?: string; // Search by certificate name or seer name
 }
