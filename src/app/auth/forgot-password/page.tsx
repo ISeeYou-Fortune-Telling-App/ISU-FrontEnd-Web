@@ -154,7 +154,7 @@ export default function ForgotPasswordPage() {
     <div className={`flex min-h-screen items-center justify-center bg-gray-950 p-4`}>
       <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl shadow-cyan-500/10 p-8 border border-cyan-600/30">
         <button
-          onClick={() => router.push('/login')}
+          onClick={() => router.push('/auth/login')}
           className="flex items-center text-sm font-medium text-cyan-400 hover:text-cyan-300 transition mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
