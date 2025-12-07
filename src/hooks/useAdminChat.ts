@@ -87,10 +87,31 @@ export const useAdminChat = ({ onNewMessage }: UseAdminChatProps = {}) => {
       setMessagesMap((prev) => {
         const convId = msg.conversationId;
         const oldMsgs = prev[convId] || [];
+
+        // Nếu là tin nhắn của admin, tìm và thay thế optimistic message (có ID tạm tmp-...)
+        const isMyMessage = msg.senderId === adminId;
+        if (isMyMessage) {
+          const optimisticIdx = oldMsgs.findIndex(
+            (m) =>
+              m.id.startsWith('tmp-') &&
+              m.textContent === msg.textContent &&
+              Math.abs(new Date(msg.createdAt).getTime() - new Date(m.createdAt).getTime()) < 5000,
+          );
+
+          if (optimisticIdx !== -1) {
+            console.log('🔄 [useAdminChat] Replacing optimistic message with real one');
+            const updated = [...oldMsgs];
+            updated[optimisticIdx] = msg;
+            return { ...prev, [convId]: updated };
+          }
+        }
+
+        // Check duplicate bằng ID hoặc content + time
         const isDup = oldMsgs.some(
           (m) =>
-            m.textContent === msg.textContent &&
-            Math.abs(new Date(msg.createdAt).getTime() - new Date(m.createdAt).getTime()) < 3000,
+            m.id === msg.id ||
+            (m.textContent === msg.textContent &&
+              Math.abs(new Date(msg.createdAt).getTime() - new Date(m.createdAt).getTime()) < 3000),
         );
         if (isDup) {
           console.log('⚠️ [useAdminChat] Duplicate message detected, skipping');
@@ -194,25 +215,14 @@ export const useAdminChat = ({ onNewMessage }: UseAdminChatProps = {}) => {
     }));
     onNewMessage?.(optimistic);
 
-    try {
-      // Gọi API để lưu vào database
-      const { MessagesService } = await import('@/services/messages/messages.service');
-      await MessagesService.sendMessage({
-        conversationId: currentConversationId,
-        textContent: text,
-        imagePath,
-        videoPath,
-      });
-      console.log('✅ Message saved to database');
-    } catch (error) {
-      console.error('❌ Failed to save message to database:', error);
-    }
-
-    // Emit socket để real-time
+    // Chỉ emit socket - server sẽ lo việc lưu vào DB và broadcast
+    // KHÔNG gọi API trực tiếp để tránh duplicate
     socketRef.current.emit(
       'send_message',
       { conversationId: currentConversationId, textContent: text, imagePath, videoPath },
-      (res: string | { status: string }) => console.log('📩 send_message ack:', res),
+      (res: string | { status: string }) => {
+        console.log('📩 send_message ack:', res);
+      },
     );
   };
 

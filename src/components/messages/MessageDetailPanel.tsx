@@ -89,6 +89,12 @@ export const MessageDetailPanel: React.FC<Props> = ({
   }, []);
 
   const handleDeleteMessage = async (messageId: string) => {
+    // Kiểm tra nếu là tin nhắn tạm (chưa được lưu vào DB)
+    if (messageId.startsWith('tmp-')) {
+      Swal.fire('Không thể xóa!', 'Tin nhắn đang được gửi, vui lòng đợi.', 'warning');
+      return;
+    }
+
     const result = await Swal.fire({
       title: 'Xóa tin nhắn?',
       text: 'Bạn có chắc chắn muốn xóa tin nhắn này không?',
@@ -170,7 +176,10 @@ export const MessageDetailPanel: React.FC<Props> = ({
   // ⭐ combined BÂY GIỜ CHỨA:
   // - Khi chuyển đổi: dbMessages A + messages A (cho đến khi fetch B xong)
   // - Khi tải xong: dbMessages B + messages B (messages B lúc này đã được reset)
-  const combined = [...dbMessages, ...messages];
+  // ⭐ Deduplicate messages by ID
+  const combined = [...dbMessages, ...messages].filter(
+    (msg, index, self) => index === self.findIndex((m) => m.id === msg.id),
+  );
 
   // 1️⃣ Khi load xong tin nhắn (vừa fetch từ DB xong) → cuộn ngay xuống cuối, không animation
   // Chỉ cuộn auto khi loading hoàn tất
@@ -316,13 +325,6 @@ export const MessageDetailPanel: React.FC<Props> = ({
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
               {convInfo?.customerName || convInfo?.seerName || 'Người dùng'}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {socketConnected ? (
-                <span className="text-green-600 dark:text-green-400">● Đang kết nối</span>
-              ) : (
-                <span className="text-red-600 dark:text-red-400">● Ngoại tuyến</span>
-              )}
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -358,7 +360,9 @@ export const MessageDetailPanel: React.FC<Props> = ({
         {/* ⭐ LOGIC RENDER: Đảm bảo luôn hiển thị data nếu có, chỉ hiện loading khi không có data */}
         {loading && combined.length === 0 ? (
           // Trường hợp 1: Đang tải VÀ CHƯA CÓ DATA NÀO (Lần đầu tiên tải hoặc tải thất bại)
-          <p className="text-center text-gray-500 mt-10">Đang tải tin nhắn...</p>
+          <div className="flex justify-center items-center mt-10">
+            <div className="rounded-full h-8 w-8 border-b-2 border-indigo-600 animate-spin"></div>
+          </div>
         ) : (
           <>
             {combined.length === 0 ? (
@@ -464,7 +468,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
                         className={`px-3 py-2 rounded-2xl ${
                           isAdmin
                             ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-br-none'
-                            : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none shadow'
+                            : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none shadow border border-gray-400 dark:border-gray-700'
                         }`}
                       >
                         {isImage ? (
@@ -544,7 +548,9 @@ export const MessageDetailPanel: React.FC<Props> = ({
             )}
             {/* Indicator Loading nhỏ khi đang tải nhưng đã có tin nhắn hiển thị */}
             {loading && combined.length > 0 && (
-              <p className="text-center text-gray-500 text-sm italic">Đang tải tin nhắn...</p>
+              <div className="flex justify-center py-2">
+                <div className="rounded-full h-6 w-6 border-b-2 border-indigo-600 animate-spin"></div>
+              </div>
             )}
             <div ref={bottomRef} />
           </>

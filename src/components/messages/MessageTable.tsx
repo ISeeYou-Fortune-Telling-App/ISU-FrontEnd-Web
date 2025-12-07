@@ -82,11 +82,12 @@ export const MessageTable: React.FC = () => {
   }, [messageMode]);
 
   const fetchConversations = async () => {
-    // Nếu không còn data thì return
-    if (!hasMore) return;
-
     // Nếu đang fetch rồi thì không fetch nữa (dùng ref thay vì state)
     if (isLoadingNextPageRef.current) return;
+
+    // Nếu không còn data VÀ KHÔNG PHẢI trang 1 thì return
+    // (Trang 1 luôn được phép fetch để reset data)
+    if (!hasMore && page !== 1) return;
 
     // Đánh dấu đang fetch
     isLoadingNextPageRef.current = true;
@@ -198,6 +199,7 @@ export const MessageTable: React.FC = () => {
     // Reset page về 1 và hasMore khi search thay đổi
     setPage(1);
     setHasMore(true);
+    setConversations([]); // Reset conversations để tránh hiển thị data cũ
     // Reset flag khi search thay đổi
     isLoadingNextPageRef.current = false;
   }, [debouncedSearch]);
@@ -417,7 +419,9 @@ export const MessageTable: React.FC = () => {
 
           {/* Danh sách hội thoại */}
           {loading ? (
-            <p className="text-center text-gray-500">Đang tải...</p>
+            <div className="flex justify-center items-center py-10">
+              <div className="rounded-full h-8 w-8 border-b-2 border-indigo-600 animate-spin"></div>
+            </div>
           ) : error ? (
             <p className="text-center text-red-500">{error}</p>
           ) : (

@@ -327,8 +327,22 @@ const ChatHistoryTable: React.FC = () => {
                 <td className="px-4 py-3">
                   <Badge type="AccountStatus" value={STATUS_DISPLAY[conv.status]} />
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                  {conv.sessionStartTime ? new Date(conv.sessionStartTime).toLocaleString() : '-'}
+                <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                  {conv.sessionStartTime ? (
+                    <div className="flex flex-col items-center">
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {new Date(conv.sessionStartTime).toLocaleDateString('vi-VN')}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(conv.sessionStartTime).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  ) : (
+                    '-'
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-medium space-x-2">
                   <button
