@@ -13,6 +13,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'ISU - I See U',
   description: 'An application to xem bói toán',
+  icons: {
+    icon: '/logo_isu.png',
+    shortcut: '/logo_isu.png',
+    apple: '/logo_isu.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
