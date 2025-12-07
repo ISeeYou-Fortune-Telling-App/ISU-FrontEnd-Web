@@ -11,31 +11,9 @@ const AdminHeader = memo(({ notificationCount }: { notificationCount: number }) 
     className="fixed top-0 right-0 z-20 h-16 
       bg-white dark:bg-gray-800 
       border-b border-gray-400 dark:border-gray-700 
-      flex items-center justify-between px-6 
+      flex items-center justify-end px-6 
       ml-64 w-[calc(100%-16rem)]"
   >
-    <div className="flex items-center space-x-6">
-      <Menu className="w-6 h-6 text-gray-500 dark:text-gray-400 cursor-pointer" />
-
-      <div className="relative flex items-center bg-gray-100 dark:bg-gray-700 rounded-3xl h-10 px-3">
-        <Search className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" />
-        <input
-          type="text"
-          placeholder="Tìm kiếm..."
-          className="bg-transparent focus:outline-none text-gray-700 dark:text-gray-200 w-64 placeholder:text-gray-400 font-light text-sm"
-        />
-      </div>
-
-      <div className="relative p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-        <Bell className="w-6 h-6 text-gray-500 dark:text-gray-300" />
-        {notificationCount > 0 && (
-          <span className="absolute top-0 right-0 transform -translate-x-0.5 translate-y-0.5 w-4 h-4 text-xs font-bold text-white bg-red-600 rounded-full flex items-center justify-center">
-            {notificationCount}
-          </span>
-        )}
-      </div>
-    </div>
-
     <div className="flex items-center space-x-4">
       <ThemeSwitchToggle />
     </div>
@@ -53,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Tối ưu: Tránh tính toán lại className mỗi lần render
   const mainClassName = React.useMemo(() => {
     if (isProfilePage) return 'pt-16';
-    if (isAiAnalysisPage) return 'p-6 pt-20 w-full h-[calc(100vh-0px)] flex flex-col';
+    if (isAiAnalysisPage) return 'h-screen overflow-hidden';
     return 'p-6 pt-20';
   }, [isProfilePage, isAiAnalysisPage]);
 

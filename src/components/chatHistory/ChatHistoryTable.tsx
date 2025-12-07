@@ -8,6 +8,7 @@ import { MessagesService } from '@/services/messages/messages.service';
 import { ChatHistoryModal } from './ChatHistoryModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Badge } from '@/components/common/Badge';
+import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
 import Swal from 'sweetalert2';
 
 const ITEMS_PER_PAGE = 10;
@@ -33,7 +34,6 @@ const ChatHistoryTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('Tất cả');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -41,6 +41,10 @@ const ChatHistoryTable: React.FC = () => {
 
   const debouncedSearch = useDebounce(searchTerm, 500);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll to top when page changes
+  useScrollToTopOnPageChange(paging.page, tableRef);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -90,27 +94,18 @@ const ChatHistoryTable: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!loading) {
-      setCurrentPage(1);
-      fetchConversations(1, false);
-    }
-  }, [selectedStatus, debouncedSearch]);
-
-  useEffect(() => {
-    if (!loading) {
-      fetchConversations(currentPage, false);
-    }
-  }, [currentPage]);
+    if (!loading) fetchConversations(paging.page, false);
+  }, [selectedStatus, debouncedSearch, paging.page]);
 
   const goToNextPage = () => {
-    if (currentPage < paging.totalPages && !isRefreshing) {
-      setCurrentPage((prev) => prev + 1);
+    if (paging.page < paging.totalPages && !isRefreshing) {
+      setPaging((prev) => ({ ...prev, page: prev.page + 1 }));
     }
   };
 
   const goToPrevPage = () => {
-    if (currentPage > 1 && !isRefreshing) {
-      setCurrentPage((prev) => prev - 1);
+    if (paging.page > 1 && !isRefreshing) {
+      setPaging((prev) => ({ ...prev, page: prev.page - 1 }));
     }
   };
 
@@ -137,7 +132,7 @@ const ChatHistoryTable: React.FC = () => {
           showConfirmButton: false,
         });
         // Refresh data
-        fetchConversations(currentPage, false);
+        fetchConversations(paging.page, false);
       } catch (error: any) {
         await Swal.fire({
           title: 'Lỗi!',
@@ -188,7 +183,7 @@ const ChatHistoryTable: React.FC = () => {
           showConfirmButton: false,
         });
         // Refresh data
-        fetchConversations(currentPage, false);
+        fetchConversations(paging.page, false);
       } catch (error: any) {
         await Swal.fire({
           title: 'Lỗi!',
@@ -208,7 +203,10 @@ const ChatHistoryTable: React.FC = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
+    <div
+      ref={tableRef}
+      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
+    >
       {/* Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
         <div className="relative flex-grow mr-4">
@@ -220,7 +218,7 @@ const ChatHistoryTable: React.FC = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              setPaging((prev) => ({ ...prev, page: 1 }));
             }}
           />
         </div>
@@ -246,7 +244,7 @@ const ChatHistoryTable: React.FC = () => {
                     onClick={() => {
                       setSelectedStatus(label);
                       setIsStatusDropdownOpen(false);
-                      setCurrentPage(1);
+                      setPaging((prev) => ({ ...prev, page: 1 }));
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
@@ -364,29 +362,31 @@ const ChatHistoryTable: React.FC = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center pt-4">
+      <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
         <span className="text-sm text-gray-700 dark:text-gray-300">
           Trang {paging.page}/{paging.totalPages} • {paging.total} cuộc hội thoại
         </span>
+
         <div className="flex items-center space-x-2">
           <button
             onClick={goToPrevPage}
-            disabled={currentPage === 1 || isRefreshing}
-            className={`p-1 border border-gray-400 dark:border-gray-600 rounded-lg ${
-              currentPage === 1 || isRefreshing
-                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                : 'text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            disabled={paging.page <= 1 || isRefreshing}
+            className={`p-2 rounded-md transition ${
+              paging.page <= 1 || isRefreshing
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
+
           <button
             onClick={goToNextPage}
-            disabled={currentPage >= paging.totalPages || isRefreshing}
-            className={`p-1 border border-gray-400 dark:border-gray-600 rounded-lg ${
-              currentPage >= paging.totalPages || isRefreshing
-                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                : 'text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            disabled={paging.page >= paging.totalPages || isRefreshing}
+            className={`p-2 rounded-md transition ${
+              paging.page >= paging.totalPages || isRefreshing
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <ChevronRight className="w-4 h-4" />

@@ -78,9 +78,6 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     {booking.customer.fullName}
                   </span>
                 </div>
-                <div className="mt-2">
-                  <Badge type="status" value={booking.status} />
-                </div>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Nhà tiên tri</p>
@@ -94,11 +91,21 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     {booking.seer.fullName}
                   </span>
                 </div>
-                <div className="mt-2">
-                  <Badge type="payment" value={paymentInfo?.paymentStatus || 'PENDING'} />
-                </div>
               </div>
             </div>
+          </div>
+          {/* Khối 1: Trạng thái lịch hẹn */}
+          <div className="flex items-center gap-2">
+            <h1 className="mb-0">Trạng thái lịch hẹn</h1>
+            <Badge type="status" value={booking.status} />
+          </div>
+
+          {/* Khối 2: Trạng thái thanh toán */}
+          <div className="flex items-center gap-2 mt-2">
+            {' '}
+            {/* mt-2 nếu muốn cách khối trên ra */}
+            <h1 className="mb-0">Trạng thái thanh toán</h1>
+            <Badge type="payment" value={paymentInfo?.paymentStatus || 'PENDING'} />
           </div>
 
           {/* THÔNG TIN DỊCH VỤ */}

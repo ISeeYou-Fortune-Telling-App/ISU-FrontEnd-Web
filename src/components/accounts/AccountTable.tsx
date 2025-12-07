@@ -9,6 +9,7 @@ import { UserAccount, Role, Status, GetAccountsParams } from '@/types/account/ac
 import { Badge } from '../common/Badge';
 import { AccountDetailModal } from './AccountDetailModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -26,6 +27,10 @@ export const AccountTable: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll to top when page changes
+  useScrollToTopOnPageChange(paging.page, tableRef);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -109,7 +114,10 @@ export const AccountTable: React.FC = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
+    <div
+      ref={tableRef}
+      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
+    >
       {/* Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
         <div className="relative flex-grow mr-4">

@@ -1,4 +1,4 @@
-import { apiFetch } from '@/services/api-core';
+import { apiFetch } from '@/services/api-client';
 import type {
   GetReportsParams,
   GetReportsResponse,
@@ -11,7 +11,7 @@ import type { SingleResponse, SimpleResponse } from '@/types/response.type';
 export const ReportsService = {
   /**
    * Lấy danh sách loại báo cáo
-   * GET /reports/types
+   * GET /core/reports/types
    */
   getReportTypes: async (params?: {
     page?: number;
@@ -26,7 +26,7 @@ export const ReportsService = {
     if (params?.sortType) queryParams.append('sortType', params.sortType);
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
 
-    const url = `/reports/types${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/core/reports/types${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await apiFetch<GetReportTypesResponse>(url, { method: 'GET' });
 
     return response;
@@ -34,7 +34,7 @@ export const ReportsService = {
 
   /**
    * Lấy danh sách báo cáo vi phạm với phân trang và filter
-   * GET /reports
+   * GET /core/reports
    */
   getReports: async (params?: GetReportsParams): Promise<GetReportsResponse> => {
     const queryParams = new URLSearchParams();
@@ -43,10 +43,12 @@ export const ReportsService = {
     if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
     if (params?.sortType) queryParams.append('sortType', params.sortType);
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params?.name) queryParams.append('name', params.name);
     if (params?.status) queryParams.append('status', params.status);
     if (params?.reportType) queryParams.append('reportType', params.reportType);
+    if (params?.targetType) queryParams.append('targetType', params.targetType);
 
-    const url = `/reports${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/core/reports${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await apiFetch<GetReportsResponse>(url, { method: 'GET' });
 
     return response;
@@ -54,32 +56,29 @@ export const ReportsService = {
 
   /**
    * Lấy chi tiết một báo cáo
-   * GET /reports/:id
+   * GET /core/reports/:id
    */
   getReportById: async (id: string): Promise<Report> => {
-    const response = await apiFetch<SingleResponse<Report>>(`/reports/${id}`, { method: 'GET' });
+    const response = await apiFetch<SingleResponse<Report>>(`/core/reports/${id}`, {
+      method: 'GET',
+    });
     return response.data;
   },
 
   /**
-   * Cập nhật trạng thái và hành động xử lý báo cáo
-   * PUT /reports/:id
+   * Cập nhật trạng thái báo cáo (Đã xem, Từ chối)
+   * PATCH /core/reports/:id
    */
   updateReport: async (
     id: string,
     data: {
-      reportStatus?: 'PENDING' | 'VIEWED' | 'RESOLVED' | 'REJECTED';
-      actionType?:
-        | 'NO_ACTION'
-        | 'WARNING_ISSUED'
-        | 'CONTENT_REMOVED'
-        | 'USER_BANNED'
-        | 'TEMPORARY_SUSPENSION';
+      status: 'PENDING' | 'VIEWED' | 'RESOLVED' | 'REJECTED';
+      actionType: 'NO_ACTION';
       note?: string;
     },
   ): Promise<Report> => {
-    const response = await apiFetch<SingleResponse<Report>>(`/reports/${id}`, {
-      method: 'PUT',
+    const response = await apiFetch<SingleResponse<Report>>(`/core/reports/${id}`, {
+      method: 'PATCH',
       data,
     });
     return response.data;
@@ -87,7 +86,7 @@ export const ReportsService = {
 
   /**
    * Xử lý vi phạm (WARNING, SUSPEND, BAN)
-   * POST /reports/{reportId}/violation-action
+   * POST /core/reports/{reportId}/violation-action
    */
   handleViolation: async (
     reportId: string,
@@ -98,7 +97,7 @@ export const ReportsService = {
     },
   ): Promise<Report> => {
     const response = await apiFetch<SingleResponse<Report>>(
-      `/reports/${reportId}/violation-action`,
+      `/core/reports/${reportId}/violation-action`,
       {
         method: 'POST',
         data,
@@ -108,40 +107,23 @@ export const ReportsService = {
   },
 
   getReportsStats: async (): Promise<ReportsStats> => {
-    const res = await apiFetch<SingleResponse<ReportsStats>>('/reports/stats', { method: 'GET' });
+    const res = await apiFetch<SingleResponse<ReportsStats>>('/core/reports/stats', {
+      method: 'GET',
+    });
     return res.data;
   },
 
   /**
-   * Update report status (PENDING, NO_ACTION)
-   * PATCH /reports/{id}
-   */
-  updateReportStatus: async (
-    id: string,
-    data: {
-      status: 'PENDING' | 'NO_ACTION';
-      actionType: 'NO_ACTION';
-      note?: string;
-    },
-  ): Promise<Report> => {
-    const response = await apiFetch<SingleResponse<Report>>(`/reports/${id}`, {
-      method: 'PATCH',
-      data,
-    });
-    return response.data;
-  },
-
-  /**
    * Xóa báo cáo
-   * DELETE /reports/:id
+   * DELETE /core/reports/:id
    */
   deleteReport: async (id: string): Promise<void> => {
-    await apiFetch<SimpleResponse>(`/reports/${id}`, { method: 'DELETE' });
+    await apiFetch<SimpleResponse>(`/core/reports/${id}`, { method: 'DELETE' });
   },
 
   /**
    * Lấy lịch sử báo cáo của một người dùng (người báo cáo)
-   * GET /reports/reporter/:reporterId
+   * GET /core/reports/reporter/:reporterId
    */
   getReportsByReporter: async (
     reporterId: string,
@@ -159,7 +141,7 @@ export const ReportsService = {
     if (params?.sortType) queryParams.append('sortType', params.sortType);
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
 
-    const url = `/reports/reporter/${reporterId}${
+    const url = `/core/reports/reporter/${reporterId}${
       queryParams.toString() ? `?${queryParams.toString()}` : ''
     }`;
     const response = await apiFetch<GetReportsResponse>(url, { method: 'GET' });
@@ -169,7 +151,7 @@ export const ReportsService = {
 
   /**
    * Lấy lịch sử bị báo cáo của một người dùng
-   * GET /reports/reported-user/:reportedUserId
+   * GET /core/reports/reported-user/:reportedUserId
    */
   getReportsByReportedUser: async (
     reportedUserId: string,
@@ -187,7 +169,7 @@ export const ReportsService = {
     if (params?.sortType) queryParams.append('sortType', params.sortType);
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
 
-    const url = `/reports/reported-user/${reportedUserId}${
+    const url = `/core/reports/reported-user/${reportedUserId}${
       queryParams.toString() ? `?${queryParams.toString()}` : ''
     }`;
     const response = await apiFetch<GetReportsResponse>(url, { method: 'GET' });

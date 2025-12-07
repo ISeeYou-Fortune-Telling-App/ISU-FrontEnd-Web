@@ -66,7 +66,7 @@ const ServiceDistributionCard: React.FC = () => {
         setLoading(true);
         const response = await dashboardService.getCategoryDistribution(
           selectedYear,
-          selectedMonth > 0 ? selectedMonth : undefined
+          selectedMonth > 0 ? selectedMonth : undefined,
         );
 
         const data: ServiceDistributionData[] = Object.entries(response.data).map(
@@ -129,11 +129,13 @@ const ServiceDistributionCard: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none"
             >
               <span>{MONTHS.find((m) => m.value === selectedMonth)?.label}</span>
               <ChevronDown
-                className={`w-4 h-4 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 transition-transform ${
+                  isMonthDropdownOpen ? 'rotate-180' : ''
+                }`}
               />
             </button>
 
@@ -166,7 +168,7 @@ const ServiceDistributionCard: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
               <span>Năm {selectedYear}</span>
               <ChevronDown

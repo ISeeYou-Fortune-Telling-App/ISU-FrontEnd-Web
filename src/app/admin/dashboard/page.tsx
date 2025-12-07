@@ -31,7 +31,7 @@ const TopSeerPerformanceChart = dynamic(
   () => import('../../../components/dashboard/TopSeerPerformanceChart'),
   {
     loading: () => (
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-400 dark:border-gray-700 h-64 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
       </div>
     ),

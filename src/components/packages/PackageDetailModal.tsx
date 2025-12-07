@@ -24,6 +24,7 @@ interface PackageDetailModalProps {
   package: ServicePackage | null;
   onClose: () => void;
   onHide?: (id: string, reason: string) => void;
+  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onActionComplete?: () => void;
 }
@@ -32,11 +33,17 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
   package: pkg,
   onClose,
   onHide,
+  onEdit,
   onDelete,
   onActionComplete,
 }) => {
   const [hideReason, setHideReason] = useState('');
   const [suspendDays, setSuspendDays] = useState(7);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(pkg?.packageTitle || '');
+  const [editedContent, setEditedContent] = useState(pkg?.packageContent || '');
+  const [editedPrice, setEditedPrice] = useState(pkg?.price || 0);
+  const [editedDuration, setEditedDuration] = useState(pkg?.durationMinutes || 0);
 
   // lock scroll khi modal mở
   const useScrollLock = (locked: boolean) => {
@@ -65,17 +72,274 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
     }
   };
 
-  const handleHide = () => {
-    if (onHide && hideReason.trim()) {
-      onHide(pkg.id, hideReason);
-      onClose();
+  const handleApprove = async () => {
+    const result = await Swal.fire({
+      title: 'Xác nhận duyệt',
+      text: 'Bạn có chắc chắn muốn duyệt gói dịch vụ này?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Duyệt',
+      cancelButtonText: 'Hủy',
+      reverseButtons: true,
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { PackageService } = await import('@/services/packages/package.service');
+        const response = await PackageService.adminConfirm(pkg.id, 'APPROVED');
+        await Swal.fire({
+          title: 'Thành công!',
+          text: response.message || 'Đã duyệt gói dịch vụ',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+        onClose();
+        if (onActionComplete) onActionComplete();
+      } catch (error: any) {
+        console.error('❌ Lỗi khi duyệt gói:', error);
+        Swal.fire({
+          title: 'Lỗi!',
+          text: error?.response?.data?.message || 'Không thể duyệt gói dịch vụ',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
     }
   };
 
-  const handleDelete = () => {
-    if (onDelete) {
-      onDelete(pkg.id);
-      onClose();
+  const handleReject = async () => {
+    const result = await Swal.fire({
+      title: 'Từ chối gói dịch vụ',
+      input: 'textarea',
+      inputLabel: 'Lý do từ chối',
+      inputPlaceholder: 'Nhập lý do từ chối gói dịch vụ...',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Từ chối',
+      cancelButtonText: 'Hủy',
+      reverseButtons: true,
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      inputValidator: (value) => {
+        if (!value) return 'Vui lòng nhập lý do từ chối!';
+      },
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { PackageService } = await import('@/services/packages/package.service');
+        const response = await PackageService.adminConfirm(pkg.id, 'REJECTED', result.value);
+        await Swal.fire({
+          title: 'Thành công!',
+          text: response.message || 'Đã từ chối gói dịch vụ',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+        onClose();
+        if (onActionComplete) onActionComplete();
+      } catch (error: any) {
+        console.error('❌ Lỗi khi từ chối gói:', error);
+        Swal.fire({
+          title: 'Lỗi!',
+          text: error?.response?.data?.message || 'Không thể từ chối gói dịch vụ',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
+    }
+  };
+
+  const handleHide = async () => {
+    const reasonResult = await Swal.fire({
+      title: 'Ẩn gói dịch vụ',
+      input: 'textarea',
+      inputLabel: 'Lý do ẩn',
+      inputPlaceholder: 'Nhập lý do ẩn gói dịch vụ...',
+      showCancelButton: true,
+      confirmButtonColor: '#6b7280',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Tiếp tục',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      inputValidator: (value) => {
+        if (!value) return 'Vui lòng nhập lý do!';
+      },
+    });
+
+    if (!reasonResult.isConfirmed) return;
+
+    const confirmResult = await Swal.fire({
+      title: 'Xác nhận ẩn',
+      html: `Bạn có chắc chắn muốn ẩn gói dịch vụ này?<br/><br/>
+             <small class="text-gray-600 dark:text-gray-400">Lý do: ${reasonResult.value}</small>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#6b7280',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Ẩn',
+      cancelButtonText: 'Hủy',
+      reverseButtons: true,
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (confirmResult.isConfirmed) {
+      try {
+        const { PackageService } = await import('@/services/packages/package.service');
+        await PackageService.updatePackageStatus(pkg.id, 'HIDDEN', {
+          packageTitle: pkg.packageTitle,
+          packageContent: pkg.packageContent,
+          price: pkg.price,
+          durationMinutes: pkg.durationMinutes,
+          categoryIds: pkg.categories.map((c) => c.id),
+          imageUrl: pkg.imageUrl,
+        });
+
+        await Swal.fire({
+          title: 'Thành công!',
+          text: 'Đã ẩn gói dịch vụ thành công!',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+
+        if (onActionComplete) onActionComplete();
+        onClose();
+      } catch (error: any) {
+        console.error('Error hiding package:', error);
+        Swal.fire({
+          title: 'Lỗi!',
+          text: error?.response?.data?.message || 'Không thể ẩn gói dịch vụ',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    const result = await Swal.fire({
+      title: 'Xác nhận xóa',
+      html: `Bạn có chắc chắn muốn xóa gói dịch vụ này?<br/><br/>
+             <small class="text-gray-600 dark:text-gray-400">Các booking chưa hoàn thành sẽ được hoàn tiền và hủy tự động.</small>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+      reverseButtons: true,
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { PackageService } = await import('@/services/packages/package.service');
+        const response = await PackageService.delete(pkg.id);
+
+        await Swal.fire({
+          title: 'Thành công!',
+          text: response.message || 'Đã xóa gói dịch vụ thành công!',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+
+        if (onActionComplete) onActionComplete();
+        onClose();
+      } catch (error: any) {
+        console.error('Error deleting package:', error);
+        Swal.fire({
+          title: 'Lỗi!',
+          text: error?.response?.data?.message || 'Không thể xóa gói dịch vụ',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!editedTitle.trim() || !editedContent.trim()) {
+      Swal.fire({
+        title: 'Lỗi!',
+        text: 'Vui lòng điền đầy đủ thông tin',
+        icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Xác nhận chỉnh sửa',
+      text: 'Bạn có chắc chắn muốn lưu các thay đổi?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Lưu',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { PackageService } = await import('@/services/packages/package.service');
+
+        await PackageService.updatePackage(pkg.id, {
+          packageTitle: editedTitle,
+          packageContent: editedContent,
+          price: editedPrice,
+          durationMinutes: editedDuration,
+          status: pkg.status,
+        });
+
+        await Swal.fire({
+          title: 'Thành công!',
+          text: 'Đã cập nhật gói dịch vụ',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+
+        setIsEditing(false);
+        if (onActionComplete) onActionComplete();
+        onClose();
+      } catch (error) {
+        console.error('Error updating package:', error);
+        Swal.fire({
+          title: 'Lỗi!',
+          text: 'Không thể cập nhật gói dịch vụ',
+          icon: 'error',
+          background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+        });
+      }
     }
   };
 
@@ -293,33 +557,46 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
             <p className="text-xs text-gray-500 dark:text-gray-400">Tiêu đề bài viết</p>
             <input
               type="text"
-              value={pkg.packageTitle}
-              readOnly
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm 
-                         bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-medium"
+              value={isEditing ? editedTitle : pkg.packageTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              readOnly={!isEditing}
+              className={`w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm 
+                         ${
+                           isEditing ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'
+                         } text-gray-900 dark:text-white font-medium`}
             />
           </div>
 
           {/* NỘI DUNG BÀI VIẾT */}
           <div className="space-y-2">
             <p className="text-xs text-gray-500 dark:text-gray-400">Nội dung bài viết</p>
-            <div
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm 
-                         bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 
-                         max-h-40 overflow-y-auto prose prose-sm dark:prose-invert max-w-none
-                         prose-headings:font-bold prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
-                         prose-p:my-2 prose-ul:my-2 prose-li:my-1"
-              dangerouslySetInnerHTML={{
-                __html: pkg.packageContent
-                  .replace(/\\n/g, '\n')
-                  .replace(/\n/g, '<br />')
-                  .replace(/#{3}\s+(.+?)(<br \/>|$)/g, '<h3>$1</h3>')
-                  .replace(/#{2}\s+(.+?)(<br \/>|$)/g, '<h2>$1</h2>')
-                  .replace(/#{1}\s+(.+?)(<br \/>|$)/g, '<h1>$1</h1>')
-                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                  .replace(/\*(.+?)\*/g, '<em>$1</em>'),
-              }}
-            />
+            {isEditing ? (
+              <textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                rows={6}
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm 
+                           bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+              />
+            ) : (
+              <div
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm 
+                           bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 
+                           max-h-40 overflow-y-auto prose prose-sm dark:prose-invert max-w-none
+                           prose-headings:font-bold prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
+                           prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+                dangerouslySetInnerHTML={{
+                  __html: pkg.packageContent
+                    .replace(/\\n/g, '\n')
+                    .replace(/\n/g, '<br />')
+                    .replace(/#{3}\s+(.+?)(<br \/>|$)/g, '<h3>$1</h3>')
+                    .replace(/#{2}\s+(.+?)(<br \/>|$)/g, '<h2>$1</h2>')
+                    .replace(/#{1}\s+(.+?)(<br \/>|$)/g, '<h1>$1</h1>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>'),
+                }}
+              />
+            )}
           </div>
 
           {/* THÔNG TIN DỊCH VỤ */}
@@ -329,26 +606,50 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Danh mục</p>
                 <div className="flex flex-wrap gap-1">
-                  {pkg.categories.map((cat) => (
-                    <Badge key={cat.id} type="expertise" value={cat.name} />
-                  ))}
+                  {[...pkg.categories]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((cat) => (
+                      <Badge key={cat.id} type="expertise" value={cat.name} />
+                    ))}
                 </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Thời lượng</p>
-                <div className="flex items-center space-x-1">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <p className="font-medium">{pkg.durationMinutes} phút</p>
-                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Thời lượng (phút)</p>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedDuration}
+                    onChange={(e) => setEditedDuration(parseInt(e.target.value) || 0)}
+                    min="1"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm 
+                               bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                ) : (
+                  <div className="flex items-center space-x-1">
+                    <Clock className="w-4 h-4 text-gray-500" />
+                    <p className="font-medium">{pkg.durationMinutes} phút</p>
+                  </div>
+                )}
               </div>
               <div className="col-span-2">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Giá tiền</p>
-                <div className="flex items-center space-x-1">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  <p className="font-medium text-green-600">
-                    {pkg.price.toLocaleString('vi-VN')} VND
-                  </p>
-                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Giá tiền (VND)</p>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedPrice}
+                    onChange={(e) => setEditedPrice(parseInt(e.target.value) || 0)}
+                    min="0"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm 
+                               bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                ) : (
+                  <div className="flex items-center space-x-1">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    <p className="font-medium text-green-600">
+                      {pkg.price.toLocaleString('vi-VN')} VND
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -466,45 +767,78 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
 
         {/* FOOTER - Actions */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          {isAvailable ? (
+          {isHidden ? (
+            /* Nút Approve/Reject cho gói HIDDEN */
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleApprove}
+                className="py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <ThumbsUp className="w-5 h-5" />
+                <span>Duyệt</span>
+              </button>
+              <button
+                onClick={handleReject}
+                className="py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white"
+              >
+                <ThumbsDown className="w-5 h-5" />
+                <span>Từ chối</span>
+              </button>
+            </div>
+          ) : isAvailable ? (
             <div className="space-y-3">
-              {/* Input lý do khi ẩn */}
-              <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                  Lý do ẩn bài viết (tùy chọn)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nhập lý do ẩn bài viết..."
-                  value={hideReason}
-                  onChange={(e) => setHideReason(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
-                            focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
-                            text-gray-900 dark:text-gray-200"
-                />
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleHide}
-                  disabled={!hideReason.trim()}
-                  className={`flex-1 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2
-                    ${
-                      !hideReason.trim()
-                        ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-600 hover:bg-gray-700 text-white'
-                    }`}
-                >
-                  <EyeOff className="w-5 h-5" />
-                  <span>Ẩn bài viết</span>
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="flex-1 py-3 text-white font-semibold rounded-lg transition flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  <span>Xóa</span>
-                </button>
-              </div>
+              {isEditing ? (
+                /* Nút khi đang edit */
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedTitle(pkg.packageTitle);
+                      setEditedContent(pkg.packageContent);
+                      setEditedPrice(pkg.price);
+                      setEditedDuration(pkg.durationMinutes);
+                    }}
+                    className="py-3 rounded-lg font-semibold transition bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleEdit}
+                    className="py-3 rounded-lg font-semibold transition bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Lưu thay đổi
+                  </button>
+                </div>
+              ) : (
+                /* 3 nút riêng biệt */
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Nút Ẩn */}
+                  <button
+                    onClick={handleHide}
+                    className="py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white"
+                  >
+                    <EyeOff className="w-5 h-5" />
+                    <span>Ẩn</span>
+                  </button>
+
+                  {/* Nút Chỉnh sửa */}
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <span>Chỉnh sửa</span>
+                  </button>
+
+                  {/* Nút Xóa */}
+                  <button
+                    onClick={handleDelete}
+                    className="py-3 text-white font-semibold rounded-lg transition flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    <span>Xóa</span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <button

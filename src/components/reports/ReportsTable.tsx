@@ -10,9 +10,11 @@ import type {
   ReportTypeItem,
   GetReportsParams,
   ReportUser,
+  TargetReportType,
 } from '@/types/reports/reports.type';
 import { Badge } from '@/components/common/Badge';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
 import { ReportDetailModal } from './ReportDetailModal';
 import { ReportHistoryModal } from './ReportHistoryModal';
 
@@ -25,12 +27,12 @@ const STATUS_LABELS: Record<ReportStatus, string> = {
   REJECTED: 'Từ chối',
 };
 
-const ACTION_LABELS: Record<string, string> = {
-  NO_ACTION: 'Chưa xử lý',
-  WARNING_ISSUED: 'Cảnh cáo',
-  CONTENT_REMOVED: 'Gỡ nội dung',
-  USER_BANNED: 'Cấm TK',
-  TEMPORARY_SUSPENSION: 'Tạm khóa',
+const TARGET_TYPE_LABELS: Record<TargetReportType, string> = {
+  SEER: 'Nhà tiên tri',
+  CHAT: 'Tin nhắn',
+  BOOKING: 'Lịch hẹn',
+  SERVICE_PACKAGE: 'Gói dịch vụ',
+  POST: 'Bài viết',
 };
 
 export function ReportsTable() {
@@ -43,8 +45,12 @@ export function ReportsTable() {
 
   const [selectedStatus, setSelectedStatus] = useState<'Tất cả' | ReportStatus>('Tất cả');
   const [selectedType, setSelectedType] = useState<'Tất cả' | string>('Tất cả');
+  const [selectedTargetType, setSelectedTargetType] = useState<'Tất cả' | TargetReportType>(
+    'Tất cả',
+  );
 
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const [isTargetTypeDropdownOpen, setIsTargetTypeDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -57,6 +63,11 @@ export function ReportsTable() {
   } | null>(null);
 
   const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const targetTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll to top when page changes
+  useScrollToTopOnPageChange(paging.page, tableRef);
 
   // Close dropdown when click outside
   useEffect(() => {
@@ -64,12 +75,18 @@ export function ReportsTable() {
       if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
         setIsTypeDropdownOpen(false);
       }
+      if (
+        targetTypeDropdownRef.current &&
+        !targetTypeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsTargetTypeDropdownOpen(false);
+      }
     };
-    if (isTypeDropdownOpen) {
+    if (isTypeDropdownOpen || isTargetTypeDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isTypeDropdownOpen]);
+  }, [isTypeDropdownOpen, isTargetTypeDropdownOpen]);
 
   // Fetch report types
   useEffect(() => {
@@ -95,8 +112,10 @@ export function ReportsTable() {
         limit: ITEMS_PER_PAGE,
         sortType: 'desc',
         sortBy: 'createdAt',
+        name: debouncedSearch.trim() || undefined,
         status: selectedStatus !== 'Tất cả' ? selectedStatus : undefined,
         reportType: selectedType !== 'Tất cả' ? selectedType : undefined,
+        targetType: selectedTargetType !== 'Tất cả' ? selectedTargetType : undefined,
       };
 
       const response = await ReportsService.getReports(params);
@@ -121,7 +140,7 @@ export function ReportsTable() {
 
   useEffect(() => {
     if (!loading) fetchReports(paging.page, false);
-  }, [selectedStatus, selectedType, debouncedSearch]);
+  }, [selectedStatus, selectedType, selectedTargetType, debouncedSearch, paging.page]);
 
   const goToNextPage = () => {
     if (paging.page < paging.totalPages && !isRefreshing) {
@@ -219,21 +238,43 @@ export function ReportsTable() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
-      {/* Type Dropdown */}
+    <div
+      ref={tableRef}
+      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
+    >
+      {/* Search Bar and Dropdowns */}
       <div className="flex gap-4 items-center mb-4">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên người dùng..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPaging((prev) => ({ ...prev, page: 1 }));
+            }}
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 
+                       rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white 
+                       placeholder-gray-400 dark:placeholder-gray-500 
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          />
+        </div>
+
+        {/* Report Type Dropdown */}
         <div className="relative flex-shrink-0" ref={typeDropdownRef}>
           <button
             onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
-            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 
+            className="flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 
                        dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
                        hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600 min-w-[180px]"
           >
-            <span className="truncate">
+            <span className="truncate mr-2">
               {selectedType === 'Tất cả' ? 'Tất cả loại vi phạm' : getReportTypeLabel(selectedType)}
             </span>
             <ChevronDown
-              className={`w-4 h-4 ml-1 transition-transform flex-shrink-0 ${
+              className={`w-4 h-4 transition-transform flex-shrink-0 ${
                 isTypeDropdownOpen ? 'rotate-180' : ''
               }`}
             />
@@ -274,6 +315,68 @@ export function ReportsTable() {
                     }`}
                   >
                     {type.description}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Target Type Dropdown */}
+        <div className="relative flex-shrink-0" ref={targetTypeDropdownRef}>
+          <button
+            onClick={() => setIsTargetTypeDropdownOpen(!isTargetTypeDropdownOpen)}
+            className="flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 
+                       dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
+                       hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600 min-w-[180px]"
+          >
+            <span className="truncate mr-2">
+              {selectedTargetType === 'Tất cả'
+                ? 'Tất cả đối tượng'
+                : TARGET_TYPE_LABELS[selectedTargetType]}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform flex-shrink-0 ${
+                isTargetTypeDropdownOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {isTargetTypeDropdownOpen && (
+            <div
+              className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-700 
+                         ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-20 animate-fadeIn max-h-80 overflow-y-auto"
+            >
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setSelectedTargetType('Tất cả');
+                    setIsTargetTypeDropdownOpen(false);
+                    setPaging((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                    selectedTargetType === 'Tất cả'
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Tất cả đối tượng
+                </button>
+                {Object.entries(TARGET_TYPE_LABELS).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSelectedTargetType(key as TargetReportType);
+                      setIsTargetTypeDropdownOpen(false);
+                      setPaging((prev) => ({ ...prev, page: 1 }));
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                      selectedTargetType === key
+                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {label}
                   </button>
                 ))}
               </div>
@@ -417,7 +520,7 @@ export function ReportsTable() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end space-x-2">
+                    <div className="flex justify-center space-x-2">
                       {report.reportStatus !== 'RESOLVED' && report.reportStatus !== 'REJECTED' && (
                         <button
                           onClick={() => handleViewDetail(report)}

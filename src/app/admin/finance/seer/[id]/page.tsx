@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 import { SeerPerformance } from '@/types/finance/finance.types';
 import {
   ArrowLeft,
@@ -20,15 +22,6 @@ import {
 } from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
 import { BookingService } from '@/services/booking/booking.service';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 
 const formatCurrency = (value: number | null | undefined) => {
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
@@ -63,9 +56,14 @@ const getStatusBadge = (status: string) => {
   return colors[status] || 'bg-gray-100 text-gray-800';
 };
 
-const PaymentHistoryRow: React.FC<{ payment: any }> = ({ payment }) => {
+const PaymentHistoryRow: React.FC<{ payment: any; index: number }> = ({ payment, index }) => {
   return (
-    <div className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15, delay: index * 0.02 }}
+      className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+    >
       <div className="flex items-center space-x-4 flex-1 min-w-0">
         <img
           src={payment.customer.avatarUrl || '/default_avatar.jpg'}
@@ -107,15 +105,17 @@ const PaymentHistoryRow: React.FC<{ payment: any }> = ({ payment }) => {
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 const PayBonusModal: React.FC<{
   seer: SeerPerformance;
+  month: number;
+  year: number;
   onClose: () => void;
   onSuccess: (updatedSeer: SeerPerformance) => void;
-}> = ({ seer, onClose, onSuccess }) => {
+}> = ({ seer, month, year, onClose, onSuccess }) => {
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -136,25 +136,30 @@ const PayBonusModal: React.FC<{
 
     try {
       const bonusAmount = parseFloat(amount);
-      const currentDate = new Date();
 
       await ReportService.payBonus(seer.seerId, bonusAmount, reason);
 
-      const verifyResponse = await ReportService.getSeerPerformance(
-        seer.seerId,
-        currentDate.getMonth() + 1,
-        currentDate.getFullYear(),
-      );
+      const verifyResponse = await ReportService.getSeerPerformance(seer.seerId, month, year);
 
       if (verifyResponse.data.bonus >= seer.bonus + bonusAmount) {
-        alert('Thanh toán bonus thành công!');
+        await Swal.fire({
+          icon: 'success',
+          title: 'Thành công!',
+          text: `Đã thanh toán bonus ${formatCurrency(bonusAmount)} cho ${seer.fullName}`,
+          confirmButtonColor: '#10b981',
+        });
         onSuccess(verifyResponse.data);
       } else {
         const optimisticUpdate: SeerPerformance = {
           ...seer,
           bonus: seer.bonus + bonusAmount,
         };
-        alert('Thanh toán bonus thành công!');
+        await Swal.fire({
+          icon: 'success',
+          title: 'Thành công!',
+          text: `Đã thanh toán bonus ${formatCurrency(bonusAmount)} cho ${seer.fullName}`,
+          confirmButtonColor: '#10b981',
+        });
         onSuccess(optimisticUpdate);
       }
 
@@ -205,8 +210,20 @@ const PayBonusModal: React.FC<{
             </label>
             <input
               type="number"
+              min="0"
+              step="1000"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || parseFloat(value) >= 0) {
+                  setAmount(value);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                  e.preventDefault();
+                }
+              }}
               placeholder="Nhập số tiền..."
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
@@ -260,15 +277,37 @@ const PayBonusModal: React.FC<{
   );
 };
 
-const SeerDetailPage: React.FC = () => {
+const SeerDetailContent: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const seerId = params?.id as string;
 
+  // Load month/year from sessionStorage immediately (lazy initialization)
+  const [month, setMonth] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem(`seer_${seerId}_period`);
+      if (stored) {
+        const { month: storedMonth } = JSON.parse(stored);
+        return storedMonth;
+      }
+    }
+    return new Date().getMonth() + 1;
+  });
+
+  const [year, setYear] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem(`seer_${seerId}_period`);
+      if (stored) {
+        const { year: storedYear } = JSON.parse(stored);
+        return storedYear;
+      }
+    }
+    return new Date().getFullYear();
+  });
+
   const [seerData, setSeerData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showPayModal, setShowPayModal] = useState(false);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Payment history states
   const [payments, setPayments] = useState<any[]>([]);
@@ -279,14 +318,12 @@ const SeerDetailPage: React.FC = () => {
 
   useEffect(() => {
     const fetchSeerDetail = async () => {
-      try {
-        const currentDate = new Date();
+      console.log('📅 Fetching seer detail with:', { seerId, month, year });
 
+      try {
         // WORKAROUND: Gateway đang ăn mất field 'data', gọi trực tiếp backend service
         const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-        const directBackendUrl = `http://localhost:8080/report/seer-performance?seerId=${seerId}&month=${
-          currentDate.getMonth() + 1
-        }&year=${currentDate.getFullYear()}`;
+        const directBackendUrl = `http://localhost:8080/report/seer-performance?seerId=${seerId}&month=${month}&year=${year}`;
 
         const testResponse = await fetch(directBackendUrl, {
           headers: {
@@ -297,11 +334,7 @@ const SeerDetailPage: React.FC = () => {
         const testData = await testResponse.json();
         console.log('🧪 Direct backend response:', testData);
 
-        const seerResponse = await ReportService.getSeerPerformance(
-          seerId,
-          currentDate.getMonth() + 1,
-          currentDate.getFullYear(),
-        );
+        const seerResponse = await ReportService.getSeerPerformance(seerId, month, year);
         console.log('🔍 Service response:', seerResponse);
 
         // Backend trả về {statusCode, message, data}, nhưng service chỉ trả về {statusCode, message}
@@ -320,10 +353,10 @@ const SeerDetailPage: React.FC = () => {
       }
     };
 
-    if (seerId) {
+    if (seerId && month && year) {
       fetchSeerDetail();
     }
-  }, [seerId]);
+  }, [seerId, month, year]);
 
   // Fetch payment history
   useEffect(() => {
@@ -360,14 +393,9 @@ const SeerDetailPage: React.FC = () => {
 
   const handleRefresh = async () => {
     setLoading(true);
-    const currentDate = new Date();
 
     try {
-      const response = await ReportService.getSeerPerformance(
-        seerId,
-        currentDate.getMonth() + 1,
-        currentDate.getFullYear(),
-      );
+      const response = await ReportService.getSeerPerformance(seerId, month, year);
       setSeerData(response.data);
     } catch (error) {
       console.error('Error refreshing:', error);
@@ -387,35 +415,24 @@ const SeerDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen dark:bg-gray-900">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/admin/finance?tab=seer')}
             className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại</span>
           </button>
 
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2 disabled:opacity-50"
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span>Làm mới</span>
-            </button>
-
-            <button
-              onClick={() => setShowPayModal(true)}
-              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center space-x-2"
-            >
-              <DollarSign className="w-4 h-4" />
-              <span>Bonus</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setShowPayModal(true)}
+            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center space-x-2"
+          >
+            <DollarSign className="w-4 h-4" />
+            <span>Thưởng thêm</span>
+          </button>
         </div>
 
         {/* Profile Card */}
@@ -566,28 +583,36 @@ const SeerDetailPage: React.FC = () => {
           ) : payments.length > 0 ? (
             <>
               <div className="space-y-1">
-                {payments.map((payment) => (
-                  <PaymentHistoryRow key={payment.id} payment={payment} />
+                {payments.map((payment, index) => (
+                  <PaymentHistoryRow key={payment.id} payment={payment} index={index} />
                 ))}
               </div>
 
               {/* Pagination */}
-              <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+              <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
                 <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Trang {paymentPage} / {paymentTotalPages}
+                  Trang {paymentPage}/{paymentTotalPages} • {paymentTotal} giao dịch
                 </span>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setPaymentPage((p) => Math.max(1, p - 1))}
-                    disabled={paymentPage === 1}
-                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
+                    disabled={paymentPage === 1 || loadingPayments}
+                    className={`p-2 rounded-md transition ${
+                      paymentPage === 1 || loadingPayments
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setPaymentPage((p) => Math.min(paymentTotalPages, p + 1))}
-                    disabled={paymentPage >= paymentTotalPages}
-                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
+                    disabled={paymentPage >= paymentTotalPages || loadingPayments}
+                    className={`p-2 rounded-md transition ${
+                      paymentPage >= paymentTotalPages || loadingPayments
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -632,6 +657,8 @@ const SeerDetailPage: React.FC = () => {
       {showPayModal && (
         <PayBonusModal
           seer={seerData}
+          month={month}
+          year={year}
           onClose={() => setShowPayModal(false)}
           onSuccess={handleBonusSuccess}
         />
@@ -640,4 +667,4 @@ const SeerDetailPage: React.FC = () => {
   );
 };
 
-export default SeerDetailPage;
+export default SeerDetailContent;

@@ -2,8 +2,11 @@
 
 import axios, { AxiosRequestConfig, AxiosError } from 'axios';
 import { SimpleResponse } from '@/types/response.type';
-import { apiFetch } from '../api-push-noti';
-import { NotificationCreateRequest, NotificationParams } from '@/types/notification/notification.type';
+import { apiFetch } from '../api-client';
+import {
+  NotificationCreateRequest,
+  NotificationParams,
+} from '@/types/notification/notification.type';
 import { SingleResponse } from '@/types/response.type';
 import { PageResponse } from '@/types/paging.type';
 
@@ -14,7 +17,7 @@ export const notificationService = {
   createNotification: async (
     data: NotificationCreateRequest,
   ): Promise<SingleResponse<Notification>> => {
-    const res = await apiFetch<SingleResponse<Notification>>('', {
+    const res = await apiFetch<SingleResponse<Notification>>('/notification', {
       method: 'POST',
       data,
     });
@@ -31,7 +34,7 @@ export const notificationService = {
       throw new Error('recipientId is required');
     }
 
-    const res = await apiFetch<PageResponse<Notification>>('', {
+    const res = await apiFetch<PageResponse<Notification>>('/notification', {
       method: 'GET',
       params: {
         page: params.page ?? 1,
@@ -45,7 +48,7 @@ export const notificationService = {
   },
 
   /**
-   * Lấy tất cả notification của user hiện tại 
+   * Lấy tất cả notification của user hiện tại
    */
   getMyNotifications: async (params?: {
     page?: number;
@@ -53,7 +56,7 @@ export const notificationService = {
     sortBy?: string;
     sortType?: 'asc' | 'desc';
   }): Promise<PageResponse<Notification>> => {
-    const res = await apiFetch<PageResponse<Notification>>('/me', {
+    const res = await apiFetch<PageResponse<Notification>>('/notification/me', {
       method: 'GET',
       params: {
         page: params?.page ?? 1,
@@ -70,7 +73,7 @@ export const notificationService = {
    */
   markAsRead: async (notificationId: string): Promise<SingleResponse<Notification>> => {
     const res = await apiFetch<SingleResponse<Notification>>(
-      `/${notificationId}/read`,
+      `/notification/${notificationId}/read`,
       {
         method: 'PATCH',
       },
@@ -82,7 +85,7 @@ export const notificationService = {
    * Xóa notification
    */
   deleteNotification: async (notificationId: string): Promise<SimpleResponse> => {
-    const res = await apiFetch<SimpleResponse>(`/${notificationId}`, {
+    const res = await apiFetch<SimpleResponse>(`/notification/${notificationId}`, {
       method: 'DELETE',
     });
     return res;

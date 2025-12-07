@@ -43,7 +43,10 @@ export const MessageTable: React.FC = () => {
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setAdminId(localStorage.getItem('userId'));
+    // Thử lấy từ localStorage trước, sau đó sessionStorage
+    const id = localStorage.getItem('userId') || sessionStorage.getItem('userId');
+    setAdminId(id);
+    console.log('🔑 [MessageTable] Admin ID from storage:', id);
   }, []);
 
   // Dùng useCallback để tránh re-init listener
@@ -247,8 +250,21 @@ export const MessageTable: React.FC = () => {
   const handleNewMessage = useCallback(
     (msg: any) => {
       console.log('📨 New message received:', msg);
-      const currentUserId = localStorage.getItem('userId');
-      const isMyMessage = msg.senderId === currentUserId;
+      // Lấy userId từ sessionStorage hoặc localStorage
+      const currentUserId =
+        sessionStorage.getItem('userId') || localStorage.getItem('userId') || adminId;
+      // So sánh cả string và convert về cùng kiểu, HOẶC check messageType là USER (từ admin)
+      const isMyMessage =
+        msg.senderId === currentUserId ||
+        msg.senderId?.toString() === currentUserId?.toString() ||
+        msg.messageType === 'USER'; // Tin nhắn từ admin có messageType là USER
+
+      console.log('🔍 Message check:', {
+        senderId: msg.senderId,
+        currentUserId,
+        messageType: msg.messageType,
+        isMyMessage,
+      });
 
       // Lưu vị trí cuộn hiện tại
       if (conversationListRef.current) {
@@ -263,11 +279,19 @@ export const MessageTable: React.FC = () => {
         if (idx !== -1) {
           // Conversation đã tồn tại trong list
           const isActive = selectedConvId === msg.conversationId || selectedConvId === msg.id;
+
+          console.log('📊 Unread count logic:', {
+            isActive,
+            isMyMessage,
+            currentUnread: prev[idx].adminUnreadCount,
+            willIncrease: !isActive && !isMyMessage,
+          });
+
           const updated = {
             ...prev[idx],
             lastMessageContent: msg.textContent,
             lastMessageTime: msg.createdAt,
-            // Cập nhật unread count
+            // Cập nhật unread count - CHỈ tăng khi KHÔNG phải tin nhắn của mình VÀ conversation không active
             adminUnreadCount: isActive
               ? 0
               : isMyMessage
@@ -290,7 +314,7 @@ export const MessageTable: React.FC = () => {
         }
       });
     },
-    [selectedConvId],
+    [selectedConvId, adminId],
   );
 
   const { socketConnected, getMessages, joinConversation, sendMessage, clearMessages } =

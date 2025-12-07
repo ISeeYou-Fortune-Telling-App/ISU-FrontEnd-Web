@@ -51,7 +51,9 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
     try {
       setMarkingAsViewed(true);
       await ReportsService.updateReport(report.id, {
-        reportStatus: 'VIEWED',
+        status: 'VIEWED',
+        actionType: 'NO_ACTION',
+        note: 'Đã xem',
       });
       await Swal.fire({
         title: 'Thành công!',
@@ -64,10 +66,11 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
       });
       onActionComplete();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Lỗi khi đánh dấu đã xem:', error);
       Swal.fire({
         title: 'Lỗi!',
-        text: 'Không thể cập nhật trạng thái',
+        text: error?.response?.data?.message || 'Không thể cập nhật trạng thái',
         icon: 'error',
         background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
         color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
@@ -114,10 +117,11 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
         });
         onActionComplete();
         onClose();
-      } catch (error) {
+      } catch (error: any) {
+        console.error('❌ Lỗi khi gửi cảnh cáo:', error);
         Swal.fire({
           title: 'Lỗi!',
-          text: 'Không thể gửi cảnh cáo',
+          text: error?.response?.data?.message || 'Không thể gửi cảnh cáo',
           icon: 'error',
           background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
           color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
@@ -175,10 +179,11 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
         });
         onActionComplete();
         onClose();
-      } catch (error) {
+      } catch (error: any) {
+        console.error('❌ Lỗi khi tạm khóa tài khoản:', error);
         Swal.fire({
           title: 'Lỗi!',
-          text: 'Không thể tạm khóa tài khoản',
+          text: error?.response?.data?.message || 'Không thể tạm khóa tài khoản',
           icon: 'error',
           background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
           color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
@@ -220,10 +225,11 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
         });
         onActionComplete();
         onClose();
-      } catch (error) {
+      } catch (error: any) {
+        console.error('❌ Lỗi khi cấm tài khoản:', error);
         Swal.fire({
           title: 'Lỗi!',
-          text: 'Không thể cấm tài khoản',
+          text: error?.response?.data?.message || 'Không thể cấm tài khoản',
           icon: 'error',
           background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
           color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
@@ -249,8 +255,8 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
 
     if (result.isConfirmed) {
       try {
-        await ReportsService.updateReportStatus(report.id, {
-          status: 'NO_ACTION',
+        await ReportsService.updateReport(report.id, {
+          status: 'REJECTED',
           actionType: 'NO_ACTION',
           note: result.value || undefined,
         });
@@ -263,10 +269,11 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
         });
         onActionComplete();
         onClose();
-      } catch (error) {
+      } catch (error: any) {
+        console.error('❌ Lỗi khi cập nhật không xử lý:', error);
         Swal.fire({
           title: 'Lỗi!',
-          text: 'Không thể cập nhật',
+          text: error?.response?.data?.message || 'Không thể cập nhật',
           icon: 'error',
           background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
           color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',

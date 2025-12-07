@@ -39,9 +39,15 @@ const RankingItem: React.FC<RankingItemProps> = ({ item, type }) => {
   const router = useRouter();
 
   const handleViewDetail = () => {
+    const month = item.month || new Date().getMonth() + 1;
+    const year = item.year || new Date().getFullYear();
+
+    // Save to sessionStorage for detail page to use
     if (type === 'seer') {
+      sessionStorage.setItem(`seer_${item.seerId}_period`, JSON.stringify({ month, year }));
       router.push(`/admin/finance/seer/${item.seerId}`);
     } else {
+      sessionStorage.setItem(`customer_${item.customerId}_period`, JSON.stringify({ month, year }));
       router.push(`/admin/finance/customer/${item.customerId}`);
     }
   };
@@ -53,6 +59,10 @@ const RankingItem: React.FC<RankingItemProps> = ({ item, type }) => {
           src={item.avatar || '/default_avatar.jpg'}
           alt={item.name}
           className="w-10 h-10 rounded-full object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/default_avatar.jpg';
+          }}
         />
         <div>
           <div className="flex items-center space-x-2">

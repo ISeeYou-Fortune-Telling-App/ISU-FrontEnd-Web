@@ -273,6 +273,15 @@ Socket.IO is used for real-time features:
 - Real-time notifications
 - Booking status updates
 
+**Socket Configuration:**
+
+- Socket path: `/socket` (configured in `src/services/socket/chat.socket.ts`)
+- Connection includes `userId` query parameter for authentication
+- Auto-reconnection enabled with 5 attempts
+- Timeout: 20 seconds
+
+**Note:** If socket connection fails, messages will still be saved to database via REST API and will appear after page reload.
+
 ## Troubleshooting
 
 ### Cannot login
@@ -291,8 +300,18 @@ Socket.IO is used for real-time features:
 
 ### Real-time chat not working
 
+**Socket connection issues:**
+
+- Check if backend socket server is running on port 8080
+- Verify socket path is `/socket` (not `/socket.io/`)
+- Check browser console for connection errors
+- Messages will still save to database even if socket fails
+- Reload page to see messages if socket is disconnected
+
+**CometChat issues:**
+
 - Verify CometChat credentials in `.env.local`
-- Check Socket.IO connection in browser console
+- Check CometChat dashboard for API limits
 - Ensure Core Service is running and accessible
 
 ### Data not loading

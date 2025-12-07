@@ -23,7 +23,8 @@ export type BadgeType =
   | 'AccountRole'
   | 'expertise'
   | 'post'
-  | 'payment';
+  | 'payment'
+  | 'KnowledgeStatus';
 export type BadgeAccountStatus =
   | 'Đang hoạt động'
   | 'Ngừng hoạt động'
@@ -274,6 +275,23 @@ export const Badge: React.FC<{ type: BadgeType; value: string }> = ({ type, valu
       classes = 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-100';
     } else {
       classes = 'bg-pink-100 text-pink-700 dark:bg-pink-800 dark:text-pink-100';
+    }
+  }
+
+  if (type === 'KnowledgeStatus') {
+    switch (value) {
+      case 'Đã xuất bản':
+        classes = 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100';
+        Icon = CheckCircle2;
+        break;
+      case 'Bản nháp':
+        classes = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100';
+        Icon = Clock;
+        break;
+      case 'Đã ẩn':
+        classes = 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100';
+        Icon = Eye;
+        break;
     }
   }
 

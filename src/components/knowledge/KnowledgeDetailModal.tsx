@@ -169,15 +169,17 @@ export const KnowledgeDetailModal: React.FC<KnowledgeDetailModalProps> = ({
           <div className="space-y-2 pt-2">
             <h4 className="font-semibold text-gray-700 dark:text-gray-200">Nội dung bài viết</h4>
             <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:font-bold">
-              <ReactMarkdown>{knowledge.content || '(Không có nội dung)'}</ReactMarkdown>
+              <ReactMarkdown>
+                {knowledge.content?.replace(/\\n/g, '\n') || '(Không có nội dung)'}
+              </ReactMarkdown>
             </div>
           </div>
 
           {/* Lượt xem */}
           <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center pt-2">
             <Eye className="w-4 h-4 mr-1" />
-            <span className="font-medium">{knowledge.viewCount.toLocaleString('vi-VN')}</span> lượt
-            xem
+            <span className="font-medium mr-1">{knowledge.viewCount.toLocaleString('vi-VN')}</span>
+            lượt xem
           </p>
         </div>
 

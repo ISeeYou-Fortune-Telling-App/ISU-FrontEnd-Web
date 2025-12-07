@@ -1,24 +1,36 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Eye, X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Eye, X, ChevronLeft, ChevronRight, Loader2, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BookingDetailModal } from './AppointmentDetailModal';
 import { Badge } from '../common/Badge';
 import { BookingService } from '@/services/booking/booking.service';
-import type { BookingResponse, BookingStatus } from '@/types/booking/booking.type';
+import type { BookingResponse, BookingStatus, PaymentStatus } from '@/types/booking/booking.type';
+import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const ITEMS_PER_PAGE = 10;
-type StatusFilterType = 'Tất cả' | 'PENDING' | 'CONFIRMED' | 'FAILED' | 'COMPLETED' | 'CANCELED';
+type StatusFilterType = 'Tất cả' | BookingStatus;
+type PaymentStatusFilterType = 'Tất cả' | PaymentStatus;
 
 export const BookingTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<StatusFilterType>('Tất cả');
+  const debouncedSearch = useDebounce(searchTerm, 500);
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilterType>('Tất cả');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] =
+    useState<PaymentStatusFilterType>('Tất cả');
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const tableRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  useScrollToTopOnPageChange(currentPage, tableRef);
 
   // =========================================================
   // 🔹 Fetch API từ backend
@@ -31,7 +43,10 @@ export const BookingTable: React.FC = () => {
         limit: ITEMS_PER_PAGE,
         sortType: 'desc',
         sortBy: 'createdAt',
-        status: selectedFilter === 'Tất cả' ? undefined : (selectedFilter as BookingStatus),
+        status: selectedStatus === 'Tất cả' ? undefined : (selectedStatus as BookingStatus),
+        paymentStatus:
+          selectedPaymentStatus === 'Tất cả' ? undefined : (selectedPaymentStatus as PaymentStatus),
+        name: debouncedSearch.trim() || undefined,
       });
       setBookings(res.data);
       setTotalItems(res.paging?.total || 0);
@@ -44,19 +59,7 @@ export const BookingTable: React.FC = () => {
 
   useEffect(() => {
     fetchBookings();
-  }, [currentPage, selectedFilter]);
-
-  // =========================================================
-  // 🔹 Lọc theo searchTerm (client-side)
-  // =========================================================
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((b) => {
-      const matchesSearch =
-        b.customer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.seer.fullName.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
-  }, [bookings, searchTerm]);
+  }, [currentPage, selectedStatus, selectedPaymentStatus, debouncedSearch]);
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -106,17 +109,18 @@ export const BookingTable: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
-      {/* Search */}
-      <div className="mb-4">
-        <div className="relative">
+    <div
+      ref={tableRef}
+      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
+    >
+      {/* Search + Dropdown */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="relative flex-grow mr-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Tìm kiếm theo tên Khách hàng hoặc Nhà tiên tri..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg 
-                       focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
-                       text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -124,33 +128,89 @@ export const BookingTable: React.FC = () => {
             }}
           />
         </div>
+
+        <div className="relative flex-shrink-0" ref={dropdownRef}>
+          <button
+            onClick={() => setIsPaymentDropdownOpen(!isPaymentDropdownOpen)}
+            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
+          >
+            <span>
+              {selectedPaymentStatus === 'Tất cả'
+                ? 'Tất cả'
+                : selectedPaymentStatus === 'PENDING'
+                ? 'Chờ thanh toán'
+                : selectedPaymentStatus === 'COMPLETED'
+                ? 'Đã thanh toán'
+                : selectedPaymentStatus === 'FAILED'
+                ? 'Thất bại'
+                : 'Đã hoàn tiền'}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 ml-1 transition-transform ${
+                isPaymentDropdownOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {isPaymentDropdownOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setIsPaymentDropdownOpen(false)} />
+              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-20">
+                <div className="py-1">
+                  {[
+                    ['Tất cả', 'Tất cả'],
+                    ['PENDING', 'Chờ thanh toán'],
+                    ['COMPLETED', 'Đã thanh toán'],
+                    ['FAILED', 'Thất bại'],
+                    ['REFUNDED', 'Đã hoàn tiền'],
+                  ].map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setSelectedPaymentStatus(key as PaymentStatusFilterType);
+                        setIsPaymentDropdownOpen(false);
+                        setCurrentPage(1);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                        selectedPaymentStatus === key
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-600 font-semibold'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex space-x-2 mb-4 overflow-x-auto pb-1">
-        <div className="inline-flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
+      {/* Filter Tabs - Booking Status */}
+      <div className="flex space-x-2 mb-4">
+        <div className="flex border border-gray-400 dark:border-gray-600 rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700">
           {[
-            { label: 'Tất cả', value: 'Tất cả' },
-            { label: 'Chờ xác nhận', value: 'PENDING' },
-            { label: 'Đã xác nhận', value: 'CONFIRMED' },
-            { label: 'Hoàn thành', value: 'COMPLETED' },
-            { label: 'Bị hủy', value: 'CANCELED' },
-            { label: 'Thất bại', value: 'FAILED' },
-          ].map((status) => (
+            ['Tất cả', 'Tất cả'],
+            ['PENDING', 'Chờ xác nhận'],
+            ['CONFIRMED', 'Đã xác nhận'],
+            ['COMPLETED', 'Hoàn thành'],
+            ['CANCELED', 'Bị hủy'],
+            ['FAILED', 'Thất bại'],
+          ].map(([key, label]) => (
             <button
-              key={status.value}
+              key={key}
               onClick={() => {
-                setSelectedFilter(status.value as StatusFilterType);
+                setSelectedStatus(key as StatusFilterType);
                 setCurrentPage(1);
               }}
-              className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
-                ${
-                  selectedFilter === status.value
-                    ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+              className={`px-4 py-1 text-sm font-medium rounded-lg transition-colors ${
+                selectedStatus === key
+                  ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400 font-semibold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
             >
-              {status.label}
+              {label}
             </button>
           ))}
         </div>
@@ -196,14 +256,14 @@ export const BookingTable: React.FC = () => {
                   </div>
                 </td>
               </tr>
-            ) : filteredBookings.length === 0 ? (
+            ) : bookings.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center py-10 text-gray-500 dark:text-gray-400">
                   Không có dữ liệu
                 </td>
               </tr>
             ) : (
-              filteredBookings.map((b, index) => (
+              bookings.map((b, index) => (
                 <motion.tr
                   key={b.id}
                   initial={{ opacity: 0 }}

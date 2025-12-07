@@ -39,8 +39,10 @@ export interface GetReportsParams {
   limit?: number;
   sortType?: 'asc' | 'desc';
   sortBy?: 'createdAt';
+  name?: string; // Tìm kiếm theo tên reporter hoặc reported user
   status?: ReportStatus;
   reportType?: string; // name của report type (SPAM, FRAUD, etc.)
+  targetType?: TargetReportType; // Lọc theo loại đối tượng (SEER, CHAT, BOOKING, etc.)
 }
 
 // ==================== API RESPONSE ====================

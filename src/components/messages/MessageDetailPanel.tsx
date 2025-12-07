@@ -42,6 +42,7 @@ export const MessageDetailPanel: React.FC<Props> = ({
   const [file, setFile] = useState<File | null>(null);
   const [sendingMedia, setSendingMedia] = useState(false);
   const [adminId, setAdminId] = useState<string | null>(null);
+  const [adminAvatar, setAdminAvatar] = useState<string>('/default_avatar.jpg');
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('video');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -51,7 +52,28 @@ export const MessageDetailPanel: React.FC<Props> = ({
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setAdminId(localStorage.getItem('userId'));
+    // Thử lấy từ localStorage trước, sau đó sessionStorage
+    const id = localStorage.getItem('userId') || sessionStorage.getItem('userId');
+    setAdminId(id);
+    console.log('🔑 Admin ID from storage:', id);
+    console.log('🔑 localStorage userId:', localStorage.getItem('userId'));
+    console.log('🔑 sessionStorage userId:', sessionStorage.getItem('userId'));
+
+    // Lấy avatar admin từ AccountService
+    const fetchAdminAvatar = async () => {
+      try {
+        const { AccountService } = await import('@/services/account/account.service');
+        const response = await AccountService.getCurrentUser();
+        if (response.data?.avatarUrl) {
+          setAdminAvatar(response.data.avatarUrl);
+          console.log('👤 Admin avatar loaded:', response.data.avatarUrl);
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch admin avatar:', error);
+      }
+    };
+
+    fetchAdminAvatar();
   }, []);
 
   // Close menu when clicking outside
@@ -186,6 +208,13 @@ export const MessageDetailPanel: React.FC<Props> = ({
     const text = input.trim();
     setInput('');
 
+    console.log('📤 Sending message:', {
+      text,
+      conversationId,
+      socketConnected,
+      adminId,
+    });
+
     let imagePath = '';
     let videoPath = '';
 
@@ -209,9 +238,11 @@ export const MessageDetailPanel: React.FC<Props> = ({
       if (messageMode === 'group' && selectedConversations.size > 0) {
         // Gửi tin nhắn cho nhiều người
         const conversationIds = Array.from(selectedConversations);
+        console.log('📤 Sending to group:', conversationIds);
         sendMessage(text || imagePath || videoPath, conversationIds);
       } else if (conversationId) {
         // Gửi tin nhắn cho 1 người
+        console.log('📤 Sending to conversation:', conversationId);
         sendMessage(text || imagePath || videoPath);
       }
     } catch (err) {
@@ -240,7 +271,12 @@ export const MessageDetailPanel: React.FC<Props> = ({
                 placeholder="Nhập nội dung tin nhắn..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
               />
               <button
                 className="ml-2 w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full text-white flex items-center justify-center hover:scale-105 transition"
@@ -281,7 +317,11 @@ export const MessageDetailPanel: React.FC<Props> = ({
               {convInfo?.customerName || convInfo?.seerName || 'Người dùng'}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {socketConnected ? 'Đang kết nối' : 'Ngoại tuyến'}
+              {socketConnected ? (
+                <span className="text-green-600 dark:text-green-400">● Đang kết nối</span>
+              ) : (
+                <span className="text-red-600 dark:text-red-400">● Ngoại tuyến</span>
+              )}
             </p>
           </div>
         </div>
@@ -327,7 +367,19 @@ export const MessageDetailPanel: React.FC<Props> = ({
             ) : (
               // Trường hợp 3: Có data (data cũ khi đang tải mới hoặc data mới tải xong)
               combined.map((msg) => {
-                const isAdmin = msg.senderId === adminId;
+                // So sánh cả string và number để đảm bảo
+                const isAdmin =
+                  msg.senderId === adminId || msg.senderId?.toString() === adminId?.toString();
+
+                // Debug log
+                console.log('📨 Message:', {
+                  id: msg.id,
+                  senderId: msg.senderId,
+                  adminId: adminId,
+                  isAdmin: isAdmin,
+                  content: msg.textContent?.substring(0, 20),
+                });
+
                 const isImage = msg.textContent?.match(/\.(jpg|jpeg|png|gif)$/i);
                 const isVideo = msg.textContent?.match(/\.(mp4|mov|webm)$/i);
                 return (
@@ -345,8 +397,8 @@ export const MessageDetailPanel: React.FC<Props> = ({
                   >
                     {!isAdmin && (
                       <img
-                        src={msg.customerAvatar || '/default_avatar.jpg'}
-                        alt={msg.customerName}
+                        src={msg.customerAvatar || msg.seerAvatar || adminAvatar}
+                        alt={msg.customerName || msg.seerName}
                         className="w-8 h-8 rounded-full object-cover border border-gray-400"
                       />
                     )}
@@ -475,8 +527,8 @@ export const MessageDetailPanel: React.FC<Props> = ({
 
                     {isAdmin && (
                       <img
-                        src={msg.seerAvatar || '/default_avatar.jpg'}
-                        alt={msg.seerName}
+                        src={adminAvatar}
+                        alt="Admin"
                         className="w-8 h-8 rounded-full object-cover border border-gray-400"
                       />
                     )}
@@ -526,7 +578,12 @@ export const MessageDetailPanel: React.FC<Props> = ({
           placeholder="Nhập tin nhắn..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
         />
         <input
           type="file"

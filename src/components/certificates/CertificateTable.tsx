@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
 import {
   Search,
   Eye,
@@ -50,6 +51,9 @@ export const CertificateTable: React.FC = () => {
     seerId: string;
     seerName: string;
   } | null>(null);
+
+  const tableRef = useRef<HTMLDivElement>(null);
+  useScrollToTopOnPageChange(currentPage, tableRef);
 
   const fetchCertificates = async () => {
     try {
@@ -218,7 +222,10 @@ export const CertificateTable: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
+    <div
+      ref={tableRef}
+      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
+    >
       {/* Search + Category */}
       <div className="flex gap-4 items-center mb-4">
         <div className="relative flex-grow">

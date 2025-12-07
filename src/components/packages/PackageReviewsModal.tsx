@@ -70,9 +70,9 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
     if (!replyText.trim() || !selectedReview) {
       console.warn('Gửi phản hồi bị chặn: không có nội dung hoặc bình luận gốc.');
       return;
-    } // Lấy ID an toàn TRƯỚC KHI await (Điều này vẫn rất quan trọng)
+    }
 
-    const parentId = selectedReview.reviewId; // Thêm kiểm tra phòng trường hợp ID không tồn tại
+    const parentId = selectedReview.reviewId;
 
     if (!parentId) {
       console.error('Không thể phản hồi: Bình luận gốc không có ID.', selectedReview);
@@ -80,26 +80,38 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
         title: 'Lỗi!',
         text: 'Không tìm thấy ID của bình luận gốc.',
         icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
       });
       return;
     }
 
     try {
-      // Gọi API để tạo reply
       await PackageService.createReview(packageId, {
         comment: replyText,
-        parentReviewId: parentId, // Dùng ID đã lưu
+        parentReviewId: parentId,
       });
 
-      setReplyText(''); // Tải lại danh sách replies
+      await Swal.fire({
+        title: 'Thành công!',
+        text: 'Đã gửi phản hồi',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
 
-      loadReplies(parentId);
+      setReplyText('');
+      await loadReplies(parentId);
     } catch (err) {
       console.error('Error sending reply:', err);
       Swal.fire({
         title: 'Lỗi!',
         text: 'Không thể gửi phản hồi',
         icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
       });
     }
   };
@@ -111,13 +123,36 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
       await PackageService.updateReview(reviewId, {
         comment: editText,
       });
+
+      await Swal.fire({
+        title: 'Thành công!',
+        text: 'Đã cập nhật bình luận',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+
       setEditingReviewId(null);
       setEditText('');
-      // Reload
+
+      // Reload data based on context
       if (selectedReview) {
-        loadReplies(selectedReview.reviewId);
+        // If editing a reply, reload replies
+        if (reviewId !== selectedReview.reviewId) {
+          await loadReplies(selectedReview.reviewId);
+        } else {
+          // If editing the main review, reload both and update selectedReview
+          await loadReviews();
+          // Fetch updated review to update the right panel
+          const updatedReview = await PackageService.getReviewById(reviewId);
+          setSelectedReview(updatedReview.data);
+          await loadReplies(selectedReview.reviewId);
+        }
       } else {
-        loadReviews();
+        // If no selected review, just reload main reviews
+        await loadReviews();
       }
     } catch (err) {
       console.error('Error editing review:', err);
@@ -125,6 +160,8 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
         title: 'Lỗi!',
         text: 'Không thể cập nhật bình luận',
         icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
       });
     }
   };
@@ -140,6 +177,8 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
       confirmButtonText: 'Xóa',
       cancelButtonText: 'Hủy',
       reverseButtons: true,
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
     });
 
     if (!result.isConfirmed) return;
@@ -147,17 +186,24 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
     try {
       await PackageService.deleteReview(reviewId);
 
+      await Swal.fire({
+        title: 'Đã xóa!',
+        text: 'Bình luận đã được xóa thành công.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+
       if (selectedReview && selectedReview.reviewId === reviewId) {
         setSelectedReview(null);
         setReplies([]);
-        loadReviews(); // Tải lại danh sách bình luận chính
+        await loadReviews();
       } else if (selectedReview) {
-        // Case 2: Bạn vừa xóa một PHẢN HỒI
-        // Chỉ cần tải lại danh sách replies cho bình luận gốc hiện tại
-        loadReplies(selectedReview.reviewId);
+        await loadReplies(selectedReview.reviewId);
       } else {
-        // Trường hợp dự phòng: tải lại danh sách chính
-        loadReviews();
+        await loadReviews();
       }
     } catch (err) {
       console.error('Error deleting review:', err);
@@ -165,6 +211,8 @@ export const PackageReviewsModal: React.FC<PackageReviewsModalProps> = ({
         title: 'Lỗi!',
         text: 'Không thể xóa bình luận',
         icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
       });
     }
   };

@@ -23,6 +23,8 @@ export interface KnowledgeItem {
   status: KnowledgeStatus;
   imageUrl: string;
   viewCount: number;
+  source?: string;
+  sourceUrl?: string;
 }
 
 export interface KnowledgeItemSearchParams extends PagingParams {

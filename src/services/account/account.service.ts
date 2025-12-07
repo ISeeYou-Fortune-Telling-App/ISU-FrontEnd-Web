@@ -1,4 +1,4 @@
-import { apiFetch } from '@/services/api-core';
+import { apiFetch } from '@/services/api-client';
 import { ListResponse, SingleResponse, SimpleResponse } from '@/types/response.type';
 import {
   GetAccountsParams,
@@ -41,7 +41,7 @@ export const AccountService = {
   },
 
   async updateProfile(data: UpdateProfileRequest): Promise<SingleResponse<UserAccount>> {
-    return await apiFetch(`/account/me`, { method: 'PUT', data });
+    return await apiFetch(`/account/me`, { method: 'PATCH', data });
   },
 
   async updateUserRole(

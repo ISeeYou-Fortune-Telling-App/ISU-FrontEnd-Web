@@ -3,7 +3,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, DollarSign, Award, TrendingUp, Calendar, X, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  ArrowLeft,
+  DollarSign,
+  Award,
+  TrendingUp,
+  Calendar,
+  X,
+  CreditCard,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
 import { BookingService } from '@/services/booking/booking.service';
 import { CustomerPotential } from '@/types/finance/finance.types';
@@ -17,8 +28,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+const formatCurrency = (value: number | null | undefined) => {
+  const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(safeValue);
 };
 
 const getTierColor = (tier: string) => {
@@ -49,9 +61,14 @@ const getStatusBadge = (status: string) => {
   return colors[status] || 'bg-gray-100 text-gray-800';
 };
 
-const PaymentHistoryRow: React.FC<{ payment: any }> = ({ payment }) => {
+const PaymentHistoryRow: React.FC<{ payment: any; index: number }> = ({ payment, index }) => {
   return (
-    <div className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15, delay: index * 0.02 }}
+      className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+    >
       <div className="flex items-center space-x-4 flex-1 min-w-0">
         <img
           src={payment.seer.avatarUrl || '/default_avatar.jpg'}
@@ -66,10 +83,18 @@ const PaymentHistoryRow: React.FC<{ payment: any }> = ({ payment }) => {
             {payment.packageTitle}
           </p>
           <div className="flex items-center space-x-2 mt-1">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(payment.paymentStatus)}`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(
+                payment.paymentStatus,
+              )}`}
+            >
               {payment.paymentStatus}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getPaymentMethodBadge(payment.paymentMethod)}`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${getPaymentMethodBadge(
+                payment.paymentMethod,
+              )}`}
+            >
               {payment.paymentMethod}
             </span>
           </div>
@@ -85,7 +110,7 @@ const PaymentHistoryRow: React.FC<{ payment: any }> = ({ payment }) => {
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -157,16 +182,38 @@ const RevenueChart: React.FC<{
   );
 };
 
-const CustomerDetailPage: React.FC = () => {
+const CustomerDetailContent: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const customerId = params?.id as string;
 
+  // Load month/year from sessionStorage immediately (lazy initialization)
+  const [month, setMonth] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem(`customer_${customerId}_period`);
+      if (stored) {
+        const { month: storedMonth } = JSON.parse(stored);
+        return storedMonth;
+      }
+    }
+    return new Date().getMonth() + 1;
+  });
+
+  const [year, setYear] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem(`customer_${customerId}_period`);
+      if (stored) {
+        const { year: storedYear } = JSON.parse(stored);
+        return storedYear;
+      }
+    }
+    return new Date().getFullYear();
+  });
+
   const [customerData, setCustomerData] = useState<CustomerPotential | null>(null);
   const [loading, setLoading] = useState(true);
   const [avgSpendingData, setAvgSpendingData] = useState<any[]>([]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  
+
   // Payment history states
   const [payments, setPayments] = useState<any[]>([]);
   const [paymentPage, setPaymentPage] = useState(1);
@@ -176,15 +223,12 @@ const CustomerDetailPage: React.FC = () => {
 
   useEffect(() => {
     const fetchCustomerDetail = async () => {
+      console.log('📅 Fetching customer detail with:', { customerId, month, year });
+
       try {
-        const currentDate = new Date();
         const [customerResponse, avgSpendingResponse] = await Promise.all([
-          ReportService.getCustomerPotential(
-            customerId,
-            currentDate.getMonth() + 1,
-            currentDate.getFullYear(),
-          ),
-          ReportService.getChart('AVG_CUSTOMER_SPENDING', undefined, selectedYear),
+          ReportService.getCustomerPotential(customerId, month, year),
+          ReportService.getChart('AVG_CUSTOMER_SPENDING', undefined, year),
         ]);
         setCustomerData(customerResponse.data);
         setAvgSpendingData(avgSpendingResponse.data || []);
@@ -195,10 +239,10 @@ const CustomerDetailPage: React.FC = () => {
       }
     };
 
-    if (customerId) {
+    if (customerId && month && year) {
       fetchCustomerDetail();
     }
-  }, [customerId, selectedYear]);
+  }, [customerId, month, year]);
 
   // Fetch payment history
   useEffect(() => {
@@ -212,7 +256,7 @@ const CustomerDetailPage: React.FC = () => {
           sortType: 'desc',
           userId: customerId,
         });
-        
+
         setPayments(response.data || []);
         setPaymentTotal(response.paging?.total || 0);
         setPaymentTotalPages(response.paging?.totalPages || 0);
@@ -248,7 +292,7 @@ const CustomerDetailPage: React.FC = () => {
             Đã có lỗi xảy ra hoặc khách hàng không tồn tại.
           </p>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/admin/finance?tab=customer')}
             className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mx-auto"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -260,12 +304,12 @@ const CustomerDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/admin/finance?tab=customer')}
             className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -423,28 +467,36 @@ const CustomerDetailPage: React.FC = () => {
           ) : payments.length > 0 ? (
             <>
               <div className="space-y-1">
-                {payments.map((payment) => (
-                  <PaymentHistoryRow key={payment.id} payment={payment} />
+                {payments.map((payment, index) => (
+                  <PaymentHistoryRow key={payment.id} payment={payment} index={index} />
                 ))}
               </div>
 
               {/* Pagination */}
-              <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+              <div className="flex justify-between items-center pt-4 border-t border-gray-400 dark:border-gray-700 mt-4">
                 <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Trang {paymentPage} / {paymentTotalPages}
+                  Trang {paymentPage}/{paymentTotalPages} • {paymentTotal} giao dịch
                 </span>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setPaymentPage((p) => Math.max(1, p - 1))}
-                    disabled={paymentPage === 1}
-                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
+                    disabled={paymentPage === 1 || loadingPayments}
+                    className={`p-2 rounded-md transition ${
+                      paymentPage === 1 || loadingPayments
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setPaymentPage((p) => Math.min(paymentTotalPages, p + 1))}
-                    disabled={paymentPage >= paymentTotalPages}
-                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
+                    disabled={paymentPage >= paymentTotalPages || loadingPayments}
+                    className={`p-2 rounded-md transition ${
+                      paymentPage >= paymentTotalPages || loadingPayments
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -487,4 +539,4 @@ const CustomerDetailPage: React.FC = () => {
   );
 };
 
-export default CustomerDetailPage;
+export default CustomerDetailContent;

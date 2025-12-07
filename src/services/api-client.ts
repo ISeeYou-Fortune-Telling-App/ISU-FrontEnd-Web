@@ -6,21 +6,18 @@ import {
   ListResponse,
   ValidationErrorResponse,
 } from '@/types/response.type';
-import type { PageResponse } from '@/types/paging.type';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_GATEWAY_API_URL + '/report',
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: false,
 });
 
-// Thêm accessToken vào mỗi request
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      // Thử lấy token từ localStorage trước, sau đó sessionStorage
       const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
       if (token) {
         config.headers = config.headers || {};
@@ -28,7 +25,6 @@ api.interceptors.request.use(
       }
     }
 
-    // Nếu là FormData thì xóa Content-Type (để axios tự set)
     if (config.data instanceof FormData && config.headers) {
       delete config.headers['Content-Type'];
     }
@@ -38,7 +34,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Cờ tránh lặp vô hạn
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 
@@ -51,7 +46,6 @@ const onRefreshed = (token: string) => {
   refreshSubscribers = [];
 };
 
-// Interceptor xử lý refresh token tự động
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -61,7 +55,6 @@ api.interceptors.response.use(
       typeof window !== 'undefined' &&
       !originalRequest._retry
     ) {
-      // Nếu đang ở trang login thì không redirect
       if (window.location.pathname === '/auth/login') {
         return Promise.reject(error);
       }
@@ -75,7 +68,6 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // Ngăn gọi refresh song song
       if (isRefreshing) {
         return new Promise((resolve) => {
           subscribeTokenRefresh((token) => {
@@ -89,14 +81,18 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_GATEWAY_API_URL}/auth/refresh`, {
-          headers: { Authorization: `Bearer ${refreshToken}` },
-        });
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_GATEWAY_API_URL}/core/auth/refresh`,
+          {
+            headers: { Authorization: `Bearer ${refreshToken}` },
+          },
+        );
 
         const { token, refreshToken: newRefreshToken } = res.data;
-        // Lưu vào storage phù hợp (localStorage hoặc sessionStorage)
-        const storage =
-          localStorage.getItem('rememberMe') === 'true' ? localStorage : sessionStorage;
+
+        const rememberMe = localStorage.getItem('rememberMe') === 'true';
+        const storage = rememberMe ? localStorage : sessionStorage;
+
         storage.setItem('accessToken', token);
         storage.setItem('refreshToken', newRefreshToken);
 
@@ -120,28 +116,25 @@ api.interceptors.response.use(
   },
 );
 
-// API wrapper
 export const apiFetch = async <
-  T extends
-    | SingleResponse<any>
-    | ListResponse<any>
-    | SimpleResponse
-    | ValidationErrorResponse
-    | boolean,
+  T extends SingleResponse<any> | ListResponse<any> | SimpleResponse | ValidationErrorResponse,
 >(
   url: string,
   config?: AxiosRequestConfig,
 ): Promise<T> => {
+  const finalUrl =
+    url.startsWith('/core') || url.startsWith('/notification') || url.startsWith('/report')
+      ? url
+      : `/core${url}`;
+
   try {
-    const response = await api(url, config);
+    const response = await api(finalUrl, config);
     const data = response.data;
 
-    // Nếu trả về chuẩn định dạng
     if (data && typeof data === 'object' && 'statusCode' in data) {
       return data as T;
     }
 
-    // Nếu backend trả data trần
     return {
       statusCode: response.status || 200,
       message: 'Success',

@@ -1,6 +1,5 @@
 import { SingleResponse } from '@/types/response.type';
-import { apiFetch } from '../api-report-service';
-import { apiFetch as apiFetchCore } from '../api-core';
+import { apiFetch } from '../api-client';
 
 import {
   ChartData,
@@ -25,13 +24,10 @@ export const ReportService = {
     month: number,
     year: number,
   ): Promise<SingleResponse<CustomerPotential>> => {
-    const res = await apiFetch<SingleResponse<CustomerPotential>>(
-      '/customer-potential',
-      {
-        method: 'GET',
-        params: { customerId, month, year },
-      },
-    );
+    const res = await apiFetch<SingleResponse<CustomerPotential>>('/report/customer-potential', {
+      method: 'GET',
+      params: { customerId, month, year },
+    });
     return res;
   },
 
@@ -39,44 +35,38 @@ export const ReportService = {
     month: number,
     year: number,
   ): Promise<SingleResponse<CustomerPotential>> => {
-    const res = await apiFetch<SingleResponse<CustomerPotential>>(
-      '/my-customer-potential',
-      {
-        method: 'GET',
-        params: { month, year },
-      },
-    );
+    const res = await apiFetch<SingleResponse<CustomerPotential>>('/report/my-customer-potential', {
+      method: 'GET',
+      params: { month, year },
+    });
     return res;
   },
 
   getAllCustomerPotential: async (
     params?: CustomerPotentialParams,
   ): Promise<PageResponse<CustomerPotential>> => {
-    const res = await apiFetch<PageResponse<CustomerPotential>>(
-      '/all-customer-potential',
-      {
-        method: 'GET',
-        params: {
-          page: params?.page ?? 1,
-          limit: params?.limit ?? 15,
-          sortType: params?.sortType ?? 'desc',
-          sortBy: params?.sortBy ?? 'createdAt',
-          month: params?.month,
-          year: params?.year,
-          minPotentialPoint: params?.minPotentialPoint,
-          maxPotentialPoint: params?.maxPotentialPoint,
-          potentialTier: params?.potentialTier,
-          minRanking: params?.minRanking,
-          maxRanking: params?.maxRanking,
-          minTotalBookingRequests: params?.minTotalBookingRequests,
-          maxTotalBookingRequests: params?.maxTotalBookingRequests,
-          minTotalSpending: params?.minTotalSpending,
-          maxTotalSpending: params?.maxTotalSpending,
-          minCancelledByCustomer: params?.minCancelledByCustomer,
-          maxCancelledByCustomer: params?.maxCancelledByCustomer,
-        },
+    const res = await apiFetch<PageResponse<CustomerPotential>>('/report/all-customer-potential', {
+      method: 'GET',
+      params: {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? 15,
+        sortType: params?.sortType ?? 'desc',
+        sortBy: params?.sortBy ?? 'createdAt',
+        month: params?.month,
+        year: params?.year,
+        minPotentialPoint: params?.minPotentialPoint,
+        maxPotentialPoint: params?.maxPotentialPoint,
+        potentialTier: params?.potentialTier,
+        minRanking: params?.minRanking,
+        maxRanking: params?.maxRanking,
+        minTotalBookingRequests: params?.minTotalBookingRequests,
+        maxTotalBookingRequests: params?.maxTotalBookingRequests,
+        minTotalSpending: params?.minTotalSpending,
+        maxTotalSpending: params?.maxTotalSpending,
+        minCancelledByCustomer: params?.minCancelledByCustomer,
+        maxCancelledByCustomer: params?.maxCancelledByCustomer,
       },
-    );
+    });
     return res;
   },
 
@@ -87,13 +77,10 @@ export const ReportService = {
     month: number,
     year: number,
   ): Promise<SingleResponse<SeerPerformance>> => {
-    const res = await apiFetch<SingleResponse<SeerPerformance>>(
-      '/seer-performance',
-      {
-        method: 'GET',
-        params: { seerId, month, year },
-      },
-    );
+    const res = await apiFetch<SingleResponse<SeerPerformance>>('/report/seer-performance', {
+      method: 'GET',
+      params: { seerId, month, year },
+    });
     return res;
   },
 
@@ -101,54 +88,48 @@ export const ReportService = {
     month: number,
     year: number,
   ): Promise<SingleResponse<SeerPerformance>> => {
-    const res = await apiFetch<SingleResponse<SeerPerformance>>(
-      '/my-seer-performance',
-      {
-        method: 'GET',
-        params: { month, year },
-      },
-    );
+    const res = await apiFetch<SingleResponse<SeerPerformance>>('/report/my-seer-performance', {
+      method: 'GET',
+      params: { month, year },
+    });
     return res;
   },
 
   getAllSeerPerformance: async (
     params?: SeerPerformanceParams,
   ): Promise<PageResponse<SeerPerformance>> => {
-    const res = await apiFetch<PageResponse<SeerPerformance>>(
-      '/all-seer-performance',
-      {
-        method: 'GET',
-        params: {
-          page: params?.page ?? 1,
-          limit: params?.limit ?? 10,
-          sortBy: params?.sortBy ?? 'createdAt',
-          sortType: params?.sortType ?? 'desc',
-          month: params?.month,
-          year: params?.year,
-          minPerformancePoint: params?.minPerformancePoint,
-          maxPerformancePoint: params?.maxPerformancePoint,
-          performanceTier: params?.performanceTier,
-          minRanking: params?.minRanking,
-          maxRanking: params?.maxRanking,
-          minTotalPackages: params?.minTotalPackages,
-          maxTotalPackages: params?.maxTotalPackages,
-          minTotalRates: params?.minTotalRates,
-          maxTotalRates: params?.maxTotalRates,
-          minAvgRating: params?.minAvgRating,
-          maxAvgRating: params?.maxAvgRating,
-          minTotalBookings: params?.minTotalBookings,
-          maxTotalBookings: params?.maxTotalBookings,
-          minCompletedBookings: params?.minCompletedBookings,
-          maxCompletedBookings: params?.maxCompletedBookings,
-          minCancelledBySeer: params?.minCancelledBySeer,
-          maxCancelledBySeer: params?.maxCancelledBySeer,
-          minTotalRevenue: params?.minTotalRevenue,
-          maxTotalRevenue: params?.maxTotalRevenue,
-          minBonus: params?.minBonus,
-          maxBonus: params?.maxBonus,
-        },
+    const res = await apiFetch<PageResponse<SeerPerformance>>('/report/all-seer-performance', {
+      method: 'GET',
+      params: {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? 10,
+        sortBy: params?.sortBy ?? 'createdAt',
+        sortType: params?.sortType ?? 'desc',
+        month: params?.month,
+        year: params?.year,
+        minPerformancePoint: params?.minPerformancePoint,
+        maxPerformancePoint: params?.maxPerformancePoint,
+        performanceTier: params?.performanceTier,
+        minRanking: params?.minRanking,
+        maxRanking: params?.maxRanking,
+        minTotalPackages: params?.minTotalPackages,
+        maxTotalPackages: params?.maxTotalPackages,
+        minTotalRates: params?.minTotalRates,
+        maxTotalRates: params?.maxTotalRates,
+        minAvgRating: params?.minAvgRating,
+        maxAvgRating: params?.maxAvgRating,
+        minTotalBookings: params?.minTotalBookings,
+        maxTotalBookings: params?.maxTotalBookings,
+        minCompletedBookings: params?.minCompletedBookings,
+        maxCompletedBookings: params?.maxCompletedBookings,
+        minCancelledBySeer: params?.minCancelledBySeer,
+        maxCancelledBySeer: params?.maxCancelledBySeer,
+        minTotalRevenue: params?.minTotalRevenue,
+        maxTotalRevenue: params?.maxTotalRevenue,
+        minBonus: params?.minBonus,
+        maxBonus: params?.maxBonus,
       },
-    );
+    });
     return res;
   },
 
@@ -160,7 +141,7 @@ export const ReportService = {
     year: number,
   ): Promise<SingleResponse<SeerPerformance>> => {
     const res = await apiFetch<SingleResponse<SeerPerformance>>(
-      '/internal/seer-simple-rating',
+      '/report/internal/seer-simple-rating',
       {
         method: 'GET',
         params: { seerId, month, year },
@@ -176,7 +157,7 @@ export const ReportService = {
     month: number,
     year: number,
   ): Promise<SingleResponse<boolean>> => {
-    const res = await apiFetch<SingleResponse<boolean>>('/customer-reports', {
+    const res = await apiFetch<SingleResponse<boolean>>('/report/customer-reports', {
       method: 'POST',
       data: customerIds,
       params: { month, year },
@@ -192,17 +173,14 @@ export const ReportService = {
     month: number,
     year: number,
   ): Promise<SingleResponse<boolean>> => {
-    const res = await apiFetch<SingleResponse<boolean>>(
-      '/seer-performance-reports',
-      {
-        method: 'POST',
-        data: seerIds,
-        params: { month, year },
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    const res = await apiFetch<SingleResponse<boolean>>('/report/seer-performance-reports', {
+      method: 'POST',
+      data: seerIds,
+      params: { month, year },
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
     return res;
   },
 
@@ -213,7 +191,7 @@ export const ReportService = {
     action: CustomerAction,
     amount?: number,
   ): Promise<boolean> => {
-    const res = await apiFetch<SingleResponse<boolean>>('/customer-action', {
+    const res = await apiFetch<SingleResponse<boolean>>('/report/customer-action', {
       method: 'POST',
       params: {
         customerId,
@@ -225,7 +203,7 @@ export const ReportService = {
   },
 
   seerAction: async (seerId: string, action: SeerAction, amount?: number): Promise<boolean> => {
-    const res = await apiFetch<SingleResponse<boolean>>('/seer-action', {
+    const res = await apiFetch<SingleResponse<boolean>>('/report/seer-action', {
       method: 'POST',
       params: {
         seerId,
@@ -241,7 +219,7 @@ export const ReportService = {
     amount: number,
     reason: string,
   ): Promise<SingleResponse<PaymentResponse>> => {
-    const res = await apiFetchCore<SingleResponse<PaymentResponse>>('/admin/bonus', {
+    const res = await apiFetch<SingleResponse<PaymentResponse>>('/core/admin/bonus', {
       method: 'POST',
       data: {
         seerId,
@@ -258,12 +236,9 @@ export const ReportService = {
   // ==================== FINANCE & CHARTS ====================
 
   getFinanceStatistic: async (): Promise<SingleResponse<FinanceStatistic>> => {
-    const res = await apiFetch<SingleResponse<FinanceStatistic>>(
-      '/finance-statistic',
-      {
-        method: 'GET',
-      },
-    );
+    const res = await apiFetch<SingleResponse<FinanceStatistic>>('/report/finance-statistic', {
+      method: 'GET',
+    });
     return res;
   },
 
@@ -272,7 +247,7 @@ export const ReportService = {
     month?: number,
     year?: number,
   ): Promise<SingleResponse<ChartData[]>> => {
-    const res = await apiFetch<SingleResponse<ChartDto>>('/chart', {
+    const res = await apiFetch<SingleResponse<ChartDto>>('/report/chart', {
       method: 'GET',
       params: {
         chartType,

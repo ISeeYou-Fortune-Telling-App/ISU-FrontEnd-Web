@@ -2,7 +2,8 @@
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
 import {
   Search,
   Eye,
@@ -42,6 +43,9 @@ export const PackageTable: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const tableRef = useRef<HTMLDivElement>(null);
+  useScrollToTopOnPageChange(currentPage, tableRef);
 
   // Helper function to reload data
   const reloadData = async () => {
@@ -205,7 +209,10 @@ export const PackageTable: React.FC = () => {
   // ==================== RENDER ====================
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-400 dark:border-gray-700">
+    <div
+      ref={tableRef}
+      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
+    >
       {/* Search & Category Filter */}
       <div className="flex gap-3 mb-4">
         {/* Search Box */}
@@ -213,7 +220,7 @@ export const PackageTable: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo tên Nhà tiên tri hoặc tiêu đề..."
+            placeholder="Tìm kiếm tiêu đề dịch vụ..."
             className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg
                        focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
                        text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
@@ -229,17 +236,17 @@ export const PackageTable: React.FC = () => {
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700
+            className="flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700
                        dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg 
                        hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600 min-w-[160px]"
           >
-            <span className="truncate">
+            <span className="truncate mr-2">
               {!selectedCategory
                 ? 'Tất cả danh mục'
                 : categories.find((c) => c.id === selectedCategory)?.name || 'Tất cả danh mục'}
             </span>
             <ChevronDown
-              className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform ${
+              className={`w-4 h-4 flex-shrink-0 transition-transform ${
                 isDropdownOpen ? 'rotate-180' : ''
               }`}
             />
@@ -419,9 +426,11 @@ export const PackageTable: React.FC = () => {
                   <td className="px-4 py-3">
                     {pkg.categories && pkg.categories.length > 0 ? (
                       <div className="flex flex-wrap gap-1 justify-center">
-                        {pkg.categories.map((cat) => (
-                          <Badge key={cat.id} type="expertise" value={cat.name} />
-                        ))}
+                        {[...pkg.categories]
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((cat) => (
+                            <Badge key={cat.id} type="expertise" value={cat.name} />
+                          ))}
                       </div>
                     ) : (
                       <span className="text-sm text-gray-500">Không có dữ liệu</span>
@@ -550,6 +559,18 @@ export const PackageTable: React.FC = () => {
             // Reload data after action
             await reloadData();
           }}
+          onEdit={async (id) => {
+            // TODO: Implement edit functionality
+            await Swal.fire({
+              title: 'Chỉnh sửa gói dịch vụ',
+              text: 'Chức năng chỉnh sửa đang được phát triển',
+              icon: 'info',
+              background: document.documentElement.classList.contains('dark')
+                ? '#1f2937'
+                : '#ffffff',
+              color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+            });
+          }}
           onHide={async (id, reason) => {
             const result = await Swal.fire({
               title: 'Xác nhận ẩn',
@@ -572,7 +593,14 @@ export const PackageTable: React.FC = () => {
 
             if (result.isConfirmed) {
               try {
-                const response = await PackageService.adminConfirm(id, 'HIDDEN', reason);
+                const response = await PackageService.updatePackageStatus(id, 'HIDDEN', {
+                  packageTitle: selectedPackage.packageTitle,
+                  packageContent: selectedPackage.packageContent,
+                  price: selectedPackage.price,
+                  durationMinutes: selectedPackage.durationMinutes,
+                  categoryIds: selectedPackage.categories.map((c) => c.id),
+                  imageUrl: selectedPackage.imageUrl,
+                });
                 await Swal.fire({
                   title: 'Thành công!',
                   text: response.message || 'Đã ẩn bài viết thành công!',

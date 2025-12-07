@@ -38,15 +38,17 @@ const TopSeerPerformanceChart: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(0);
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
+  const [isDataFetched, setIsDataFetched] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setIsDataFetched(false);
         const response = await dashboardService.getTopSeerPerformance(
           selectedYear,
           100,
-          selectedMonth > 0 ? selectedMonth : undefined
+          selectedMonth > 0 ? selectedMonth : undefined,
         );
 
         // Group by seerId and aggregate data
@@ -93,9 +95,11 @@ const TopSeerPerformanceChart: React.FC = () => {
 
         setChartData(topSeers);
         setError(null);
+        setIsDataFetched(true);
       } catch (err) {
         console.error('Error fetching top seer performance:', err);
         setError('Không thể tải dữ liệu');
+        setIsDataFetched(true);
       } finally {
         setLoading(false);
       }
@@ -115,7 +119,7 @@ const TopSeerPerformanceChart: React.FC = () => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-400 dark:border-gray-700">
           <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {data.fullName}
           </p>
@@ -175,18 +179,20 @@ const TopSeerPerformanceChart: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
               <span>{MONTHS.find((m) => m.value === selectedMonth)?.label}</span>
               <ChevronDown
-                className={`w-4 h-4 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 transition-transform ${
+                  isMonthDropdownOpen ? 'rotate-180' : ''
+                }`}
               />
             </button>
 
             {isMonthDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsMonthDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden max-h-60 overflow-y-auto">
+                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden max-h-60 overflow-y-auto">
                   {MONTHS.map((month) => (
                     <button
                       key={month.value}
@@ -212,7 +218,7 @@ const TopSeerPerformanceChart: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <span>Năm {selectedYear}</span>
               <ChevronDown
@@ -262,35 +268,38 @@ const TopSeerPerformanceChart: React.FC = () => {
       ) : (
         <div className="flex-1 mt-4">
           <div style={{ height: '450px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 5, bottom: 5, left: 10 }}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  className="stroke-gray-200 dark:stroke-gray-700"
-                  horizontal={false}
-                />
-                <XAxis
-                  type="number"
-                  className="text-xs text-gray-600 dark:text-gray-400"
-                  tick={{ fill: 'currentColor', fontSize: 12 }}
-                  tickFormatter={formatCurrency}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  tick={<CustomYAxisTick />}
-                  width={180}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar
-                  dataKey="revenue"
-                  fill="#a855f7"
-                  radius={[0, 8, 8, 0]}
-                  animationBegin={0}
-                  animationDuration={800}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {isDataFetched && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 5, bottom: 5, left: 10 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-gray-200 dark:stroke-gray-700"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    className="text-xs text-gray-600 dark:text-gray-400"
+                    tick={{ fill: 'currentColor', fontSize: 12 }}
+                    tickFormatter={formatCurrency}
+                  />
+                  <YAxis type="category" dataKey="name" tick={<CustomYAxisTick />} width={180} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar
+                    dataKey="revenue"
+                    fill="#a855f7"
+                    radius={[0, 8, 8, 0]}
+                    animationBegin={0}
+                    animationDuration={800}
+                    barSize={35}
+                    maxBarSize={35}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       )}

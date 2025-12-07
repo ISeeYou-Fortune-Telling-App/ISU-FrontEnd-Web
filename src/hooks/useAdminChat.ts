@@ -26,25 +26,49 @@ export const useAdminChat = ({ onNewMessage }: UseAdminChatProps = {}) => {
   // Lấy adminId
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedId = localStorage.getItem('userId');
+      // Thử lấy từ localStorage trước, sau đó sessionStorage
+      const storedId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
+      console.log('🔑 [useAdminChat] Admin ID from storage:', storedId);
+
+      // Check if it's a default/test ID
+      if (storedId === '550e8400-e29b-41d4-a716-446655440000') {
+        console.warn(
+          '⚠️ [useAdminChat] Using default test userId - WebSocket may not work properly',
+        );
+      }
+
       if (storedId) setAdminId(storedId);
+      else console.warn('⚠️ [useAdminChat] No userId found in storage');
     }
   }, []);
 
-  // Kết nối socket
+  // Kết nối socket - chỉ chạy khi adminId đã có
   useEffect(() => {
-    if (!adminId) return;
+    if (!adminId) {
+      console.log('⚠️ [useAdminChat] No adminId, skipping socket connection');
+      return;
+    }
+
+    console.log('🔌 [useAdminChat] Creating socket connection for admin:', adminId);
     const socket = createChatSocket(adminId);
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      console.log('✅ [useAdminChat] Socket connected!');
       setSocketConnected(true);
       socket.emit('admin_join_all_conversations', adminId, (res: any) => {
-        console.log(`✅ Joined ${res.totalJoined} conversations`);
+        console.log(`✅ [useAdminChat] Joined ${res.totalJoined} conversations`);
       });
     });
 
-    socket.on('disconnect', () => setSocketConnected(false));
+    socket.on('disconnect', () => {
+      console.log('❌ [useAdminChat] Socket disconnected');
+      setSocketConnected(false);
+    });
+
+    socket.on('connect_error', (error: any) => {
+      console.error('❌ [useAdminChat] Socket connection error:', error);
+    });
 
     socket.on('receive_message', (raw: Partial<Message> & { conversationId?: string }) => {
       console.log('🔔 [useAdminChat] receive_message event:', raw);
@@ -76,7 +100,7 @@ export const useAdminChat = ({ onNewMessage }: UseAdminChatProps = {}) => {
         // ✅ Nếu tin nhắn từ customer/seer (không phải admin), đánh dấu tất cả tin nhắn admin trước đó là READ
         const isFromOther = msg.senderId !== adminId;
         const updatedMsgs = isFromOther
-          ? oldMsgs.map((m) => (m.senderId === adminId ? { ...m, status: 'READ' } : m))
+          ? oldMsgs.map((m) => (m.senderId === adminId ? { ...m, status: 'READ' as const } : m))
           : oldMsgs;
 
         return { ...prev, [convId]: [...updatedMsgs, msg] };
@@ -93,7 +117,7 @@ export const useAdminChat = ({ onNewMessage }: UseAdminChatProps = {}) => {
         const convId = data.conversationId;
         const msgs = prev[convId] || [];
         const updated = msgs.map((m) =>
-          data.messageIds.includes(m.id) ? { ...m, status: 'READ' } : m,
+          data.messageIds.includes(m.id) ? { ...m, status: 'READ' as const } : m,
         );
         return { ...prev, [convId]: updated };
       });
@@ -125,18 +149,33 @@ export const useAdminChat = ({ onNewMessage }: UseAdminChatProps = {}) => {
     imagePath?: string,
     videoPath?: string,
   ) => {
-    if (!socketRef.current) return;
+    console.log('📤 [useAdminChat] sendMessage called:', {
+      text,
+      conversationIds,
+      currentConversationId,
+      socketConnected,
+      hasSocket: !!socketRef.current,
+    });
+
+    if (!socketRef.current) {
+      console.error('❌ [useAdminChat] No socket connection!');
+      return;
+    }
 
     if (conversationIds && conversationIds.length > 0) {
+      console.log('📤 [useAdminChat] Sending to multiple conversations:', conversationIds);
       socketRef.current.emit(
         'send_messages',
         { conversationIds, textContent: text, imagePath, videoPath },
-        (res: boolean) => console.log('📩 send_messages ack:', res),
+        (res: boolean) => console.log('📩 [useAdminChat] send_messages ack:', res),
       );
       return;
     }
 
-    if (!currentConversationId) return;
+    if (!currentConversationId) {
+      console.error('❌ [useAdminChat] No current conversation ID!');
+      return;
+    }
 
     // Optimistic update
     const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

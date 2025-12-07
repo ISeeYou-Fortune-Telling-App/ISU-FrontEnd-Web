@@ -189,25 +189,25 @@ export const PaymentTable: React.FC = () => {
                 <th className="w-[15%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Mã giao dịch
                 </th>
-                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Khách hàng
                 </th>
-                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Nhà tiên tri
                 </th>
-                <th className="w-[15%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[15%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Dịch vụ
                 </th>
-                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Phương thức
                 </th>
-                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Số tiền
                 </th>
-                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Trạng thái
                 </th>
-                <th className="w-[10%] px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+                <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                   Thao tác
                 </th>
               </tr>
@@ -229,9 +229,9 @@ export const PaymentTable: React.FC = () => {
                   <td className="px-4 py-3">
                     <span
                       className="text-sm text-gray-600 dark:text-gray-300 truncate block"
-                      title={p.customer?.fullName || 'N/A'}
+                      title={p.customer?.fullName || 'Admin'}
                     >
-                      {p.customer?.fullName || 'N/A'}
+                      {p.customer?.fullName || 'Admin'}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -247,30 +247,34 @@ export const PaymentTable: React.FC = () => {
                       className="text-sm text-gray-600 dark:text-gray-300 truncate block"
                       title={p.packageTitle || 'N/A'}
                     >
-                      {p.packageTitle || 'N/A'}
+                      {p.packageTitle || 'Admin Bonus'}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className="text-sm text-gray-600 dark:text-gray-300 truncate block"
+                      className="text-sm text-center text-gray-600 dark:text-gray-300 truncate block"
                       title={p.paymentMethod || 'N/A'}
                     >
                       {p.paymentMethod || 'N/A'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                  <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-300">
                     {p.amount?.toLocaleString('vi-VN') || '0'}₫
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <Badge type="payment" value={p.paymentStatus} />
+                  <td className="px-4 py-3 justify-center whitespace-nowrap">
+                    <div className="flex justify-center">
+                      <Badge type="payment" value={p.paymentStatus} />
+                    </div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => setSelectedPayment(p)}
-                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors"
-                    >
-                      <Eye className="w-5 h-5" />
-                    </button>
+                  <td className="px-4 py-3 text-center  whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => setSelectedPayment(p)}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

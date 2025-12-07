@@ -109,10 +109,10 @@ export default function ChatPage() {
   }, [messages]);
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/20 dark:to-purple-950/20">
+    <div className="h-screen flex flex-col from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/20 dark:to-purple-950/20">
       {/* Header với gradient */}
-      <header className="relative dark:border-gray-800/50 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-3">
+      <header className="relative dark:border-gray-800/50 backdrop-blur-sm flex-shrink-0">
+        <div className="mx-auto px-6 py-5 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
@@ -126,8 +126,8 @@ export default function ChatPage() {
       </header>
 
       {/* Nội dung chat */}
-      <div className="flex-1 overflow-y-auto px-4">
-        <div className="max-w-4xl mx-auto p-6 pb-32">
+      <div className="flex-1 overflow-y-auto px-4 scrollbar-hide">
+        <div className="max-w-5xl mx-auto p-6 pb-32">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-20">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-6 shadow-xl">
@@ -174,7 +174,7 @@ export default function ChatPage() {
                         className={`px-5 py-3 rounded-2xl shadow-sm ${
                           m.role === 'user'
                             ? 'bg-blue-600 text-white dark:bg-blue-500 rounded-tr-sm'
-                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm border border-gray-200/50 dark:border-gray-700/50'
+                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm border border-gray-400 dark:border-gray-700'
                         }`}
                       >
                         <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -185,7 +185,7 @@ export default function ChatPage() {
 
                     {/* --- DATAFRAME --- */}
                     {m.type === 'dataframe' && (
-                      <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
+                      <div className="overflow-hidden rounded-2xl border border-gray-400 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
                         <div className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center gap-2">
                           <BarChart3 className="w-4 h-4" />
                           <span className="font-semibold text-sm">
@@ -236,14 +236,14 @@ export default function ChatPage() {
                     {/* --- HTML --- */}
                     {m.type === 'html' && (
                       <div
-                        className="p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm prose prose-sm dark:prose-invert max-w-none"
+                        className="p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-400 dark:border-gray-700 shadow-sm prose prose-sm dark:prose-invert max-w-none"
                         dangerouslySetInnerHTML={{ __html: m.data }}
                       />
                     )}
 
                     {/* --- IMAGE --- */}
                     {m.type === 'image' && m.data?.url && (
-                      <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">
+                      <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-400 dark:border-gray-700">
                         <img src={m.data.url} alt="AI generated" className="max-w-full" />
                       </div>
                     )}
@@ -266,7 +266,7 @@ export default function ChatPage() {
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-md">
                 <Bot className="w-4 h-4 text-white" />
               </div>
-              <div className="px-5 py-3 rounded-2xl rounded-tl-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="px-5 py-3 rounded-2xl rounded-tl-sm bg-white dark:bg-gray-800 border border-gray-400 dark:border-gray-700 shadow-sm">
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
                   <div className="flex gap-1">
                     <span
@@ -291,10 +291,10 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Thanh nhập tin nhắn */}
-      <div className="fixed bottom-0 left-0 right-0 ml-64 z-10 bg-gradient-to-t from-white via-white/95 dark:from-gray-900 dark:via-gray-900/95 pt-8 pb-6 dark:border-gray-800/50">
+      {/* Thanh nhập tin nhắn - Nền trong suốt */}
+      <div className="flex-shrink-0 bg-transparent pt-8 pb-6 dark:border-gray-800/50">
         <div className="max-w-4xl mx-auto px-6">
-          <div className="relative flex items-center gap-3 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-400 dark:border-gray-700 p-2 transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+          <div className="relative flex items-center gap-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-400 dark:border-gray-700 p-2 transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
             <input
               type="text"
               value={input}

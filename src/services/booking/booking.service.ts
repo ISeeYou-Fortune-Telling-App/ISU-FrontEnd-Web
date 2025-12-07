@@ -1,6 +1,11 @@
-import { apiFetch } from '@/services/api-core';
+import { apiFetch } from '@/services/api-client';
 import { ListResponse, SingleResponse } from '@/types/response.type';
-import { BookingResponse, BookingParams, BookingStats, PaymentParams } from '@/types/booking/booking.type';
+import {
+  BookingResponse,
+  BookingParams,
+  BookingStats,
+  PaymentParams,
+} from '@/types/booking/booking.type';
 
 export const BookingService = {
   getBookings: (params: BookingParams) =>

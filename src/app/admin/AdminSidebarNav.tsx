@@ -14,7 +14,6 @@ import {
   Mail,
   Bell,
   LogOut,
-  Settings,
   BotMessageSquare,
   CircleDollarSign,
   Ban,
@@ -91,10 +90,6 @@ export default function AdminSidebarNav() {
     AuthService.logout();
   }, []);
 
-  const handleSettings = useCallback(() => {
-    router.push('/admin/settings');
-  }, [router]);
-
   const handleProfile = useCallback(() => {
     router.push('/admin/profile');
   }, [router]);
@@ -113,7 +108,7 @@ export default function AdminSidebarNav() {
           href="/admin/finance"
           icon={CircleDollarSign}
           label="Quản lý tài chính"
-          isActive={currentPath === '/admin/finance'}
+          isActive={currentPath.startsWith('/admin/finance')}
         />
         <SidebarItem
           href="/admin/accounts"
@@ -136,7 +131,7 @@ export default function AdminSidebarNav() {
         <SidebarItem
           href="/admin/packages"
           icon={Newspaper}
-          label="Quản lý bài viết"
+          label="Quản lý dịch vụ"
           isActive={currentPath === '/admin/packages'}
         />
         <SidebarItem
@@ -210,13 +205,6 @@ export default function AdminSidebarNav() {
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
             >
               <LogOut className="w-5 h-5" />
-            </button>
-            <button
-              title="Cài đặt"
-              onClick={handleSettings}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
-            >
-              <Settings className="w-5 h-5" />
             </button>
           </div>
         </div>

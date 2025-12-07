@@ -11,23 +11,10 @@ import type {
   KnowledgeStatus,
 } from '@/types/knowledge/knowledge.type';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Badge } from '@/components/common/Badge';
+import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
 
 const ITEMS_PER_PAGE = 10;
-
-const CategoryBadge = ({ value }: { value: string }) => {
-  let colorClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-  if (value === 'Ngũ Hành')
-    colorClass = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-  if (value === 'Tarot')
-    colorClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${colorClass} mr-2 mb-1`}
-    >
-      {value}
-    </span>
-  );
-};
 
 export const KnowledgeTable: React.FC = () => {
   const [selectedKnowledge, setSelectedKnowledge] = useState<any | null>(null);
@@ -41,12 +28,16 @@ export const KnowledgeTable: React.FC = () => {
   const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement | null>(null);
 
   const [knowledges, setKnowledges] = useState<KnowledgeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Scroll to top when page changes
+  useScrollToTopOnPageChange(currentPage, tableRef);
 
   // --- Fetch danh mục ---
   useEffect(() => {
@@ -155,23 +146,6 @@ export const KnowledgeTable: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getStatusClass = (status: KnowledgeStatus) => {
-    if (status === 'PUBLISHED')
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-    if (status === 'DRAFT')
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-    if (status === 'HIDDEN') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-    return '';
-  };
-
-  const formatDateTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return `${d.toLocaleDateString('vi-VN')} ${d.toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`;
-  };
-
   if (loading)
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-10">
@@ -180,7 +154,10 @@ export const KnowledgeTable: React.FC = () => {
     );
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
+    <div
+      ref={tableRef}
+      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
+    >
       {/* --- SEARCH + CATEGORY DROPDOWN --- */}
       <div className="flex justify-between items-center mb-4">
         <div className="relative flex-grow mr-4">
@@ -216,7 +193,7 @@ export const KnowledgeTable: React.FC = () => {
           {isCategoryDropdownOpen && (
             <div
               className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-700 
-                            ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10 animate-fadeIn"
+                            ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-30 animate-fadeIn"
             >
               <div className="py-1 max-h-64 overflow-y-auto">
                 <button
@@ -294,7 +271,7 @@ export const KnowledgeTable: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-400 dark:divide-gray-700 table-fixed">
           <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
             <tr>
-              <th className="w-[290px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[270px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Bài viết
               </th>
               <th className="w-[270px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
@@ -303,16 +280,16 @@ export const KnowledgeTable: React.FC = () => {
               <th className="w-[250px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Trạng thái
               </th>
-              <th className="w-[50px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[40px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Lượt xem
               </th>
-              <th className="w-[130px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Ngày đăng
               </th>
-              <th className="w-[130px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Cập nhật
               </th>
-              <th className="w-[130px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[160px] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thao tác
               </th>
             </tr>
@@ -359,37 +336,58 @@ export const KnowledgeTable: React.FC = () => {
                   </td>
 
                   <td className="px-6 py-3 text-center w-[310px]">
-                    <div className="flex flex-wrap justify-start">
+                    <div className="flex flex-wrap gap-1 justify-center">
                       {k.categories.map((cat, idx) => (
-                        <CategoryBadge key={idx} value={cat} />
+                        <Badge key={idx} type="expertise" value={cat} />
                       ))}
                     </div>
                   </td>
 
                   <td className="px-6 py-3 text-center w-[250px]">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusClass(
-                        k.status,
-                      )}`}
-                    >
-                      {k.status === 'PUBLISHED'
-                        ? 'Đã xuất bản'
-                        : k.status === 'DRAFT'
-                        ? 'Bản nháp'
-                        : 'Đã ẩn'}
-                    </span>
+                    <div className="flex justify-center">
+                      <Badge
+                        type="KnowledgeStatus"
+                        value={
+                          k.status === 'PUBLISHED'
+                            ? 'Đã xuất bản'
+                            : k.status === 'DRAFT'
+                            ? 'Bản nháp'
+                            : 'Đã ẩn'
+                        }
+                      />
+                    </div>
                   </td>
 
                   <td className="px-6 py-3 text-center w-[50px] text-gray-600 dark:text-gray-300 text-sm">
                     {k.viewCount}
                   </td>
 
-                  <td className="px-6 py-3 text-center w-[160px] text-gray-600 dark:text-gray-300 text-sm ">
-                    {formatDateTime(k.createdAt)}
+                  <td className="px-6 py-3 text-center w-[160px]">
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {new Date(k.createdAt).toLocaleDateString('vi-VN')}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(k.createdAt).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
                   </td>
 
-                  <td className="px-6 py-3 text-center w-[160px] text-gray-600 dark:text-gray-300 text-sm">
-                    {formatDateTime(k.updatedAt)}
+                  <td className="px-6 py-3 text-center w-[160px]">
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {new Date(k.updatedAt).toLocaleDateString('vi-VN')}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(k.updatedAt).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
                   </td>
 
                   <td className="px-4 py-3 text-center w-[150px] space-x-1">

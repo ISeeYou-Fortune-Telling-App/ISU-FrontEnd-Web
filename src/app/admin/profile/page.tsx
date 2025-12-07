@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 export default function AdminProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -64,6 +65,31 @@ export default function AdminProfilePage() {
     }
   };
 
+  const handleUploadCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    setIsUploadingCover(true);
+    try {
+      await AccountService.uploadCover(file);
+      await Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Đã cập nhật ảnh bìa',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      window.location.reload();
+    } catch (err) {
+      console.error('Upload cover error:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: 'Không thể tải ảnh bìa lên',
+      });
+      setIsUploadingCover(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
@@ -98,74 +124,112 @@ export default function AdminProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-400 dark:border-gray-700 p-8 mb-6">
-        <div className="flex items-center gap-8">
-          {/* Avatar */}
-          <div className="relative flex-shrink-0">
+    <div className="mx-auto p-6">
+      {/* Header with Cover */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-400 dark:border-gray-700 overflow-hidden mb-6">
+        {/* Cover Image */}
+        <div className="relative h-64 bg-gray-300 dark:bg-gray-700">
+          {user.coverUrl ? (
             <img
-              src={user.avatarUrl || '/default_avatar.jpg'}
-              alt="Avatar"
-              className="w-32 h-32 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"
+              src={user.coverUrl}
+              alt="Cover"
+              className="w-full h-full object-cover"
               onError={(e) => {
-                e.currentTarget.src = '/default_avatar.jpg';
+                e.currentTarget.style.display = 'none';
               }}
             />
-            <label className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg transition">
-              {isUploading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Camera className="w-5 h-5" />
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleUploadAvatar}
-                disabled={isUploading}
-              />
-            </label>
-          </div>
+          ) : null}
+          {/* Upload Cover Button */}
+          <label className="absolute top-4 right-4 bg-white/90 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg cursor-pointer shadow-lg transition backdrop-blur-sm flex items-center gap-2">
+            {isUploadingCover ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm font-medium">Đang tải...</span>
+              </>
+            ) : (
+              <>
+                <Camera className="w-4 h-4" />
+                <span className="text-sm font-medium">Đổi ảnh bìa</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleUploadCover}
+              disabled={isUploadingCover}
+            />
+          </label>
+        </div>
 
-          {/* Info */}
-          <div className="flex-1">
-            <div className="flex items-center gap-4 mb-4">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {user.fullName || 'Chưa có tên'}
-              </h1>
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="px-4 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                {isEditing ? 'Hủy' : 'Chỉnh sửa'}
-              </button>
+        {/* Profile Info */}
+        <div className="px-8 pb-16 relative">
+          {/* Edit Profile Button - Bottom Right */}
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="absolute bottom-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+            title="Chỉnh sửa trang cá nhân"
+          >
+            <Settings className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
+
+          <div className="flex items-end gap-8 -mt-16">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <img
+                src={user.avatarUrl || '/default_avatar.jpg'}
+                alt="Avatar"
+                className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg"
+                onError={(e) => {
+                  e.currentTarget.src = '/default_avatar.jpg';
+                }}
+              />
+              <label className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg transition">
+                {isUploading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleUploadAvatar}
+                  disabled={isUploading}
+                />
+              </label>
             </div>
 
-            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <p>
-                <span className="font-medium text-gray-900 dark:text-white">Email:</span>{' '}
-                {user.email}
-              </p>
-              <p>
-                <span className="font-medium text-gray-900 dark:text-white">Vai trò:</span>{' '}
-                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">
-                  {user.role}
-                </span>
-              </p>
-              <p>
-                <span className="font-medium text-gray-900 dark:text-white">Trạng thái:</span>{' '}
-                <span
-                  className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    user.status === 'ACTIVE'
-                      ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {user.status}
-                </span>
-              </p>
+            {/* Info */}
+            <div className="flex-1 pt-24">
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+                {user.fullName || 'Chưa có tên'}
+              </h1>
+
+              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">Email:</span>{' '}
+                  {user.email}
+                </p>
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">Vai trò:</span>{' '}
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">
+                    {user.role}
+                  </span>
+                </p>
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">Trạng thái:</span>{' '}
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      user.status === 'ACTIVE'
+                        ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {user.status}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
         </div>

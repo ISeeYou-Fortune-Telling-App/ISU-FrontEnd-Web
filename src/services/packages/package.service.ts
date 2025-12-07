@@ -1,4 +1,4 @@
-import { apiFetch } from '@/services/api-core';
+import { apiFetch } from '@/services/api-client';
 import {
   DeletePackageResponse,
   GetPackagesParams,
@@ -64,15 +64,17 @@ export const PackageService = {
 
   adminConfirm: async (
     packageId: string,
-    status: string,
+    action: 'APPROVED' | 'REJECTED',
     rejectionReason?: string,
   ): Promise<ServicePackageResponse> => {
+    const data: any = { action };
+    if (action === 'REJECTED' && rejectionReason) {
+      data.rejectionReason = rejectionReason;
+    }
+
     const res = await apiFetch<ServicePackageResponse>(`/service-packages/${packageId}/confirm`, {
       method: 'PUT',
-      data: {
-        status,
-        rejectionReason,
-      },
+      data,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -183,6 +185,76 @@ export const PackageService = {
   deleteReview: async (reviewId: string): Promise<ServiceReviewResponse> => {
     const res = await apiFetch<ServiceReviewResponse>(`/service-packages/reviews/${reviewId}`, {
       method: 'DELETE',
+    });
+    return res;
+  },
+
+  // Update package status (for hiding/showing packages)
+  updatePackageStatus: async (
+    packageId: string,
+    status: string,
+    packageData: {
+      packageTitle: string;
+      packageContent: string;
+      price: number;
+      durationMinutes: number;
+      categoryIds: string[];
+      imageUrl?: string;
+    },
+  ): Promise<ServicePackageResponse> => {
+    const formData = new FormData();
+    formData.append('packageTitle', packageData.packageTitle);
+    formData.append('packageContent', packageData.packageContent);
+    formData.append('price', packageData.price.toString());
+    formData.append('durationMinutes', packageData.durationMinutes.toString());
+    formData.append('status', status);
+
+    // Add categoryIds
+    if (packageData.categoryIds && packageData.categoryIds.length > 0) {
+      packageData.categoryIds.forEach((id) => formData.append('categoryIds', id));
+    }
+
+    // Keep existing image URL if no new image
+    if (packageData.imageUrl) {
+      formData.append('imageUrl', packageData.imageUrl);
+    }
+
+    const res = await apiFetch<ServicePackageResponse>(`/service-packages?id=${packageId}`, {
+      method: 'PUT',
+      data: formData,
+    });
+    return res;
+  },
+
+  // Update package content
+  updatePackage: async (
+    packageId: string,
+    data: {
+      packageTitle?: string;
+      packageContent?: string;
+      price?: number;
+      durationMinutes?: number;
+      categoryIds?: string[];
+      status?: string;
+      image?: File;
+    },
+  ): Promise<ServicePackageResponse> => {
+    const formData = new FormData();
+
+    if (data.packageTitle) formData.append('packageTitle', data.packageTitle);
+    if (data.packageContent) formData.append('packageContent', data.packageContent);
+    if (data.price !== undefined) formData.append('price', data.price.toString());
+    if (data.durationMinutes !== undefined)
+      formData.append('durationMinutes', data.durationMinutes.toString());
+    if (data.status) formData.append('status', data.status);
+    if (data.image) formData.append('image', data.image);
+    if (data.categoryIds && data.categoryIds.length > 0) {
+      data.categoryIds.forEach((id) => formData.append('categoryIds', id));
+    }
+
+    const res = await apiFetch<ServicePackageResponse>(`/service-packages?id=${packageId}`, {
+      method: 'PUT',
+      data: formData,
     });
     return res;
   },

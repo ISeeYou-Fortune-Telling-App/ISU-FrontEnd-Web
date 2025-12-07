@@ -1,4 +1,4 @@
-import { apiFetch } from '@/services/api-core';
+import { apiFetch } from '@/services/api-client';
 import {
   ListResponse,
   SingleResponse,

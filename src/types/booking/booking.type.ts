@@ -49,6 +49,8 @@ export interface BookingPaymentInfo {
 
 export interface BookingParams extends PagingParams {
   status?: BookingStatus;
+  paymentStatus?: PaymentStatus;
+  name?: string;
 }
 
 export interface PaymentParams {

@@ -23,9 +23,9 @@ export default function ChatHistoryPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Gữi tin nhắn</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Gửi tin nhắn</h1>
         <p className="text-base font-light text-gray-500 dark:text-gray-400">
-          Gữi tin nhắn tới các nhà tiên tri và khách hàng
+          Gửi tin nhắn tới các nhà tiên tri và khách hàng
         </p>
       </div>
 

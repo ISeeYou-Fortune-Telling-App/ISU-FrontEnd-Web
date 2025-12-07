@@ -61,8 +61,11 @@ export const KnowledgeEditModal: React.FC<KnowledgeEditModalProps> = ({
       // Add empty categoryIds (will keep existing categories on backend)
       formData.append('categoryIds', '');
 
+      // Nếu có upload ảnh mới thì gửi file, không thì gửi URL cũ
       if (imageFile) {
         formData.append('imageFile', imageFile);
+      } else if (knowledge.imageUrl) {
+        formData.append('imageUrl', knowledge.imageUrl);
       }
 
       await KnowledgeService.updateKnowledgeItem(knowledge.id, formData);
