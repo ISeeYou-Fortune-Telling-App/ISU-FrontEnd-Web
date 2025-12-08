@@ -220,6 +220,8 @@ const CustomerDetailContent: React.FC = () => {
   const [paymentTotal, setPaymentTotal] = useState(0);
   const [paymentTotalPages, setPaymentTotalPages] = useState(0);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>('ALL');
+  const [paymentStatus, setPaymentStatus] = useState<string>('ALL');
 
   useEffect(() => {
     const fetchCustomerDetail = async () => {
@@ -255,6 +257,8 @@ const CustomerDetailContent: React.FC = () => {
           sortBy: 'createdAt',
           sortType: 'desc',
           userId: customerId,
+          paymentMethod: paymentMethod !== 'ALL' ? paymentMethod : undefined,
+          paymentStatus: paymentStatus !== 'ALL' ? paymentStatus : undefined,
         });
 
         setPayments(response.data || []);
@@ -271,7 +275,7 @@ const CustomerDetailContent: React.FC = () => {
     if (customerId) {
       fetchPayments();
     }
-  }, [customerId, paymentPage]);
+  }, [customerId, paymentPage, paymentMethod, paymentStatus]);
 
   if (loading) {
     return (
@@ -315,6 +319,56 @@ const CustomerDetailContent: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại</span>
           </button>
+
+          {/* Month/Year Filter */}
+          <div className="flex items-center space-x-2">
+            {/* Month Dropdown */}
+            <select
+              value={month}
+              onChange={(e) => {
+                const newMonth = Number(e.target.value);
+                setMonth(newMonth);
+                sessionStorage.setItem(
+                  `customer_${customerId}_period`,
+                  JSON.stringify({ month: newMonth, year }),
+                );
+              }}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              <option value={0}>Cả năm</option>
+              <option value={1}>Tháng 1</option>
+              <option value={2}>Tháng 2</option>
+              <option value={3}>Tháng 3</option>
+              <option value={4}>Tháng 4</option>
+              <option value={5}>Tháng 5</option>
+              <option value={6}>Tháng 6</option>
+              <option value={7}>Tháng 7</option>
+              <option value={8}>Tháng 8</option>
+              <option value={9}>Tháng 9</option>
+              <option value={10}>Tháng 10</option>
+              <option value={11}>Tháng 11</option>
+              <option value={12}>Tháng 12</option>
+            </select>
+
+            {/* Year Dropdown */}
+            <select
+              value={year}
+              onChange={(e) => {
+                const newYear = Number(e.target.value);
+                setYear(newYear);
+                sessionStorage.setItem(
+                  `customer_${customerId}_period`,
+                  JSON.stringify({ month, year: newYear }),
+                );
+              }}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              <option value={2026}>Năm 2026</option>
+              <option value={2025}>Năm 2025</option>
+              <option value={2024}>Năm 2024</option>
+              <option value={2023}>Năm 2023</option>
+            </select>
+          </div>
         </div>
 
         {/* Profile Card */}
@@ -448,6 +502,17 @@ const CustomerDetailContent: React.FC = () => {
           </div>
         </div>
 
+        {/* Average Spending Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Chi tiêu trung bình theo tháng
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Biểu đồ chi tiêu trung bình của khách hàng trong năm {year}
+          </p>
+          <RevenueChart data={avgSpendingData} formatValue={formatCurrency} />
+        </div>
+
         {/* Payment History Section */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
@@ -458,6 +523,40 @@ const CustomerDetailContent: React.FC = () => {
             <span className="text-sm text-gray-500 dark:text-gray-400">
               Tổng: {paymentTotal} giao dịch
             </span>
+          </div>
+
+          {/* Payment Filters */}
+          <div className="flex items-center space-x-2 mb-4">
+            {/* Payment Method Filter */}
+            <select
+              value={paymentMethod}
+              onChange={(e) => {
+                setPaymentMethod(e.target.value);
+                setPaymentPage(1);
+              }}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              <option value="ALL">Tất cả phương thức</option>
+              <option value="MOMO">MOMO</option>
+              <option value="VNPAY">VNPAY</option>
+              <option value="PAYPAL">PAYPAL</option>
+            </select>
+
+            {/* Payment Status Filter */}
+            <select
+              value={paymentStatus}
+              onChange={(e) => {
+                setPaymentStatus(e.target.value);
+                setPaymentPage(1);
+              }}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="PENDING">Đang xử lý</option>
+              <option value="COMPLETED">Thành công</option>
+              <option value="FAILED">Thất bại</option>
+              <option value="REFUNDED">Hoàn tiền</option>
+            </select>
           </div>
 
           {loadingPayments ? (

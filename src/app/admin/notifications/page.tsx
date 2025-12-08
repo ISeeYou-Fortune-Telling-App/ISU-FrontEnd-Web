@@ -1,7 +1,4 @@
-// src/app/admin/chat/page.tsx
 import React from 'react';
-
-import { StatCardAccount } from '../../../components/common/StatCardAccount';
 import { NotificationTable } from '../../../components/notifications/NotificationTable';
 
 export default function NotificationPage() {

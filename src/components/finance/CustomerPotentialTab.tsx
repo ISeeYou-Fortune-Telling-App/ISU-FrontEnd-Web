@@ -271,7 +271,7 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
                     onClick={() => setIsYearDropdownOpen(false)}
                   />
                   <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg shadow-lg z-20 overflow-hidden">
-                    {[2025, 2024, 2023].map((year) => (
+                    {[2026, 2025, 2024, 2023].map((year) => (
                       <button
                         key={year}
                         onClick={() => {

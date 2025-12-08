@@ -120,7 +120,7 @@ const AdvancedFilterModal: React.FC<{
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-6 overflow-y-auto space-y-2">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
               <Award className="w-4 h-4 text-orange-500" />
@@ -165,35 +165,148 @@ const AdvancedFilterModal: React.FC<{
                 suffix="pts"
               />
 
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
+              <FilterRangeGroup
+                label="Xếp hạng (Ranking)"
+                icon={Award}
+                minKey="minRanking"
+                maxKey="maxRanking"
+                onChange={handleChange}
+                placeholder="minRanking"
+              />
+
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
+              <FilterRangeGroup
+                label="Tổng gói dịch vụ (Packages)"
+                icon={Target}
+                minKey="minTotalPackages"
+                maxKey="maxTotalPackages"
+                onChange={handleChange}
+                placeholder="minTotalPackages"
+              />
+
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
+              <FilterRangeGroup
+                label="Tổng đánh giá (Rates)"
+                icon={Star}
+                minKey="minTotalRates"
+                maxKey="maxTotalRates"
+                onChange={handleChange}
+                placeholder="minTotalRates"
+              />
+
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   <Star className="w-4 h-4 text-yellow-500" />
-                  Đánh giá tối thiểu
+                  Đánh giá trung bình
                 </div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    placeholder="VD: 4.5"
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      if (!isNaN(val) && val >= 0 && val <= 5) handleChange('minAvgRating', val);
-                      if (e.target.value === '') handleChange('minAvgRating', undefined);
-                    }}
-                    className="w-full pl-3 pr-3 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                    / 5.0
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      placeholder="Tối thiểu"
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val) && val >= 0 && val <= 5) handleChange('minAvgRating', val);
+                        if (e.target.value === '') handleChange('minAvgRating', undefined);
+                      }}
+                      className="w-full pl-3 pr-12 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                      / 5.0
+                    </span>
+                  </div>
+                  <span className="text-gray-400">-</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      placeholder="Tối đa"
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val) && val >= 0 && val <= 5) handleChange('maxAvgRating', val);
+                        if (e.target.value === '') handleChange('maxAvgRating', undefined);
+                      }}
+                      className="w-full pl-3 pr-12 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                      / 5.0
+                    </span>
+                  </div>
                 </div>
               </div>
+
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
+              <FilterRangeGroup
+                label="Tổng bookings"
+                icon={TrendingUp}
+                minKey="minTotalBookings"
+                maxKey="maxTotalBookings"
+                onChange={handleChange}
+                placeholder="minTotalBookings"
+              />
+
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
+              <FilterRangeGroup
+                label="Bookings hoàn thành"
+                icon={TrendingUp}
+                minKey="minCompletedBookings"
+                maxKey="maxCompletedBookings"
+                onChange={handleChange}
+                placeholder="minCompletedBookings"
+              />
+
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
+              <FilterRangeGroup
+                label="Bookings bị hủy bởi Seer"
+                icon={X}
+                minKey="minCancelledBySeer"
+                maxKey="maxCancelledBySeer"
+                onChange={handleChange}
+                placeholder="minCancelledBySeer"
+              />
+
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
+              <FilterRangeGroup
+                label="Tổng doanh thu"
+                icon={DollarSign}
+                minKey="minTotalRevenue"
+                maxKey="maxTotalRevenue"
+                onChange={handleChange}
+                placeholder="minTotalRevenue"
+                suffix="VND"
+              />
+
+              <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
+              <FilterRangeGroup
+                label="Tổng tiền thưởng (Bonus)"
+                icon={Award}
+                minKey="minBonus"
+                maxKey="maxBonus"
+                onChange={handleChange}
+                placeholder="minBonus"
+                suffix="VND"
+              />
             </div>
           )}
 
           {type === 'customer' && (
-            <div className="space-y-5">
+            <div className="space-y-2">
               <FilterRangeGroup
                 label="Điểm tiềm năng (Potential)"
                 icon={Target}
@@ -203,14 +316,50 @@ const AdvancedFilterModal: React.FC<{
                 placeholder="0"
                 suffix="pts"
               />
+
+              <div className=""></div>
+
+              <FilterRangeGroup
+                label="Xếp hạng (Ranking)"
+                icon={Award}
+                minKey="minRanking"
+                maxKey="maxRanking"
+                onChange={handleChange}
+                placeholder="minRanking"
+              />
+
+              <div className=""></div>
+
+              <FilterRangeGroup
+                label="Tổng booking requests"
+                icon={TrendingUp}
+                minKey="minTotalBookingRequests"
+                maxKey="maxTotalBookingRequests"
+                onChange={handleChange}
+                placeholder="1"
+              />
+
+              <div className=""></div>
+
               <FilterRangeGroup
                 label="Tổng chi tiêu"
                 icon={DollarSign}
                 minKey="minTotalSpending"
                 maxKey="maxTotalSpending"
                 onChange={handleChange}
-                placeholder="0"
+                placeholder="minTotalSpending"
                 suffix="VND"
+              />
+
+              <div className=""></div>
+
+              <FilterRangeGroup
+                label="Số lần hủy bởi khách hàng"
+                icon={X}
+                minKey="minCancelledByCustomer"
+                maxKey="maxCancelledByCustomer"
+                onChange={handleChange}
+                placeholder=""
               />
             </div>
           )}

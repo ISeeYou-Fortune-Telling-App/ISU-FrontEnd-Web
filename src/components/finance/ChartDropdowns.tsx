@@ -22,7 +22,7 @@ export const YearMonthDropdowns: React.FC<YearMonthDropdownsProps> = ({
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
 
-  const YEARS = [2025, 2024, 2023];
+  const YEARS = [2026, 2025, 2024, 2023];
   const MONTHS = [
     { value: 0, label: 'Cả năm' },
     { value: 1, label: 'Tháng 1' },

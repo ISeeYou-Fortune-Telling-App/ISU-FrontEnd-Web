@@ -18,7 +18,7 @@ export interface Notification {
   recipientId: string;
   imageUrl?: string;
   metaData?: Record<string, string>;
-  isRead: boolean;
+  read: boolean;
   createdAt: string;
   updatedAt: string;
 }

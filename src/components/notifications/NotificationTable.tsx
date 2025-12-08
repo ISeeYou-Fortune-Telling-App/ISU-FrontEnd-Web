@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Trash2, Eye, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, Loader2 } from 'lucide-react';
 import { notificationService } from '@/services/notification/notification.service';
 import {
   Notification as NotificationType,
@@ -96,19 +96,26 @@ export const NotificationTable: React.FC = () => {
   };
 
   const handleViewDetail = async (notification: NotificationType) => {
-    setSelectedNotification(notification);
+    // Mark as read immediately in UI for instant feedback
+    if (!notification.read) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)),
+      );
 
-    // Mark as read if not already
-    if (!notification.isRead) {
+      // Then call API
       try {
         await notificationService.markAsRead(notification.id);
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)),
-        );
       } catch (error) {
         console.error('Error marking as read:', error);
+        // Revert on error
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, isRead: false } : n)),
+        );
       }
     }
+
+    // Open modal with updated notification
+    setSelectedNotification({ ...notification, read: true });
   };
 
   const handleDelete = async (notification: NotificationType, e: React.MouseEvent) => {
@@ -167,7 +174,7 @@ export const NotificationTable: React.FC = () => {
       className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
     >
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative">
+      <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative pt-2 pr-4">
         {isRefreshing && (
           <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center backdrop-blur-sm pointer-events-none z-10">
             <div
@@ -183,10 +190,7 @@ export const NotificationTable: React.FC = () => {
         >
           <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
             <tr>
-              <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
-                Trạng thái
-              </th>
-              <th className="w-[35%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[25%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Tiêu đề
               </th>
               <th className="w-[35%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
@@ -195,7 +199,7 @@ export const NotificationTable: React.FC = () => {
               <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Loại
               </th>
-              <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thời gian
               </th>
               <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
@@ -218,23 +222,17 @@ export const NotificationTable: React.FC = () => {
               notifications.map((notification) => (
                 <tr
                   key={notification.id}
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition ${
-                    !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                  onClick={() => handleViewDetail(notification)}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer ${
+                    notification.read === false ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
                 >
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center">
-                      {!notification.isRead && (
-                        <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                      )}
-                    </div>
-                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`text-sm ${
-                        notification.isRead
-                          ? 'text-gray-700 dark:text-gray-300'
-                          : 'text-gray-900 dark:text-white font-semibold'
+                        notification.read === false
+                          ? 'text-gray-900 dark:text-white font-semibold'
+                          : 'text-gray-700 dark:text-gray-300'
                       } line-clamp-2`}
                     >
                       {notification.notificationTitle}
@@ -261,17 +259,22 @@ export const NotificationTable: React.FC = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center space-x-2">
+                  <td className="px-4 py-3 text-center relative">
+                    {' '}
+                    {/* Thêm relative vào chính thẻ td */}
+                    {/* Badge nằm độc lập ở đây, dính chặt vào góc trên phải của ô */}
+                    {notification.read === false && (
+                      <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-sm z-10">
+                        1
+                      </span>
+                    )}
+                    {/* Nút xóa vẫn căn giữa/phải bình thường */}
+                    <div className="flex justify-end items-center pr-2">
                       <button
-                        onClick={() => handleViewDetail(notification)}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors"
-                        title="Xem chi tiết"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(notification, e)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(notification, e);
+                        }}
                         disabled={deletingId === notification.id}
                         className="text-red-500 hover:text-red-700 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Xóa thông báo"
