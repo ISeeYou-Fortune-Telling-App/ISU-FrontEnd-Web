@@ -25,7 +25,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
   seerFilters,
   onClearFilters,
 }) => {
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(0);
 
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
@@ -36,11 +36,11 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
   const [isFetchingSeers, setIsFetchingSeers] = useState(false);
 
   // Chart 1: Avg Revenue (Line Chart) - only year
-  const [avgRevenueYear, setAvgRevenueYear] = useState(new Date().getFullYear());
+  const [avgRevenueYear, setAvgRevenueYear] = useState(2026);
   const [avgSeerRevenueData, setAvgSeerRevenueData] = useState<any[]>([]);
 
   // Chart 2: Tier Distribution - separate state
-  const [tierYear, setTierYear] = useState(new Date().getFullYear());
+  const [tierYear, setTierYear] = useState(2026);
   const [tierMonth, setTierMonth] = useState(0);
   const [tierDistribution, setTierDistribution] = useState<any>({});
 

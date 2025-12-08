@@ -185,21 +185,21 @@ export default function ChatPage() {
 
                     {/* --- DATAFRAME --- */}
                     {m.type === 'dataframe' && (
-                      <div className="overflow-hidden rounded-2xl border border-gray-400 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
+                      <div className="overflow-hidden rounded-2xl border border-gray-400 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg max-w-full">
                         <div className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center gap-2">
                           <BarChart3 className="w-4 h-4" />
                           <span className="font-semibold text-sm">
                             {m.data?.title || 'Kết quả truy vấn'}
                           </span>
                         </div>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-sm">
+                        <div className="overflow-x-auto max-w-full">
+                          <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-gray-50 dark:bg-gray-700/50">
                                 {m.data?.columns?.map((col: string) => (
                                   <th
                                     key={col}
-                                    className="px-4 py-3 font-semibold text-left text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700"
+                                    className="px-4 py-3 font-semibold text-left text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap"
                                   >
                                     {col}
                                   </th>
@@ -215,7 +215,7 @@ export default function ChatPage() {
                                   {m.data.columns.map((col: string) => (
                                     <td
                                       key={col}
-                                      className="px-4 py-3 text-gray-900 dark:text-gray-100"
+                                      className="px-4 py-3 text-gray-900 dark:text-gray-100 whitespace-nowrap"
                                     >
                                       {row[col]}
                                     </td>
