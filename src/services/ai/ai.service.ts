@@ -8,7 +8,7 @@ export interface ChatEvent {
 }
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_API_URL + '/ai-analysis',
   headers: {
     'Content-Type': 'application/json',
   },

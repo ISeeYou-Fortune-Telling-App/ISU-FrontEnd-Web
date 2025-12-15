@@ -5,6 +5,7 @@ import { X, Loader2 } from 'lucide-react';
 import { Conversation } from '@/types/chatHistory/chatHistory.type';
 import { MessagesService } from '@/services/messages/messages.service';
 import { Message } from '@/types/messages/messages.type';
+import { useAdminChatContext } from '@/contexts/AdminChatContext';
 
 export const ChatHistoryModal: React.FC<{
   conversation: Conversation;
@@ -13,6 +14,33 @@ export const ChatHistoryModal: React.FC<{
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Use shared socket context
+  const { socketConnected, subscribeToMessages, joinConversation } = useAdminChatContext();
+
+  // ✅ Subscribe to messages
+  useEffect(() => {
+    console.log(
+      '📝 [ChatHistoryModal] Subscribing to messages for conversation:',
+      conversation.conversationId,
+    );
+    const unsubscribe = subscribeToMessages((msg) => {
+      console.log('🔔 [ChatHistoryModal] New message received:', msg);
+
+      // Chỉ thêm tin nhắn nếu thuộc conversation đang xem
+      if (msg.conversationId === conversation.conversationId) {
+        setMessages((prev) => {
+          // Kiểm tra duplicate
+          const exists = prev.some((m) => m.id === msg.id);
+          if (exists) return prev;
+
+          return [...prev, msg as unknown as Message];
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, [socketConnected, subscribeToMessages, conversation.conversationId]);
 
   useEffect(() => {
     // Disable body scroll khi modal mở
@@ -41,7 +69,11 @@ export const ChatHistoryModal: React.FC<{
     };
 
     fetchMessages();
-  }, [conversation.conversationId]);
+
+    // ✅ Join conversation để nhận real-time updates
+    console.log('🔌 [ChatHistoryModal] Joining conversation:', conversation.conversationId);
+    joinConversation(conversation.conversationId);
+  }, [conversation.conversationId, joinConversation]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

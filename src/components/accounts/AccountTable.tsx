@@ -1,7 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Eye, ChevronLeft, ChevronRight, ChevronDown, Loader2, X } from 'lucide-react';
+import Swal from 'sweetalert2';
+import {
+  Search,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Loader2,
+  X,
+  Check,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AccountService } from '@/services/account/account.service';
 import { ROLE_LABELS, STATUS_LABELS } from '@/constants/account.constant';
@@ -26,9 +36,16 @@ export const AccountTable: React.FC = () => {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement | null>(null);
+
+  // Prevent hydration mismatch from browser extensions
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Scroll to top when page changes
   useScrollToTopOnPageChange(paging.page, tableRef);
@@ -103,6 +120,190 @@ export const AccountTable: React.FC = () => {
   const goToPrevPage = () => {
     if (paging.page > 1 && !isRefreshing) {
       setPaging((prev) => ({ ...prev, page: prev.page - 1 }));
+    }
+  };
+
+  const handleApprove = async (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (actionLoading) return;
+
+    const result = await Swal.fire({
+      title: 'Duyệt tài khoản?',
+      text: 'Bạn có chắc muốn duyệt tài khoản này?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Duyệt',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setActionLoading(userId);
+      await AccountService.approveSeer(userId);
+      await fetchAccounts(paging.page, false);
+      await Swal.fire({
+        title: 'Thành công!',
+        text: 'Đã duyệt tài khoản thành công',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } catch (error) {
+      console.error('❌ Lỗi khi duyệt tài khoản:', error);
+      await Swal.fire({
+        title: 'Lỗi!',
+        text: 'Có lỗi xảy ra khi duyệt tài khoản',
+        icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (actionLoading) return;
+
+    const result = await Swal.fire({
+      title: 'Từ chối tài khoản?',
+      text: 'Bạn có chắc muốn từ chối tài khoản này?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Từ chối',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setActionLoading(userId);
+      await AccountService.updateUserStatus(userId, 'REJECTED');
+      await fetchAccounts(paging.page, false);
+      await Swal.fire({
+        title: 'Thành công!',
+        text: 'Đã từ chối tài khoản',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } catch (error) {
+      console.error('❌ Lỗi khi từ chối tài khoản:', error);
+      await Swal.fire({
+        title: 'Lỗi!',
+        text: 'Có lỗi xảy ra khi từ chối tài khoản',
+        icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleBlock = async (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (actionLoading) return;
+
+    const result = await Swal.fire({
+      title: 'Khóa tài khoản?',
+      text: 'Bạn có chắc muốn khóa tài khoản này?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Khóa',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setActionLoading(userId);
+      await AccountService.updateUserStatus(userId, 'BLOCKED');
+      await fetchAccounts(paging.page, false);
+      await Swal.fire({
+        title: 'Thành công!',
+        text: 'Đã khóa tài khoản',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } catch (error) {
+      console.error('❌ Lỗi khi khóa tài khoản:', error);
+      await Swal.fire({
+        title: 'Lỗi!',
+        text: 'Có lỗi xảy ra khi khóa tài khoản',
+        icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUnblock = async (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (actionLoading) return;
+
+    const result = await Swal.fire({
+      title: 'Mở khóa tài khoản?',
+      text: 'Bạn có chắc muốn mở khóa tài khoản này?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Mở khóa',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setActionLoading(userId);
+      await AccountService.updateUserStatus(userId, 'ACTIVE');
+      await fetchAccounts(paging.page, false);
+      await Swal.fire({
+        title: 'Thành công!',
+        text: 'Đã mở khóa tài khoản',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } catch (error) {
+      console.error('❌ Lỗi khi mở khóa tài khoản:', error);
+      await Swal.fire({
+        title: 'Lỗi!',
+        text: 'Có lỗi xảy ra khi mở khóa tài khoản',
+        icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -300,20 +501,74 @@ export const AccountTable: React.FC = () => {
                     {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                   </td>
                   <td className="px-6 py-3 text-center text-sm font-medium">
-                    <button
-                      title="Xem chi tiết"
-                      onClick={async () => {
-                        try {
-                          const detail = await AccountService.getAccountById(user.id);
-                          setSelectedUser(detail.data);
-                        } catch (error) {
-                          console.error('Lỗi khi tải chi tiết người dùng:', error);
-                        }
-                      }}
-                      className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
-                    >
-                      <Eye className="w-5 h-5 inline-block" />
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      {user.status === 'UNVERIFIED' && (
+                        <>
+                          <button
+                            title="Duyệt tài khoản"
+                            onClick={(e) => handleApprove(user.id, e)}
+                            disabled={actionLoading === user.id}
+                            className="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {actionLoading === user.id ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <Check className="w-5 h-5" />
+                            )}
+                          </button>
+                          <button
+                            title="Từ chối tài khoản"
+                            onClick={(e) => handleReject(user.id, e)}
+                            disabled={actionLoading === user.id}
+                            className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </>
+                      )}
+                      {user.status === 'ACTIVE' && (
+                        <button
+                          title="Khóa tài khoản"
+                          onClick={(e) => handleBlock(user.id, e)}
+                          disabled={actionLoading === user.id}
+                          className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {actionLoading === user.id ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <X className="w-5 h-5" />
+                          )}
+                        </button>
+                      )}
+                      {user.status === 'BLOCKED' && (
+                        <button
+                          title="Mở khóa tài khoản"
+                          onClick={(e) => handleUnblock(user.id, e)}
+                          disabled={actionLoading === user.id}
+                          className="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {actionLoading === user.id ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Check className="w-5 h-5" />
+                          )}
+                        </button>
+                      )}
+                      <button
+                        title="Xem chi tiết"
+                        onClick={async () => {
+                          try {
+                            const detail = await AccountService.getAccountById(user.id);
+                            setSelectedUser(detail.data);
+                          } catch (error) {
+                            console.error('Lỗi khi tải chi tiết người dùng:', error);
+                          }
+                        }}
+                        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </motion.tr>
               ))

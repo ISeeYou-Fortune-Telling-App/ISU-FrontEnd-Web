@@ -14,7 +14,10 @@ const StatCardAccount: React.FC<StatCardAccountProps> = ({ value, label, colorCl
   const displayValue: string = value.toLocaleString('vi-VN');
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700">
+    <div
+      className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-400 dark:border-gray-700"
+      suppressHydrationWarning
+    >
       <p className={`text-2xl font-semibold ${colorClass}`}>{displayValue}</p>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{label}</p>
     </div>
@@ -86,6 +89,7 @@ export const AccountStats: React.FC = () => {
             <div
               key={index}
               className="bg-gray-100 dark:bg-gray-700 h-24 rounded-xl animate-pulse"
+              suppressHydrationWarning
             ></div>
           ))}
       </>

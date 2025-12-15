@@ -6,7 +6,7 @@ import { MessagesService } from '@/services/messages/messages.service';
 import type { ConversationSession, ConversationParams } from '@/types/messages/messages.type';
 import { useDebounce } from '@/hooks/useDebounce';
 import { MessageDetailPanel } from './MessageDetailPanel';
-import { useAdminChat } from '@/hooks/useAdminChat';
+import { useAdminChatContext } from '@/contexts/AdminChatContext';
 import { useCometChatGlobalListener } from '@/hooks/useCometChatGlobalListener';
 import { VideoCall } from './VideoCall';
 
@@ -133,7 +133,8 @@ export const MessageTable: React.FC = () => {
 
       const formatted = filtered.map((c: any) => ({
         ...c,
-        unreadForAdmin: c.adminUnreadCount > 0,
+        unreadForAdmin: (c.adminUnreadCount || 0) > 0,
+        adminUnreadCount: c.adminUnreadCount || 0,
       }));
 
       // Check nếu không còn data
@@ -251,22 +252,15 @@ export const MessageTable: React.FC = () => {
   // Callback để xử lý tin nhắn mới
   const handleNewMessage = useCallback(
     (msg: any) => {
-      console.log('📨 New message received:', msg);
       // Lấy userId từ sessionStorage hoặc localStorage
       const currentUserId =
         sessionStorage.getItem('userId') || localStorage.getItem('userId') || adminId;
-      // So sánh cả string và convert về cùng kiểu, HOẶC check messageType là USER (từ admin)
+
+      // Kiểm tra xem tin nhắn có phải từ admin không
       const isMyMessage =
         msg.senderId === currentUserId ||
         msg.senderId?.toString() === currentUserId?.toString() ||
-        msg.messageType === 'USER'; // Tin nhắn từ admin có messageType là USER
-
-      console.log('🔍 Message check:', {
-        senderId: msg.senderId,
-        currentUserId,
-        messageType: msg.messageType,
-        isMyMessage,
-      });
+        msg.senderRole === 'ADMIN';
 
       // Lưu vị trí cuộn hiện tại
       if (conversationListRef.current) {
@@ -275,31 +269,35 @@ export const MessageTable: React.FC = () => {
 
       setConversations((prev) => {
         const idx = prev.findIndex(
-          (c) => c.conversationId === msg.conversationId || c.id === msg.conversationId,
+          (c) => c.id === msg.conversationId || c.conversationId === msg.conversationId,
         );
 
         if (idx !== -1) {
           // Conversation đã tồn tại trong list
           const isActive = selectedConvId === msg.conversationId || selectedConvId === msg.id;
 
-          console.log('📊 Unread count logic:', {
-            isActive,
-            isMyMessage,
-            currentUnread: prev[idx].adminUnreadCount,
-            willIncrease: !isActive && !isMyMessage,
-          });
+          // Tính toán unread count mới
+          const currentUnread = prev[idx].adminUnreadCount || 0;
+          let newUnreadCount = currentUnread;
+          let newUnreadForAdmin = prev[idx].unreadForAdmin || false;
+
+          if (isActive) {
+            // Nếu conversation đang active, reset unread
+            newUnreadCount = 0;
+            newUnreadForAdmin = false;
+          } else if (!isMyMessage) {
+            // Nếu không phải tin nhắn của admin và conversation không active, tăng unread
+            newUnreadCount = currentUnread + 1;
+            newUnreadForAdmin = true;
+          }
+          // Nếu là tin nhắn của admin, giữ nguyên unread count
 
           const updated = {
             ...prev[idx],
             lastMessageContent: msg.textContent,
             lastMessageTime: msg.createdAt,
-            // Cập nhật unread count - CHỈ tăng khi KHÔNG phải tin nhắn của mình VÀ conversation không active
-            adminUnreadCount: isActive
-              ? 0
-              : isMyMessage
-              ? prev[idx].adminUnreadCount
-              : (prev[idx].adminUnreadCount || 0) + 1,
-            unreadForAdmin: isActive ? false : isMyMessage ? prev[idx].unreadForAdmin : true,
+            adminUnreadCount: newUnreadCount,
+            unreadForAdmin: newUnreadForAdmin,
           };
 
           const newList = [...prev];
@@ -310,7 +308,6 @@ export const MessageTable: React.FC = () => {
           return newList;
         } else {
           // Conversation mới - reload để lấy data đầy đủ
-          console.log('🆕 Conversation mới, đang reload...');
           setTimeout(() => fetchConversations(), 500);
           return prev;
         }
@@ -319,10 +316,21 @@ export const MessageTable: React.FC = () => {
     [selectedConvId, adminId],
   );
 
-  const { socketConnected, getMessages, joinConversation, sendMessage, clearMessages } =
-    useAdminChat({
-      onNewMessage: handleNewMessage,
-    });
+  // ✅ Use shared socket context
+  const {
+    socketConnected,
+    subscribeToMessages,
+    joinConversation,
+    sendMessage,
+    getMessages,
+    clearMessages,
+  } = useAdminChatContext();
+
+  // ✅ Subscribe to messages
+  useEffect(() => {
+    const unsubscribe = subscribeToMessages(handleNewMessage);
+    return unsubscribe;
+  }, [socketConnected, subscribeToMessages, handleNewMessage]);
 
   const handleSelectConversation = (convId: string) => {
     if (messageMode === 'group') {
@@ -439,7 +447,7 @@ export const MessageTable: React.FC = () => {
                 <>
                   {conversations.map((conv) => (
                     <div
-                      key={conv.id}
+                      key={`${conv.id}-${conv.adminUnreadCount}-${conv.unreadForAdmin}`}
                       onClick={() => handleSelectConversation(conv.id)}
                       className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition border ${
                         selectedConvId === conv.id || selectedConversations.has(conv.id)

@@ -8,9 +8,10 @@ import {
 } from '@/types/response.type';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_GATEWAY_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_DEPLOY,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true', // ✅ Fix ngrok browser warning
   },
   withCredentials: false,
 });
@@ -81,12 +82,12 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_GATEWAY_API_URL}/core/auth/refresh`,
-          {
-            headers: { Authorization: `Bearer ${refreshToken}` },
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_GATEWAY_DEPLOY}/core/auth/refresh`, {
+          headers: {
+            Authorization: `Bearer ${refreshToken}`,
+            'ngrok-skip-browser-warning': 'true',
           },
-        );
+        });
 
         const { token, refreshToken: newRefreshToken } = res.data;
 

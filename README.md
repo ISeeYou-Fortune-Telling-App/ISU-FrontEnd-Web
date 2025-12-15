@@ -171,7 +171,7 @@ Create a `.env.local` file in the root directory:
 
 ```env
 # Gateway API URL
-NEXT_PUBLIC_GATEWAY_API_URL=http://localhost:8080
+NEXT_PUBLIC_GATEWAY_DEPLOY=http://localhost:8080
 
 # Gateway Deploy URL (for production)
 NEXT_PUBLIC_GATEWAY_DEPLOY=https://your-production-gateway.com
@@ -287,7 +287,7 @@ Socket.IO is used for real-time features:
 ### Cannot login
 
 - Verify backend services are running
-- Check `NEXT_PUBLIC_GATEWAY_API_URL` in `.env.local`
+- Check `NEXT_PUBLIC_GATEWAY_DEPLOY` in `.env.local`
 - Clear browser cache and localStorage
 - Check browser console for errors
 
@@ -393,7 +393,7 @@ npm run start
 Ensure all required environment variables are set in production:
 
 ```env
-NEXT_PUBLIC_GATEWAY_API_URL=https://your-production-gateway.com
+NEXT_PUBLIC_GATEWAY_DEPLOY=https://your-production-gateway.com
 NEXT_PUBLIC_COMETCHAT_APP_ID=your_production_app_id
 NEXT_PUBLIC_COMETCHAT_AUTH_KEY=your_production_auth_key
 ```

@@ -10,6 +10,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { Badge } from '@/components/common/Badge';
 import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useAdminChatContext } from '@/contexts/AdminChatContext';
 import Swal from 'sweetalert2';
 
 const ITEMS_PER_PAGE = 10;
@@ -43,6 +44,61 @@ const ChatHistoryTable: React.FC = () => {
   const debouncedSearch = useDebounce(searchTerm, 1000);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ Use shared socket context
+  const { socketConnected, subscribeToMessages } = useAdminChatContext();
+
+  // ✅ Subscribe to messages
+  useEffect(() => {
+    console.log('📝 [ChatHistoryTable] Subscribing to messages...');
+    const unsubscribe = subscribeToMessages((msg) => {
+      console.log('🔔 [ChatHistoryTable] New message received:', msg);
+      console.log('🔌 [ChatHistoryTable] Socket connected:', socketConnected);
+      console.log('📦 [ChatHistoryTable] Current conversations count:', conversations.length);
+
+      // Update conversation list: đẩy conversation lên đầu và tăng unread count
+      setConversations((prev) => {
+        const convId = msg.conversationId;
+        const existingConv = prev.find((c) => c.conversationId === convId);
+
+        if (!existingConv) {
+          // Nếu conversation chưa có trong list, fetch lại
+          console.log('⚠️ [ChatHistoryTable] Conversation not found, refetching...');
+          fetchConversations(1, false);
+          return prev;
+        }
+
+        // Tăng unread count (giả sử admin chưa đọc)
+        const isFromAdmin = msg.senderId === localStorage.getItem('userId');
+        const updatedConv = {
+          ...existingConv,
+          lastMessageTime: msg.createdAt,
+          lastMessageContent: msg.textContent,
+          adminUnreadCount: isFromAdmin
+            ? existingConv.adminUnreadCount
+            : (existingConv.adminUnreadCount || 0) + 1,
+        };
+
+        console.log('✅ [ChatHistoryTable] Updated conversation:', updatedConv);
+        console.log('📊 [ChatHistoryTable] Admin unread count:', updatedConv.adminUnreadCount);
+
+        // Nếu đang xem conversation này (selectedConversation), không đẩy lên top, chỉ update in-place
+        if (selectedConversation?.id === convId) {
+          console.log(
+            '👁️ [ChatHistoryTable] Currently viewing this conversation, updating in-place',
+          );
+          return prev.map((c) => (c.conversationId === convId ? updatedConv : c));
+        }
+
+        // Nếu không đang xem, đẩy lên đầu
+        console.log('⬆️ [ChatHistoryTable] Moving conversation to top');
+        const filtered = prev.filter((c) => c.conversationId !== convId);
+        return [updatedConv, ...filtered];
+      });
+    });
+
+    return unsubscribe;
+  }, [socketConnected, subscribeToMessages, conversations.length, selectedConversation]);
 
   // Scroll to top when page changes
   useScrollToTopOnPageChange(paging.page, tableRef);
@@ -283,18 +339,25 @@ const ChatHistoryTable: React.FC = () => {
             {conversations.map((conv) => (
               <tr key={conv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="px-4 py-3 text-sm">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <img
-                      src={conv.seerAvatarUrl || '/default_avatar.jpg'}
-                      alt={conv.seerName || 'Seer'}
-                      className="w-8 h-8 rounded-full object-cover border border-gray-300 dark:border-gray-600"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {conv.seerName || 'Không rõ'}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <img
+                        src={conv.seerAvatarUrl || '/default_avatar.jpg'}
+                        alt={conv.seerName || 'Seer'}
+                        className="w-8 h-8 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                      />
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {conv.seerName || 'Không rõ'}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Nhà tiên tri</div>
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Nhà tiên tri</div>
                     </div>
+                    {(conv.adminUnreadCount ?? 0) > 0 && (
+                      <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full ml-2">
+                        {conv.adminUnreadCount}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <img

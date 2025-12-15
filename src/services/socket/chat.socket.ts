@@ -5,7 +5,7 @@ export const createChatSocket = (adminId: string) => {
   console.log('🔌 Creating socket connection for admin:', adminId);
 
   // Use environment variable or fallback to localhost
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const baseUrl = process.env.NEXT_PUBLIC_GATEWAY_DEPLOY || process.env.NEXT_PUBLIC_API_URL;
   console.log('🔌 Socket base URL:', baseUrl);
 
   // Validate adminId
@@ -27,6 +27,9 @@ export const createChatSocket = (adminId: string) => {
     reconnectionDelay: 1000,
     timeout: 20000,
     forceNew: true,
+    extraHeaders: {
+      'ngrok-skip-browser-warning': 'true',
+    },
   });
 
   console.log('🔌 Socket config:', {
