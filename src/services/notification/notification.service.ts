@@ -1,6 +1,5 @@
 // notification.service.ts
 
-import axios, { AxiosRequestConfig, AxiosError } from 'axios';
 import { SimpleResponse } from '@/types/response.type';
 import { apiFetch } from '../api-client';
 import {
@@ -78,6 +77,16 @@ export const notificationService = {
         method: 'PATCH',
       },
     );
+    return res;
+  },
+
+  /**
+   * Đánh dấu tất cả notification đã đọc
+   */
+  markAllAsRead: async (): Promise<SimpleResponse> => {
+    const res = await apiFetch<SimpleResponse>('/notification/mark-all-read', {
+      method: 'PATCH',
+    });
     return res;
   },
 

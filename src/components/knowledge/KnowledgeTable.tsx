@@ -308,7 +308,8 @@ export const KnowledgeTable: React.FC = () => {
               knowledges.map((k) => (
                 <tr
                   key={k.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
+                  onClick={() => handleViewDetail(k.id)}
+                  className="hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition duration-150"
                 >
                   <td className="px-4 py-2 w-[290px]">
                     <div className="flex items-start space-x-3">
@@ -392,7 +393,10 @@ export const KnowledgeTable: React.FC = () => {
                   <td className="px-4 py-3 text-center w-[150px] space-x-1">
                     <button
                       title="Xem chi tiết"
-                      onClick={() => handleViewDetail(k.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetail(k.id);
+                      }}
                       disabled={loadingDetail}
                       className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors disabled:opacity-50"
                     >
@@ -405,7 +409,8 @@ export const KnowledgeTable: React.FC = () => {
 
                     <button
                       title="Xóa bài viết"
-                      onClick={async () => {
+                      onClick={async (e) => {
+                        e.stopPropagation();
                         const result = await Swal.fire({
                           title: 'Xác nhận xóa',
                           text: `Bạn có chắc chắn muốn xóa bài viết "${k.title}"?`,

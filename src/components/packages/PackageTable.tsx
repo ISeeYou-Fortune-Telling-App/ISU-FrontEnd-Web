@@ -396,7 +396,7 @@ export const PackageTable: React.FC = () => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.15, delay: index * 0.02 }}
                   onClick={() => handleViewDetail(pkg)}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 cursor-pointer"
+                  className="hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition duration-150"
                 >
                   {/* 🧙‍♂️ Tác giả */}
                   <td className="px-4 py-3">

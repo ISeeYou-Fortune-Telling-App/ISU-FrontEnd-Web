@@ -89,7 +89,7 @@ const RevenueChart: React.FC<{
 };
 
 export const SystemRevenueTab: React.FC = () => {
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedYear, setSelectedYear] = useState(2025);
   const [revenueChartData, setRevenueChartData] = useState<any[]>([]);
 
   useEffect(() => {

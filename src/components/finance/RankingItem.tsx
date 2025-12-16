@@ -40,7 +40,7 @@ const RankingItem: React.FC<RankingItemProps> = ({ item, type }) => {
 
   const handleViewDetail = () => {
     const month = item.month || new Date().getMonth() + 1;
-    const year = item.year || new Date().getFullYear();
+    const year = item.year || 2025;
 
     // Save to sessionStorage for detail page to use
     if (type === 'seer') {

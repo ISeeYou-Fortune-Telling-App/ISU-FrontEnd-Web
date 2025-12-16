@@ -302,7 +302,7 @@ const SeerDetailContent: React.FC = () => {
         return storedYear;
       }
     }
-    return new Date().getFullYear();
+    return 2025;
   });
 
   const [seerData, setSeerData] = useState<any>(null);
@@ -321,31 +321,8 @@ const SeerDetailContent: React.FC = () => {
       console.log('📅 Fetching seer detail with:', { seerId, month, year });
 
       try {
-        // WORKAROUND: Gateway đang ăn mất field 'data', gọi trực tiếp backend service
-        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-        const directBackendUrl = `http://localhost:8080/report/seer-performance?seerId=${seerId}&month=${month}&year=${year}`;
-
-        const testResponse = await fetch(directBackendUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const testData = await testResponse.json();
-        console.log('🧪 Direct backend response:', testData);
-
         const seerResponse = await ReportService.getSeerPerformance(seerId, month, year);
-        console.log('🔍 Service response:', seerResponse);
-
-        // Backend trả về {statusCode, message, data}, nhưng service chỉ trả về {statusCode, message}
-        // Có thể apiFetch đã xử lý sai. Tạm thời dùng direct fetch data
-        if (testData && testData.data) {
-          setSeerData(testData.data);
-        } else {
-          // Fallback: nếu seerResponse.data tồn tại thì dùng, không thì dùng toàn bộ seerResponse
-          const actualData = seerResponse.data || seerResponse;
-          setSeerData(actualData);
-        }
+        setSeerData(seerResponse.data);
       } catch (error) {
         console.error('Error fetching seer detail:', error);
       } finally {

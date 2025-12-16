@@ -345,13 +345,13 @@ export const CertificateTable: React.FC = () => {
               <th className="w-[150px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Danh mục
               </th>
-              <th className="w-[90px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+              <th className="w-[70px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Ngày cấp
               </th>
               <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Trạng thái
               </th>
-              <th className="w-[115px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+              <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Thao tác
               </th>
             </tr>
@@ -381,7 +381,8 @@ export const CertificateTable: React.FC = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.15, delay: index * 0.02 }}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  onClick={() => setSelectedCertificate(cert)}
+                  className="hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition"
                 >
                   <td className="px-6 py-4 w-[280px]">
                     <div className="flex items-start space-x-3">
@@ -451,14 +452,20 @@ export const CertificateTable: React.FC = () => {
                     <div className="flex justify-end space-x-2">
                       <button
                         title="Xem chi tiết chứng chỉ"
-                        onClick={() => setSelectedCertificate(cert)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCertificate(cert);
+                        }}
                         className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white p-1"
                       >
                         <Eye className="w-5 h-5" />
                       </button>
                       <button
                         title="Tải xuống"
-                        onClick={() => handleDownload(cert)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(cert);
+                        }}
                         className="text-blue-500 hover:text-blue-700 p-1"
                       >
                         <Download className="w-5 h-5" />
@@ -467,14 +474,20 @@ export const CertificateTable: React.FC = () => {
                         <>
                           <button
                             title="Duyệt"
-                            onClick={() => setSelectedCertificate(cert)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCertificate(cert);
+                            }}
                             className="text-green-500 hover:text-green-700 p-1"
                           >
                             <Check className="w-5 h-5" />
                           </button>
                           <button
                             title="Từ chối"
-                            onClick={() => setSelectedCertificate(cert)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCertificate(cert);
+                            }}
                             className="text-red-500 hover:text-red-700 p-1"
                           >
                             <X className="w-5 h-5" />
@@ -483,7 +496,10 @@ export const CertificateTable: React.FC = () => {
                       )}
                       <button
                         title="Xóa chứng chỉ"
-                        onClick={() => handleDelete(cert)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(cert);
+                        }}
                         className="text-red-600 hover:text-red-800 p-1"
                       >
                         <Trash2 className="w-5 h-5" />

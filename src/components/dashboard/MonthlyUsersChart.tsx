@@ -31,7 +31,7 @@ const MONTH_NAMES: Record<string, string> = {
   '12': 'T12',
 };
 
-const YEARS = [2026, 2025, 2024];
+const YEARS = [2025, 2026, 2024];
 
 const MonthlyUsersChart: React.FC = () => {
   const [chartData, setChartData] = useState<MonthlyChartData[]>([]);

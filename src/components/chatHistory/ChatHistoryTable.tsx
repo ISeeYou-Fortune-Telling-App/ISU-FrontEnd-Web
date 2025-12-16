@@ -337,7 +337,11 @@ const ChatHistoryTable: React.FC = () => {
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-400 dark:divide-gray-700">
             {conversations.map((conv) => (
-              <tr key={conv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <tr
+                key={conv.id}
+                onClick={() => setSelectedConversation(conv)}
+                className="hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition"
+              >
                 <td className="px-4 py-3 text-sm">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
@@ -406,14 +410,20 @@ const ChatHistoryTable: React.FC = () => {
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-medium space-x-2">
                   <button
-                    onClick={() => setSelectedConversation(conv)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedConversation(conv);
+                    }}
                     className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1 transition-colors"
                     title="Xem chi tiết"
                   >
                     <Eye className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => handleExtendSession(conv.conversationId)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleExtendSession(conv.conversationId);
+                    }}
                     disabled={conv.status === 'ENDED' || conv.status === 'CANCELLED'}
                     className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Gia hạn phiên"
@@ -421,7 +431,10 @@ const ChatHistoryTable: React.FC = () => {
                     <Clock className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => handleEndSession(conv.conversationId)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEndSession(conv.conversationId);
+                    }}
                     disabled={conv.status === 'ENDED' || conv.status === 'CANCELLED'}
                     className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Kết thúc phiên"

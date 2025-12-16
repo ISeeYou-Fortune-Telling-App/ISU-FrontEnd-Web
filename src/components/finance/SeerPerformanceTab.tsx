@@ -25,7 +25,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
   seerFilters,
   onClearFilters,
 }) => {
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedYear, setSelectedYear] = useState(2025);
   const [selectedMonth, setSelectedMonth] = useState(0);
 
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
@@ -36,11 +36,11 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
   const [isFetchingSeers, setIsFetchingSeers] = useState(false);
 
   // Chart 1: Avg Revenue (Line Chart) - only year
-  const [avgRevenueYear, setAvgRevenueYear] = useState(2026);
+  const [avgRevenueYear, setAvgRevenueYear] = useState(2025);
   const [avgSeerRevenueData, setAvgSeerRevenueData] = useState<any[]>([]);
 
   // Chart 2: Tier Distribution - separate state
-  const [tierYear, setTierYear] = useState(2026);
+  const [tierYear, setTierYear] = useState(2025);
   const [tierMonth, setTierMonth] = useState(0);
   const [tierDistribution, setTierDistribution] = useState<any>({});
 
@@ -267,7 +267,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
                     onClick={() => setIsYearDropdownOpen(false)}
                   />
                   <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg shadow-lg z-20 overflow-hidden">
-                    {[2026, 2025, 2024, 2023].map((year) => (
+                    {[2025, 2026, 2024, 2023].map((year) => (
                       <button
                         key={year}
                         onClick={() => {

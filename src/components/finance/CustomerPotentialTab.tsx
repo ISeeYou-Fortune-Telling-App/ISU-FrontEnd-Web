@@ -25,7 +25,7 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
   customerFilters,
   onClearFilters,
 }) => {
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedYear, setSelectedYear] = useState(2025);
   const [selectedMonth, setSelectedMonth] = useState(0);
   const [seerSearch, setSeerSearch] = useState('');
 
@@ -37,11 +37,11 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
   const [isFetchingCustomers, setIsFetchingCustomers] = useState(false);
 
   // Chart 1: Avg Spending (Line Chart) - only year
-  const [avgSpendingYear, setAvgSpendingYear] = useState(2026);
+  const [avgSpendingYear, setAvgSpendingYear] = useState(2025);
   const [avgCustomerSpendingData, setAvgCustomerSpendingData] = useState<any[]>([]);
 
   // Chart 2: Tier Distribution - separate state
-  const [tierYear, setTierYear] = useState(2026);
+  const [tierYear, setTierYear] = useState(2025);
   const [tierMonth, setTierMonth] = useState(0);
   const [tierDistribution, setTierDistribution] = useState<any>({});
 
@@ -271,7 +271,7 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
                     onClick={() => setIsYearDropdownOpen(false)}
                   />
                   <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg shadow-lg z-20 overflow-hidden">
-                    {[2026, 2025, 2024, 2023].map((year) => (
+                    {[2025, 2026, 2024, 2023].map((year) => (
                       <button
                         key={year}
                         onClick={() => {

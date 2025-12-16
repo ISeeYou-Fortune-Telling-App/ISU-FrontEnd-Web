@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Trash2, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, Loader2, CheckCheck } from 'lucide-react';
 import { notificationService } from '@/services/notification/notification.service';
 import {
   Notification as NotificationType,
@@ -43,6 +43,7 @@ export const NotificationTable: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<NotificationType | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
 
   const tableRef = useRef<HTMLDivElement | null>(null);
 
@@ -99,7 +100,7 @@ export const NotificationTable: React.FC = () => {
     // Mark as read immediately in UI for instant feedback
     if (!notification.read) {
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)),
+        prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)),
       );
 
       // Then call API
@@ -109,7 +110,7 @@ export const NotificationTable: React.FC = () => {
         console.error('Error marking as read:', error);
         // Revert on error
         setNotifications((prev) =>
-          prev.map((n) => (n.id === notification.id ? { ...n, isRead: false } : n)),
+          prev.map((n) => (n.id === notification.id ? { ...n, read: false } : n)),
         );
       }
     }
@@ -164,15 +165,105 @@ export const NotificationTable: React.FC = () => {
     }
   };
 
+  const handleMarkAsRead = async (notification: NotificationType, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (notification.read) return;
+
+    try {
+      // Update UI immediately
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)),
+      );
+
+      // Call API
+      await notificationService.markAsRead(notification.id);
+    } catch (error) {
+      console.error('Error marking as read:', error);
+      // Revert on error
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, read: false } : n)),
+      );
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadCount = notifications.filter((n) => !n.read).length;
+    if (unreadCount === 0) return;
+
+    try {
+      setMarkingAllAsRead(true);
+
+      // Update UI immediately
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+
+      // Call API
+      await notificationService.markAllAsRead();
+
+      await Swal.fire({
+        title: 'Thành công!',
+        text: `Đã đánh dấu ${unreadCount} thông báo là đã đọc.`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } catch (error: any) {
+      console.error('Error marking all as read:', error);
+      // Revert on error
+      await fetchNotifications(paging.page, false);
+
+      Swal.fire({
+        title: 'Lỗi!',
+        text: error?.response?.data?.message || 'Không thể đánh dấu tất cả thông báo',
+        icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } finally {
+      setMarkingAllAsRead(false);
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div
       ref={tableRef}
       className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
     >
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Thông báo</h2>
+          {unreadCount > 0 && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Bạn có {unreadCount} thông báo chưa đọc
+            </p>
+          )}
+        </div>
+
+        {unreadCount > 0 && (
+          <button
+            onClick={handleMarkAllAsRead}
+            disabled={markingAllAsRead}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {markingAllAsRead ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCheck className="w-4 h-4" />
+            )}
+            Đánh dấu tất cả đã đọc
+          </button>
+        )}
+      </div>
+
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-400 dark:border-gray-700 relative pt-2 pr-4">
         {isRefreshing && (
@@ -260,16 +351,23 @@ export const NotificationTable: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center relative">
-                    {' '}
-                    {/* Thêm relative vào chính thẻ td */}
                     {/* Badge nằm độc lập ở đây, dính chặt vào góc trên phải của ô */}
                     {notification.read === false && (
                       <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-sm z-10">
                         1
                       </span>
                     )}
-                    {/* Nút xóa vẫn căn giữa/phải bình thường */}
-                    <div className="flex justify-end items-center pr-2">
+                    {/* Các nút thao tác */}
+                    <div className="flex justify-end items-center gap-1 pr-2">
+                      {!notification.read && (
+                        <button
+                          onClick={(e) => handleMarkAsRead(notification, e)}
+                          className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
+                          title="Đánh dấu đã đọc"
+                        >
+                          <CheckCheck className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

@@ -466,7 +466,15 @@ export const AccountTable: React.FC = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.15, delay: index * 0.02 }}
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 ${
+                  onClick={async () => {
+                    try {
+                      const detail = await AccountService.getAccountById(user.id);
+                      setSelectedUser(detail.data);
+                    } catch (error) {
+                      console.error('Lỗi khi tải chi tiết người dùng:', error);
+                    }
+                  }}
+                  className={`hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition duration-150 ${
                     isRefreshing ? 'opacity-50 pointer-events-none' : ''
                   }`}
                 >

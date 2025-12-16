@@ -207,7 +207,7 @@ const CustomerDetailContent: React.FC = () => {
         return storedYear;
       }
     }
-    return new Date().getFullYear();
+    return 2025;
   });
 
   const [customerData, setCustomerData] = useState<CustomerPotential | null>(null);
@@ -363,7 +363,6 @@ const CustomerDetailContent: React.FC = () => {
               }}
               className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
-              <option value={2026}>Năm 2026</option>
               <option value={2025}>Năm 2025</option>
               <option value={2024}>Năm 2024</option>
               <option value={2023}>Năm 2023</option>

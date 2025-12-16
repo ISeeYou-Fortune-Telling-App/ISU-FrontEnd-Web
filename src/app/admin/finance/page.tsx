@@ -325,7 +325,7 @@ const AdvancedFilterModal: React.FC<{
                 minKey="minRanking"
                 maxKey="maxRanking"
                 onChange={handleChange}
-                placeholder="minRanking"
+                placeholder=""
               />
 
               <div className=""></div>
@@ -347,7 +347,7 @@ const AdvancedFilterModal: React.FC<{
                 minKey="minTotalSpending"
                 maxKey="maxTotalSpending"
                 onChange={handleChange}
-                placeholder="minTotalSpending"
+                placeholder=""
                 suffix="VND"
               />
 

@@ -216,7 +216,8 @@ export const PaymentTable: React.FC = () => {
               {filteredPayments.map((p) => (
                 <tr
                   key={p.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
+                  onClick={() => setSelectedPayment(p)}
+                  className="hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition duration-150"
                 >
                   <td className="px-4 py-3">
                     <span
@@ -269,7 +270,10 @@ export const PaymentTable: React.FC = () => {
                   <td className="px-4 py-3 text-center  whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-center">
                       <button
-                        onClick={() => setSelectedPayment(p)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPayment(p);
+                        }}
                         className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors"
                       >
                         <Eye className="w-5 h-5" />

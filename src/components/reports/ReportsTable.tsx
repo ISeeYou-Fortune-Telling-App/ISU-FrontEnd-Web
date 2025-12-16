@@ -459,7 +459,8 @@ export function ReportsTable() {
               reports.map((report) => (
                 <tr
                   key={report.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                  onClick={() => handleViewDetail(report)}
+                  className="hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition"
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 justify-start">
