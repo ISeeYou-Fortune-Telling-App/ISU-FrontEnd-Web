@@ -2,11 +2,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Award, X, Filter, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Award, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
 import RankingItem from '@/components/finance/RankingItem';
 import { RevenueChart, TierPieChart } from '@/components/finance/SharedChartComponents';
 import { YearMonthDropdowns } from '@/components/finance/ChartDropdowns';
+import { YearDropdown, MonthDropdown } from '@/components/finance/UnifiedDropdown';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -28,9 +29,6 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
   const [selectedYear, setSelectedYear] = useState(2025);
   const [selectedMonth, setSelectedMonth] = useState(0);
 
-  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
-  const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
-
   const [allSeers, setAllSeers] = useState<any[]>([]);
   const [seerPage, setSeerPage] = useState(1);
   const [isFetchingSeers, setIsFetchingSeers] = useState(false);
@@ -43,70 +41,69 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
   const [tierYear, setTierYear] = useState(2025);
   const [tierMonth, setTierMonth] = useState(0);
   const [tierDistribution, setTierDistribution] = useState<any>({});
+  const [isFetchingTierData, setIsFetchingTierData] = useState(false);
 
   const seerRankings = allSeers.slice((seerPage - 1) * ITEMS_PER_PAGE, seerPage * ITEMS_PER_PAGE);
   const seerTotalPages = Math.ceil(allSeers.length / ITEMS_PER_PAGE);
 
   useEffect(() => {
-    if (!isFetchingSeers) {
-      const fetchAllSeers = async () => {
-        setIsFetchingSeers(true);
-        try {
-          let allSeersData: any[] = [];
-          let page = 1;
-          let hasMore = true;
+    const fetchAllSeers = async () => {
+      setIsFetchingSeers(true);
+      try {
+        let allSeersData: any[] = [];
+        let page = 1;
+        let hasMore = true;
 
-          const monthParam = selectedMonth === 0 ? undefined : selectedMonth;
+        const monthParam = selectedMonth === 0 ? undefined : selectedMonth;
 
-          while (hasMore) {
-            const response = await ReportService.getAllSeerPerformance({
-              page,
-              limit: 1000,
-              sortBy: 'performancePoint',
-              sortType: 'desc',
-              year: selectedYear,
-              month: monthParam,
-              ...seerFilters,
-            });
-
-            const seersData = response.data || [];
-            allSeersData = [...allSeersData, ...seersData];
-
-            const totalPages = response.paging?.totalPages || 1;
-            if (page >= totalPages) {
-              hasMore = false;
-            } else {
-              page++;
-            }
-          }
-
-          const mappedSeers = allSeersData.map((seer: any) => ({
-            id: seer.id,
-            seerId: seer.seerId,
-            name: seer.fullName || 'N/A',
-            avatar: seer.avatarUrl || `https://i.pravatar.cc/150?u=${seer.seerId}`,
-            performance: seer.performancePoint,
-            ranking: seer.ranking,
-            tier: seer.performanceTier,
-            revenue: formatCurrency(seer.totalRevenue),
-            sessions: seer.completedBookings,
-            avgRating: seer.avgRating,
-            month: selectedMonth === 0 ? new Date().getMonth() + 1 : selectedMonth,
+        while (hasMore) {
+          const response = await ReportService.getAllSeerPerformance({
+            page,
+            limit: 1000,
+            sortBy: 'performancePoint',
+            sortType: 'desc',
             year: selectedYear,
-            ...seer,
-          }));
+            month: monthParam,
+            ...seerFilters,
+          });
 
-          setAllSeers(mappedSeers);
-          setSeerPage(1);
-        } catch (error) {
-          console.error('Error fetching seer rankings:', error);
-          setAllSeers([]);
-        } finally {
-          setIsFetchingSeers(false);
+          const seersData = response.data || [];
+          allSeersData = [...allSeersData, ...seersData];
+
+          const totalPages = response.paging?.totalPages || 1;
+          if (page >= totalPages) {
+            hasMore = false;
+          } else {
+            page++;
+          }
         }
-      };
-      fetchAllSeers();
-    }
+
+        const mappedSeers = allSeersData.map((seer: any) => ({
+          id: seer.id,
+          seerId: seer.seerId,
+          name: seer.fullName || 'N/A',
+          avatar: seer.avatarUrl || `https://i.pravatar.cc/150?u=${seer.seerId}`,
+          performance: seer.performancePoint,
+          ranking: seer.ranking,
+          tier: seer.performanceTier,
+          revenue: formatCurrency(seer.totalRevenue),
+          sessions: seer.completedBookings,
+          avgRating: seer.avgRating,
+          month: selectedMonth === 0 ? new Date().getMonth() + 1 : selectedMonth,
+          year: selectedYear,
+          ...seer,
+        }));
+
+        setAllSeers(mappedSeers);
+        setSeerPage(1);
+      } catch (error) {
+        console.error('Error fetching seer rankings:', error);
+        setAllSeers([]);
+      } finally {
+        setIsFetchingSeers(false);
+      }
+    };
+    fetchAllSeers();
   }, [selectedYear, selectedMonth, seerFilters]);
 
   // Fetch avg revenue chart data
@@ -129,6 +126,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
   // Fetch tier distribution chart data
   useEffect(() => {
     const fetchTierData = async () => {
+      setIsFetchingTierData(true);
       try {
         const tierData = await ReportService.getAllSeerPerformance({
           page: 1,
@@ -146,6 +144,8 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
         setTierDistribution(seerCounts);
       } catch (error) {
         console.error('Error fetching tier data:', error);
+      } finally {
+        setIsFetchingTierData(false);
       }
     };
     fetchTierData();
@@ -188,7 +188,16 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
               onMonthChange={setTierMonth}
             />
           </div>
-          <TierPieChart data={tierDistribution} title="Tier Distribution" />
+          {isFetchingTierData ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="inline-flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Đang tải dữ liệu...</span>
+              </div>
+            </div>
+          ) : (
+            <TierPieChart data={tierDistribution} title="Tier Distribution" />
+          )}
         </div>
       </div>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700">
@@ -205,88 +214,10 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Month Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              >
-                <span>{selectedMonth === 0 ? 'Cả năm' : `Tháng ${selectedMonth}`}</span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${
-                    isMonthDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {isMonthDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setIsMonthDropdownOpen(false)}
-                  />
-                  <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg shadow-lg z-20 overflow-hidden max-h-60 overflow-y-auto">
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => (
-                      <button
-                        key={month}
-                        onClick={() => {
-                          setSelectedMonth(month);
-                          setIsMonthDropdownOpen(false);
-                        }}
-                        className={`w-full px-4 py-2 text-sm text-left transition-colors ${
-                          selectedMonth === month
-                            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        {month === 0 ? 'Cả năm' : `Tháng ${month}`}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <MonthDropdown value={selectedMonth} onChange={setSelectedMonth} className="w-32" />
 
             {/* Year Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              >
-                <span>Năm {selectedYear}</span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${
-                    isYearDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {isYearDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setIsYearDropdownOpen(false)}
-                  />
-                  <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg shadow-lg z-20 overflow-hidden">
-                    {[2026, 2025, 2024, 2023].map((year) => (
-                      <button
-                        key={year}
-                        onClick={() => {
-                          setSelectedYear(year);
-                          setIsYearDropdownOpen(false);
-                        }}
-                        className={`w-full px-4 py-2 text-sm text-left transition-colors ${
-                          selectedYear === year
-                            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        Năm {year}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <YearDropdown value={selectedYear} onChange={setSelectedYear} className="w-32" />
 
             <button
               onClick={() => onShowFilter('seer')}
@@ -306,7 +237,14 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
           </div>
         </div>
         <div className="space-y-1">
-          {seerRankings.length > 0 ? (
+          {isFetchingSeers ? (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Đang tải dữ liệu...</span>
+              </div>
+            </div>
+          ) : seerRankings.length > 0 ? (
             seerRankings.map((seer) => <RankingItem key={seer.id} item={seer} type="seer" />)
           ) : (
             <div className="text-center py-8">

@@ -235,7 +235,7 @@ export const CertificateTable: React.FC = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo tên chứng chỉ hoặc tên Seer..."
+            placeholder="Tìm kiếm theo tên chứng chỉ hoặc tên nhà tiên tri..."
             className="w-full pl-10 pr-4 py-2 text-sm border border-gray-400 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
             value={searchTerm}
             onChange={(e) => {
@@ -351,7 +351,7 @@ export const CertificateTable: React.FC = () => {
               <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Trạng thái
               </th>
-              <th className="w-[140px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
+              <th className="w-[200px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase whitespace-nowrap">
                 Thao tác
               </th>
             </tr>
@@ -448,62 +448,83 @@ export const CertificateTable: React.FC = () => {
                       />
                     </div>
                   </td>
-                  <td className="px-6 py-3 w-[150px] whitespace-nowrap text-center text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        title="Xem chi tiết chứng chỉ"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCertificate(cert);
-                        }}
-                        className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white p-1"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button
-                        title="Tải xuống"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(cert);
-                        }}
-                        className="text-blue-500 hover:text-blue-700 p-1"
-                      >
-                        <Download className="w-5 h-5" />
-                      </button>
-                      {cert.status === 'PENDING' && (
-                        <>
+                  <td className="px-6 py-3 w-[200px] whitespace-nowrap text-center text-sm font-medium">
+                    <div className="grid grid-cols-5 gap-1 items-center justify-items-center w-full max-w-[200px] mx-auto">
+                      {/* Cột 1: Tick (Approve) */}
+                      <div className="flex justify-center">
+                        {cert.status === 'PENDING' && (
                           <button
-                            title="Duyệt"
+                            title="Duyệt chứng chỉ"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedCertificate(cert);
                             }}
-                            className="text-green-500 hover:text-green-700 p-1"
+                            className="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 p-1 transition-colors"
                           >
                             <Check className="w-5 h-5" />
                           </button>
+                        )}
+                      </div>
+
+                      {/* Cột 2: X (Reject) */}
+                      <div className="flex justify-center">
+                        {cert.status === 'PENDING' && (
                           <button
-                            title="Từ chối"
+                            title="Từ chối chứng chỉ"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedCertificate(cert);
                             }}
-                            className="text-red-500 hover:text-red-700 p-1"
+                            className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors"
                           >
                             <X className="w-5 h-5" />
                           </button>
-                        </>
-                      )}
-                      <button
-                        title="Xóa chứng chỉ"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(cert);
-                        }}
-                        className="text-red-600 hover:text-red-800 p-1"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                        )}
+                      </div>
+
+                      {/* Cột 3: Download - Hiển thị nếu có file */}
+                      <div className="flex justify-center">
+                        {cert.certificateUrl && (
+                          <button
+                            title="Tải xuống chứng chỉ"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(cert);
+                            }}
+                            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors"
+                          >
+                            <Download className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Cột 4: Eye (View) - Luôn hiển thị */}
+                      <div className="flex justify-center">
+                        <button
+                          title="Xem chi tiết chứng chỉ"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCertificate(cert);
+                          }}
+                          className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* Cột 5: Trash (Delete) - Luôn hiển thị */}
+                      <div className="flex justify-center">
+                        <button
+                          title="Xóa chứng chỉ"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(cert);
+                          }}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </motion.tr>

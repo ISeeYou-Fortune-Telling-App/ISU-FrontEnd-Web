@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Calendar, User, Download, FileText, Check, Star, List } from 'lucide-react';
 import { Badge } from '../common/Badge';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 interface DetailItemProps {
   label: string;
@@ -60,7 +61,6 @@ export const CertificateDetailModal: React.FC<CertificateDetailModalProps> = ({
   onViewAllCertificates,
 }) => {
   const [note, setNote] = useState('');
-  const useScrollLock = (locked: boolean) => {};
   useScrollLock(!!certificate);
 
   console.log('CertificateDetailModal - seerId:', seerId);

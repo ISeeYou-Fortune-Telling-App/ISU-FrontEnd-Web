@@ -566,11 +566,10 @@ export const AccountTable: React.FC = () => {
                     {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                   </td>
                   <td className="px-6 py-3 text-center text-sm font-medium">
-                    {user.status === 'UNVERIFIED' ? (
-                      // Tài khoản chưa duyệt: hiện ✓ X 👁️ 🗑️
-                      <div className="grid grid-cols-4 gap-1 items-center justify-items-center w-full max-w-[160px] mx-auto">
-                        {/* Approve */}
-                        <div className="flex justify-center">
+                    <div className="grid grid-cols-4 gap-1 items-center justify-items-center w-full max-w-[160px] mx-auto">
+                      {/* Cột 1: Tick (Approve/Unblock) */}
+                      <div className="flex justify-center">
+                        {user.status === 'UNVERIFIED' && (
                           <button
                             title="Duyệt tài khoản"
                             onClick={(e) => handleApprove(user.id, e)}
@@ -583,10 +582,26 @@ export const AccountTable: React.FC = () => {
                               <Check className="w-5 h-5" />
                             )}
                           </button>
-                        </div>
+                        )}
+                        {user.status === 'BLOCKED' && (
+                          <button
+                            title="Mở khóa tài khoản"
+                            onClick={(e) => handleUnblock(user.id, e)}
+                            disabled={actionLoading === user.id}
+                            className="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {actionLoading === user.id ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <Check className="w-5 h-5" />
+                            )}
+                          </button>
+                        )}
+                      </div>
 
-                        {/* Reject */}
-                        <div className="flex justify-center">
+                      {/* Cột 2: X (Reject/Block) */}
+                      <div className="flex justify-center">
+                        {user.status === 'UNVERIFIED' && (
                           <button
                             title="Từ chối tài khoản"
                             onClick={(e) => handleReject(user.id, e)}
@@ -595,43 +610,25 @@ export const AccountTable: React.FC = () => {
                           >
                             <X className="w-5 h-5" />
                           </button>
-                        </div>
-
-                        {/* View */}
-                        <div className="flex justify-center">
+                        )}
+                        {user.status === 'ACTIVE' && (
                           <button
-                            title="Xem chi tiết"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                const detail = await AccountService.getAccountById(user.id);
-                                setSelectedUser(detail.data);
-                              } catch (error) {
-                                console.error('Lỗi khi tải chi tiết người dùng:', error);
-                              }
-                            }}
-                            className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        {/* Delete */}
-                        <div className="flex justify-center">
-                          <button
-                            title="Xóa tài khoản"
-                            onClick={(e) => handleDelete(user.id, e)}
+                            title="Khóa tài khoản"
+                            onClick={(e) => handleBlock(user.id, e)}
                             disabled={actionLoading === user.id}
-                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <Trash2 className="w-5 h-5" />
+                            {actionLoading === user.id ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <X className="w-5 h-5" />
+                            )}
                           </button>
-                        </div>
+                        )}
                       </div>
-                    ) : (
-                      // Tài khoản bình thường: chỉ hiện 👁️ 🗑️
-                      <div className="flex items-center justify-center space-x-3">
-                        {/* View */}
+
+                      {/* Cột 3: Mắt (View) - Luôn hiển thị */}
+                      <div className="flex justify-center">
                         <button
                           title="Xem chi tiết"
                           onClick={async (e) => {
@@ -647,8 +644,10 @@ export const AccountTable: React.FC = () => {
                         >
                           <Eye className="w-5 h-5" />
                         </button>
+                      </div>
 
-                        {/* Delete */}
+                      {/* Cột 4: Trash (Delete) - Luôn hiển thị */}
+                      <div className="flex justify-center">
                         <button
                           title="Xóa tài khoản"
                           onClick={(e) => handleDelete(user.id, e)}
@@ -658,7 +657,7 @@ export const AccountTable: React.FC = () => {
                           <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
-                    )}
+                    </div>
                   </td>
                 </motion.tr>
               ))

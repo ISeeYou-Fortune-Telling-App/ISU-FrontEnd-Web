@@ -64,7 +64,7 @@ const FilterRangeGroup: React.FC<{
             onKeyDown={handleKeyDown}
             onChange={(e) => handleInput(minKey, e)}
             placeholder={placeholder || 'Tối thiểu'}
-            className="w-full pl-3 pr-8 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+            className="w-full pl-3 pr-8 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           {suffix && (
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
@@ -80,7 +80,7 @@ const FilterRangeGroup: React.FC<{
             onKeyDown={handleKeyDown}
             onChange={(e) => handleInput(maxKey, e)}
             placeholder={placeholder || 'Tối đa'}
-            className="w-full pl-3 pr-8 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+            className="w-full pl-3 pr-8 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           {suffix && (
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
@@ -99,6 +99,22 @@ const AdvancedFilterModal: React.FC<{
   type: 'seer' | 'customer';
 }> = ({ onClose, onApply, type }) => {
   const [filters, setFilters] = useState<any>({});
+
+  // Import and use scroll lock
+  const useScrollLock = (locked: boolean) => {
+    React.useEffect(() => {
+      if (locked) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'unset';
+      }
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }, [locked]);
+  };
+
+  useScrollLock(true);
 
   const handleChange = (key: string, value: any) => {
     setFilters((prev: any) => ({ ...prev, [key]: value }));
@@ -130,7 +146,7 @@ const AdvancedFilterModal: React.FC<{
               onChange={(e) =>
                 handleChange(type === 'seer' ? 'performanceTier' : 'potentialTier', e.target.value)
               }
-              className="w-full p-2.5 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full p-2.5 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
             >
               <option value="">Tất cả các hạng</option>
               {type === 'seer' ? (
@@ -154,7 +170,7 @@ const AdvancedFilterModal: React.FC<{
           <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
           {type === 'seer' && (
-            <div className="space-y-5">
+            <div className="space-y-2">
               <FilterRangeGroup
                 label="Điểm hiệu suất (Performance)"
                 icon={Zap}
@@ -165,18 +181,14 @@ const AdvancedFilterModal: React.FC<{
                 suffix="pts"
               />
 
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
-
               <FilterRangeGroup
                 label="Xếp hạng (Ranking)"
                 icon={Award}
                 minKey="minRanking"
                 maxKey="maxRanking"
                 onChange={handleChange}
-                placeholder="minRanking"
+                placeholder=""
               />
-
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
               <FilterRangeGroup
                 label="Tổng gói dịch vụ (Packages)"
@@ -184,10 +196,8 @@ const AdvancedFilterModal: React.FC<{
                 minKey="minTotalPackages"
                 maxKey="maxTotalPackages"
                 onChange={handleChange}
-                placeholder="minTotalPackages"
+                placeholder=""
               />
-
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
               <FilterRangeGroup
                 label="Tổng đánh giá (Rates)"
@@ -195,10 +205,8 @@ const AdvancedFilterModal: React.FC<{
                 minKey="minTotalRates"
                 maxKey="maxTotalRates"
                 onChange={handleChange}
-                placeholder="minTotalRates"
+                placeholder=""
               />
-
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -218,7 +226,13 @@ const AdvancedFilterModal: React.FC<{
                         if (!isNaN(val) && val >= 0 && val <= 5) handleChange('minAvgRating', val);
                         if (e.target.value === '') handleChange('minAvgRating', undefined);
                       }}
-                      className="w-full pl-3 pr-12 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                      onInput={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        const val = parseFloat(target.value);
+                        if (val > 5) target.value = '5';
+                        if (val < 0) target.value = '0';
+                      }}
+                      className="w-full pl-3 pr-12 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                       / 5.0
@@ -237,7 +251,13 @@ const AdvancedFilterModal: React.FC<{
                         if (!isNaN(val) && val >= 0 && val <= 5) handleChange('maxAvgRating', val);
                         if (e.target.value === '') handleChange('maxAvgRating', undefined);
                       }}
-                      className="w-full pl-3 pr-12 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                      onInput={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        const val = parseFloat(target.value);
+                        if (val > 5) target.value = '5';
+                        if (val < 0) target.value = '0';
+                      }}
+                      className="w-full pl-3 pr-12 py-2 border border-gray-400 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                       / 5.0
@@ -246,18 +266,14 @@ const AdvancedFilterModal: React.FC<{
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
-
               <FilterRangeGroup
                 label="Tổng bookings"
                 icon={TrendingUp}
                 minKey="minTotalBookings"
                 maxKey="maxTotalBookings"
                 onChange={handleChange}
-                placeholder="minTotalBookings"
+                placeholder=""
               />
-
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
               <FilterRangeGroup
                 label="Bookings hoàn thành"
@@ -265,10 +281,8 @@ const AdvancedFilterModal: React.FC<{
                 minKey="minCompletedBookings"
                 maxKey="maxCompletedBookings"
                 onChange={handleChange}
-                placeholder="minCompletedBookings"
+                placeholder=""
               />
-
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
               <FilterRangeGroup
                 label="Bookings bị hủy bởi Seer"
@@ -276,10 +290,8 @@ const AdvancedFilterModal: React.FC<{
                 minKey="minCancelledBySeer"
                 maxKey="maxCancelledBySeer"
                 onChange={handleChange}
-                placeholder="minCancelledBySeer"
+                placeholder=""
               />
-
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
               <FilterRangeGroup
                 label="Tổng doanh thu"
@@ -287,11 +299,9 @@ const AdvancedFilterModal: React.FC<{
                 minKey="minTotalRevenue"
                 maxKey="maxTotalRevenue"
                 onChange={handleChange}
-                placeholder="minTotalRevenue"
+                placeholder=""
                 suffix="VND"
               />
-
-              <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
               <FilterRangeGroup
                 label="Tổng tiền thưởng (Bonus)"
@@ -299,7 +309,7 @@ const AdvancedFilterModal: React.FC<{
                 minKey="minBonus"
                 maxKey="maxBonus"
                 onChange={handleChange}
-                placeholder="minBonus"
+                placeholder=""
                 suffix="VND"
               />
             </div>

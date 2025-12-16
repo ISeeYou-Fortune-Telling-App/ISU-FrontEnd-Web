@@ -27,6 +27,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import {
+  YearDropdown,
+  MonthDropdown,
+  PaymentMethodDropdown,
+  PaymentStatusDropdown,
+} from '@/components/finance/UnifiedDropdown';
 
 const formatCurrency = (value: number | null | undefined) => {
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
@@ -74,6 +80,9 @@ const PaymentHistoryRow: React.FC<{ payment: any; index: number }> = ({ payment,
           src={payment.seer.avatarUrl || '/default_avatar.jpg'}
           alt={payment.seer.fullName}
           className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+          onError={(e) => {
+            e.currentTarget.src = '/default_avatar.jpg';
+          }}
         />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
@@ -323,50 +332,30 @@ const CustomerDetailContent: React.FC = () => {
           {/* Month/Year Filter */}
           <div className="flex items-center space-x-2">
             {/* Month Dropdown */}
-            <select
+            <MonthDropdown
               value={month}
-              onChange={(e) => {
-                const newMonth = Number(e.target.value);
+              onChange={(newMonth) => {
                 setMonth(newMonth);
                 sessionStorage.setItem(
                   `customer_${customerId}_period`,
                   JSON.stringify({ month: newMonth, year }),
                 );
               }}
-              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              <option value={0}>Cả năm</option>
-              <option value={1}>Tháng 1</option>
-              <option value={2}>Tháng 2</option>
-              <option value={3}>Tháng 3</option>
-              <option value={4}>Tháng 4</option>
-              <option value={5}>Tháng 5</option>
-              <option value={6}>Tháng 6</option>
-              <option value={7}>Tháng 7</option>
-              <option value={8}>Tháng 8</option>
-              <option value={9}>Tháng 9</option>
-              <option value={10}>Tháng 10</option>
-              <option value={11}>Tháng 11</option>
-              <option value={12}>Tháng 12</option>
-            </select>
+              className="w-32"
+            />
 
             {/* Year Dropdown */}
-            <select
+            <YearDropdown
               value={year}
-              onChange={(e) => {
-                const newYear = Number(e.target.value);
+              onChange={(newYear) => {
                 setYear(newYear);
                 sessionStorage.setItem(
                   `customer_${customerId}_period`,
                   JSON.stringify({ month, year: newYear }),
                 );
               }}
-              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              <option value={2025}>Năm 2025</option>
-              <option value={2024}>Năm 2024</option>
-              <option value={2023}>Năm 2023</option>
-            </select>
+              className="w-32"
+            />
           </div>
         </div>
 
@@ -377,6 +366,9 @@ const CustomerDetailContent: React.FC = () => {
               src={customerData?.avatarUrl || `https://i.pravatar.cc/150?u=${customerId}`}
               alt={customerData?.fullName || 'Customer Avatar'}
               className="w-20 h-20 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = '/default_avatar.jpg';
+              }}
             />
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -527,35 +519,24 @@ const CustomerDetailContent: React.FC = () => {
           {/* Payment Filters */}
           <div className="flex items-center space-x-2 mb-4">
             {/* Payment Method Filter */}
-            <select
+            <PaymentMethodDropdown
               value={paymentMethod}
-              onChange={(e) => {
-                setPaymentMethod(e.target.value);
+              onChange={(method) => {
+                setPaymentMethod(method as string);
                 setPaymentPage(1);
               }}
-              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              <option value="ALL">Tất cả phương thức</option>
-              <option value="MOMO">MOMO</option>
-              <option value="VNPAY">VNPAY</option>
-              <option value="PAYPAL">PAYPAL</option>
-            </select>
+              className="w-48"
+            />
 
             {/* Payment Status Filter */}
-            <select
+            <PaymentStatusDropdown
               value={paymentStatus}
-              onChange={(e) => {
-                setPaymentStatus(e.target.value);
+              onChange={(status) => {
+                setPaymentStatus(status as string);
                 setPaymentPage(1);
               }}
-              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="PENDING">Đang xử lý</option>
-              <option value="COMPLETED">Thành công</option>
-              <option value="FAILED">Thất bại</option>
-              <option value="REFUNDED">Hoàn tiền</option>
-            </select>
+              className="w-40"
+            />
           </div>
 
           {loadingPayments ? (

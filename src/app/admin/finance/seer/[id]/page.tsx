@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { ReportService } from '@/services/finance/financeHistory.service';
 import { BookingService } from '@/services/booking/booking.service';
+import { YearDropdown, MonthDropdown } from '@/components/finance/UnifiedDropdown';
 
 const formatCurrency = (value: number | null | undefined) => {
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
@@ -62,13 +63,16 @@ const PaymentHistoryRow: React.FC<{ payment: any; index: number }> = ({ payment,
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.15, delay: index * 0.02 }}
-      className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+      className="flex items-center justify-between py-4 border-b last:border-b-0 border-gray-400 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
     >
       <div className="flex items-center space-x-4 flex-1 min-w-0">
         <img
           src={payment.customer.avatarUrl || '/default_avatar.jpg'}
           alt={payment.customer.fullName}
           className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+          onError={(e) => {
+            e.currentTarget.src = '/default_avatar.jpg';
+          }}
         />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
@@ -403,13 +407,42 @@ const SeerDetailContent: React.FC = () => {
             <span>Quay lại</span>
           </button>
 
-          <button
-            onClick={() => setShowPayModal(true)}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center space-x-2"
-          >
-            <DollarSign className="w-4 h-4" />
-            <span>Thưởng thêm</span>
-          </button>
+          {/* Month/Year Filter */}
+          <div className="flex items-center space-x-2">
+            {/* Month Dropdown */}
+            <MonthDropdown
+              value={month}
+              onChange={(newMonth) => {
+                setMonth(newMonth);
+                sessionStorage.setItem(
+                  `seer_${seerId}_period`,
+                  JSON.stringify({ month: newMonth, year }),
+                );
+              }}
+              className="w-32"
+            />
+
+            {/* Year Dropdown */}
+            <YearDropdown
+              value={year}
+              onChange={(newYear) => {
+                setYear(newYear);
+                sessionStorage.setItem(
+                  `seer_${seerId}_period`,
+                  JSON.stringify({ month, year: newYear }),
+                );
+              }}
+              className="w-32"
+            />
+
+            <button
+              onClick={() => setShowPayModal(true)}
+              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center space-x-2"
+            >
+              <DollarSign className="w-4 h-4" />
+              <span>Thưởng thêm</span>
+            </button>
+          </div>
         </div>
 
         {/* Profile Card */}
@@ -419,6 +452,9 @@ const SeerDetailContent: React.FC = () => {
               src={seerData?.avatarUrl || `https://i.pravatar.cc/150?u=${seerId}`}
               alt={seerData?.fullName || 'Seer Avatar'}
               className="w-20 h-20 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = '/default_avatar.jpg';
+              }}
             />
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -479,7 +515,7 @@ const SeerDetailContent: React.FC = () => {
             Thông tin chi tiết
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
               <Package className="w-5 h-5 text-indigo-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng gói dịch vụ</p>
@@ -489,7 +525,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
               <Calendar className="w-5 h-5 text-purple-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Lịch hẹn</p>
@@ -499,7 +535,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
               <TrendingUp className="w-5 h-5 text-green-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Hoàn thành</p>
@@ -509,7 +545,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
               <Users className="w-5 h-5 text-blue-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng đánh giá</p>
@@ -519,7 +555,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
               <X className="w-5 h-5 text-red-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Đã hủy</p>
@@ -529,7 +565,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
               <DollarSign className="w-5 h-5 text-yellow-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tiền thưởng</p>

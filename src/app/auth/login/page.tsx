@@ -133,17 +133,7 @@ export default function LoginPage() {
             </div>
 
             {/* Remember me + Forgot password */}
-            <div className="flex justify-between items-center pt-1">
-              <label className="flex items-center space-x-2 text-sm text-gray-300 select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 accent-cyan-400 bg-gray-900 border-gray-700 rounded focus:ring-cyan-400"
-                />
-                <span>Ghi nhớ đăng nhập</span>
-              </label>
-
+            <div className="flex justify-end items-center pt-1">
               <button
                 type="button"
                 onClick={handleForgotPassword}

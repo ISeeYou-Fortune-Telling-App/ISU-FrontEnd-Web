@@ -53,7 +53,10 @@ const RankingItem: React.FC<RankingItemProps> = ({ item, type }) => {
   };
 
   return (
-    <div className="flex items-center justify-between py-3 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
+    <div
+      onClick={handleViewDetail}
+      className="flex items-center justify-between py-3 px-3 border-b last:border-b-0 border-gray-400 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition duration-150"
+    >
       <div className="flex items-center space-x-4">
         <img
           src={item.avatar || '/default_avatar.jpg'}
@@ -105,7 +108,10 @@ const RankingItem: React.FC<RankingItemProps> = ({ item, type }) => {
           <p className="text-xs text-gray-500 dark:text-gray-400">{item.sessions} phiên</p>
         </div>
         <button
-          onClick={handleViewDetail}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleViewDetail();
+          }}
           className="px-3 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
         >
           Detail
