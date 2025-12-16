@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { dashboardService } from '@/services/dashboard/dashboard.service';
 import { TopSeerChartData } from '@/types/dashboard/dashboard.type';
 
-const YEARS = [2025, 2026, 2024];
+const YEARS = [2026, 2025, 2024];
 const MONTHS = [
   { value: 0, label: 'Tất cả' },
   { value: 1, label: 'Tháng 1' },

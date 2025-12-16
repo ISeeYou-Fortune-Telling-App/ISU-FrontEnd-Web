@@ -24,8 +24,11 @@ export const AccountService = {
       },
     });
   },
-  async approveSeer(id: string): Promise<SingleResponse<UserAccount>> {
-    return await apiFetch(`/account/${id}/approve-seer`, { method: 'PATCH' });
+  async approveSeer(id: string, data: ApproveSeerRequest): Promise<SingleResponse<UserAccount>> {
+    return await apiFetch(`/account/${id}/approve-seer`, {
+      method: 'PATCH',
+      data,
+    });
   },
 
   async getCurrentUser(): Promise<SingleResponse<UserAccount>> {

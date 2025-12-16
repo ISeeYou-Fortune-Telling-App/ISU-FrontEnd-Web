@@ -29,7 +29,7 @@ export interface UserAccount {
 }
 
 export interface ApproveSeerRequest {
-  action: string;
+  action: 'APPROVED' | 'REJECTED';
   rejectReason?: string;
 }
 

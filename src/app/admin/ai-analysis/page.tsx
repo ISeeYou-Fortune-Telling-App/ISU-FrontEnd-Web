@@ -148,9 +148,11 @@ export default function ChatPage() {
                 className={`mb-6 flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`flex gap-3 max-w-[85%] ${
-                    m.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                  }`}
+                  className={`flex gap-3 ${
+                    m.type === 'dataframe' || m.type === 'html' || m.type === 'chart'
+                      ? 'w-full max-w-[90%]'
+                      : 'max-w-[70%]'
+                  } ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   {/* Avatar */}
                   <div
@@ -167,11 +169,17 @@ export default function ChatPage() {
                     )}
                   </div>
 
-                  <div className="flex-1">
+                  <div
+                    className={
+                      m.type === 'dataframe' || m.type === 'html' || m.type === 'chart'
+                        ? 'flex-1 min-w-0'
+                        : 'inline-block'
+                    }
+                  >
                     {/* --- TEXT --- */}
                     {m.type === 'text' && (
                       <div
-                        className={`px-5 py-3 rounded-2xl shadow-sm ${
+                        className={`px-5 py-3 rounded-2xl shadow-sm inline-block ${
                           m.role === 'user'
                             ? 'bg-blue-600 text-white dark:bg-blue-500 rounded-tr-sm'
                             : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm border border-gray-400 dark:border-gray-700'
@@ -185,23 +193,26 @@ export default function ChatPage() {
 
                     {/* --- DATAFRAME --- */}
                     {m.type === 'dataframe' && (
-                      <div className="overflow-hidden rounded-2xl border border-gray-400 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg max-w-full">
+                      <div className="rounded-2xl border border-gray-400 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
                         <div className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center gap-2">
                           <BarChart3 className="w-4 h-4" />
                           <span className="font-semibold text-sm">
                             {m.data?.title || 'Kết quả truy vấn'}
                           </span>
                         </div>
-                        <div className="overflow-x-auto max-w-full">
+                        <div className="overflow-auto" style={{ maxHeight: '400px' }}>
                           <table className="w-full text-sm">
-                            <thead>
+                            <thead className="sticky top-0 z-10">
                               <tr className="bg-gray-50 dark:bg-gray-700/50">
                                 {m.data?.columns?.map((col: string) => (
                                   <th
                                     key={col}
-                                    className="px-4 py-3 font-semibold text-left text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap"
+                                    className="px-3 py-2 font-semibold text-left text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 text-xs"
+                                    style={{ minWidth: '100px', maxWidth: '150px' }}
                                   >
-                                    {col}
+                                    <div className="truncate" title={col}>
+                                      {col}
+                                    </div>
                                   </th>
                                 ))}
                               </tr>
@@ -215,9 +226,12 @@ export default function ChatPage() {
                                   {m.data.columns.map((col: string) => (
                                     <td
                                       key={col}
-                                      className="px-4 py-3 text-gray-900 dark:text-gray-100 whitespace-nowrap"
+                                      className="px-3 py-2 text-gray-900 dark:text-gray-100 text-xs"
+                                      style={{ minWidth: '100px', maxWidth: '150px' }}
                                     >
-                                      {row[col]}
+                                      <div className="truncate" title={row[col]}>
+                                        {row[col]}
+                                      </div>
                                     </td>
                                   ))}
                                 </tr>

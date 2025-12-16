@@ -11,6 +11,7 @@ import {
   Loader2,
   X,
   Check,
+  Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AccountService } from '@/services/account/account.service';
@@ -144,7 +145,7 @@ export const AccountTable: React.FC = () => {
 
     try {
       setActionLoading(userId);
-      await AccountService.approveSeer(userId);
+      await AccountService.approveSeer(userId, { action: 'APPROVED' });
       await fetchAccounts(paging.page, false);
       await Swal.fire({
         title: 'Thành công!',
@@ -175,8 +176,9 @@ export const AccountTable: React.FC = () => {
 
     const result = await Swal.fire({
       title: 'Từ chối tài khoản?',
-      text: 'Bạn có chắc muốn từ chối tài khoản này?',
-      icon: 'warning',
+      text: 'Nhập lý do từ chối:',
+      input: 'textarea',
+      inputPlaceholder: 'Lý do từ chối...',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
@@ -184,13 +186,22 @@ export const AccountTable: React.FC = () => {
       cancelButtonText: 'Hủy',
       background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
       color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      inputValidator: (value) => {
+        if (!value.trim()) {
+          return 'Vui lòng nhập lý do từ chối!';
+        }
+        return null;
+      },
     });
 
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed || !result.value) return;
 
     try {
       setActionLoading(userId);
-      await AccountService.updateUserStatus(userId, 'REJECTED');
+      await AccountService.approveSeer(userId, {
+        action: 'REJECTED',
+        rejectReason: result.value,
+      });
       await fetchAccounts(paging.page, false);
       await Swal.fire({
         title: 'Thành công!',
@@ -307,6 +318,52 @@ export const AccountTable: React.FC = () => {
     }
   };
 
+  const handleDelete = async (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (actionLoading) return;
+
+    const result = await Swal.fire({
+      title: 'Xóa tài khoản?',
+      text: 'Bạn có chắc muốn xóa vĩnh viễn tài khoản này? Hành động này không thể hoàn tác!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Xóa vĩnh viễn',
+      cancelButtonText: 'Hủy',
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setActionLoading(userId);
+      await AccountService.deleteAccount(userId);
+      await fetchAccounts(paging.page, false);
+      await Swal.fire({
+        title: 'Đã xóa!',
+        text: 'Tài khoản đã được xóa vĩnh viễn',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } catch (error) {
+      console.error('❌ Lỗi khi xóa tài khoản:', error);
+      await Swal.fire({
+        title: 'Lỗi!',
+        text: 'Có lỗi xảy ra khi xóa tài khoản',
+        icon: 'error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -314,7 +371,7 @@ export const AccountTable: React.FC = () => {
   return (
     <div
       ref={tableRef}
-      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700"
+      className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-400 dark:border-gray-700 max-w-full"
     >
       {/* Search + Dropdown */}
       <div className="flex justify-between items-center mb-4">
@@ -509,9 +566,11 @@ export const AccountTable: React.FC = () => {
                     {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                   </td>
                   <td className="px-6 py-3 text-center text-sm font-medium">
-                    <div className="flex items-center justify-center gap-2">
-                      {user.status === 'UNVERIFIED' && (
-                        <>
+                    {user.status === 'UNVERIFIED' ? (
+                      // Tài khoản chưa duyệt: hiện ✓ X 👁️ 🗑️
+                      <div className="grid grid-cols-4 gap-1 items-center justify-items-center w-full max-w-[160px] mx-auto">
+                        {/* Approve */}
+                        <div className="flex justify-center">
                           <button
                             title="Duyệt tài khoản"
                             onClick={(e) => handleApprove(user.id, e)}
@@ -524,6 +583,10 @@ export const AccountTable: React.FC = () => {
                               <Check className="w-5 h-5" />
                             )}
                           </button>
+                        </div>
+
+                        {/* Reject */}
+                        <div className="flex justify-center">
                           <button
                             title="Từ chối tài khoản"
                             onClick={(e) => handleReject(user.id, e)}
@@ -532,51 +595,70 @@ export const AccountTable: React.FC = () => {
                           >
                             <X className="w-5 h-5" />
                           </button>
-                        </>
-                      )}
-                      {user.status === 'ACTIVE' && (
+                        </div>
+
+                        {/* View */}
+                        <div className="flex justify-center">
+                          <button
+                            title="Xem chi tiết"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                const detail = await AccountService.getAccountById(user.id);
+                                setSelectedUser(detail.data);
+                              } catch (error) {
+                                console.error('Lỗi khi tải chi tiết người dùng:', error);
+                              }
+                            }}
+                            className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        {/* Delete */}
+                        <div className="flex justify-center">
+                          <button
+                            title="Xóa tài khoản"
+                            onClick={(e) => handleDelete(user.id, e)}
+                            disabled={actionLoading === user.id}
+                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Tài khoản bình thường: chỉ hiện 👁️ 🗑️
+                      <div className="flex items-center justify-center space-x-3">
+                        {/* View */}
                         <button
-                          title="Khóa tài khoản"
-                          onClick={(e) => handleBlock(user.id, e)}
-                          disabled={actionLoading === user.id}
-                          className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Xem chi tiết"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const detail = await AccountService.getAccountById(user.id);
+                              setSelectedUser(detail.data);
+                            } catch (error) {
+                              console.error('Lỗi khi tải chi tiết người dùng:', error);
+                            }
+                          }}
+                          className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
                         >
-                          {actionLoading === user.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <X className="w-5 h-5" />
-                          )}
+                          <Eye className="w-5 h-5" />
                         </button>
-                      )}
-                      {user.status === 'BLOCKED' && (
+
+                        {/* Delete */}
                         <button
-                          title="Mở khóa tài khoản"
-                          onClick={(e) => handleUnblock(user.id, e)}
+                          title="Xóa tài khoản"
+                          onClick={(e) => handleDelete(user.id, e)}
                           disabled={actionLoading === user.id}
-                          className="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {actionLoading === user.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <Check className="w-5 h-5" />
-                          )}
+                          <Trash2 className="w-5 h-5" />
                         </button>
-                      )}
-                      <button
-                        title="Xem chi tiết"
-                        onClick={async () => {
-                          try {
-                            const detail = await AccountService.getAccountById(user.id);
-                            setSelectedUser(detail.data);
-                          } catch (error) {
-                            console.error('Lỗi khi tải chi tiết người dùng:', error);
-                          }
-                        }}
-                        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 transition-colors"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                    </div>
+                      </div>
+                    )}
                   </td>
                 </motion.tr>
               ))

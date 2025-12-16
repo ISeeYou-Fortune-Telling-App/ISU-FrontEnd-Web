@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Flame, Waves, Anvil, TreePine, Mountain, Loader2 } from 'lucide-react';
+import { X, Flame, Waves, Anvil, TreePine, Mountain, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import { useScrollLock } from '../../hooks/useScrollLock';
@@ -80,7 +80,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   const handleApprove = async () => {
     try {
       setIsLoading(true);
-      await AccountService.updateUserStatus(user.id, 'VERIFIED');
+      await AccountService.approveSeer(user.id, { action: 'APPROVED' });
       await Swal.fire({
         icon: 'success',
         title: 'Thành công!',
@@ -104,7 +104,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   const handleApproveSeer = async () => {
     try {
       setIsLoading(true);
-      const response = await AccountService.approveSeer(user.id);
+      await AccountService.approveSeer(user.id, { action: 'APPROVED' });
       await Swal.fire({
         icon: 'success',
         title: 'Thành công!',
@@ -128,7 +128,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   const handleBlock = async () => {
     try {
       setIsLoading(true);
-      await AccountService.deleteAccount(user.id);
+      await AccountService.updateUserStatus(user.id, 'BLOCKED');
       await Swal.fire({
         icon: 'success',
         title: 'Thành công!',
@@ -166,6 +166,75 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
         icon: 'error',
         title: 'Lỗi!',
         text: err.message || 'Không thể mở khóa tài khoản.',
+        confirmButtonColor: '#3b82f6',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRejectSeer = async () => {
+    const { value: reason } = await Swal.fire({
+      title: 'Từ chối Seer',
+      text: 'Nhập lý do từ chối:',
+      input: 'textarea',
+      inputPlaceholder: 'Lý do từ chối...',
+      showCancelButton: true,
+      confirmButtonText: 'Từ chối',
+      cancelButtonText: 'Hủy',
+      inputValidator: (value) => {
+        if (!value.trim()) {
+          return 'Vui lòng nhập lý do từ chối!';
+        }
+        return null;
+      },
+    });
+
+    if (reason) {
+      try {
+        setIsLoading(true);
+        await AccountService.approveSeer(user.id, {
+          action: 'REJECTED',
+          rejectReason: reason,
+        });
+        await Swal.fire({
+          icon: 'success',
+          title: 'Thành công!',
+          text: 'Đã từ chối Seer.',
+          confirmButtonColor: '#3b82f6',
+        });
+        onActionComplete?.();
+        onClose();
+      } catch (err: any) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Lỗi!',
+          text: err.message || 'Không thể từ chối Seer.',
+          confirmButtonColor: '#3b82f6',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsLoading(true);
+      await AccountService.deleteAccount(user.id);
+      await Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Tài khoản đã được xóa vĩnh viễn.',
+        confirmButtonColor: '#3b82f6',
+      });
+      onActionComplete?.();
+      onClose();
+    } catch (err: any) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: err.message || 'Không thể xóa tài khoản.',
         confirmButtonColor: '#3b82f6',
       });
     } finally {
@@ -295,9 +364,10 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             )}
 
             {!isLoading && (
-              <>
+              <div className="flex space-x-2">
+                {/* Approve/Reject buttons for UNVERIFIED_SEER */}
                 {user.role === 'UNVERIFIED_SEER' && (
-                  <div className="flex space-x-2">
+                  <>
                     <button
                       onClick={handleApproveSeer}
                       className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
@@ -305,49 +375,54 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                       Duyệt Seer
                     </button>
                     <button
-                      onClick={handleBlock}
+                      onClick={handleRejectSeer}
                       className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"
                     >
-                      Khóa tài khoản
+                      Từ chối Seer
                     </button>
-                  </div>
+                  </>
                 )}
 
                 {user.status === 'UNVERIFIED' && user.role !== 'UNVERIFIED_SEER' && (
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={handleApprove}
-                      className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
-                    >
-                      Duyệt tài khoản
-                    </button>
-                    <button
-                      onClick={handleBlock}
-                      className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"
-                    >
-                      Khóa tài khoản
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleApprove}
+                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
+                  >
+                    Duyệt tài khoản
+                  </button>
                 )}
 
-                {user.status === 'VERIFIED' && (
+                {/* Block/Unblock button - Always show for all accounts */}
+                {user.status === 'BLOCKED' ? (
+                  <button
+                    onClick={handleUnblock}
+                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
+                  >
+                    Mở khóa tài khoản
+                  </button>
+                ) : (
                   <button
                     onClick={handleBlock}
-                    className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"
+                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"
                   >
                     Khóa tài khoản
                   </button>
                 )}
 
-                {user.status === 'BLOCKED' && (
-                  <button
-                    onClick={handleUnblock}
-                    className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
-                  >
-                    Mở khóa tài khoản
-                  </button>
-                )}
-              </>
+                {/* Delete button - Always available */}
+                <button
+                  onClick={handleDelete}
+                  disabled={isLoading}
+                  className="flex-1 py-3 bg-red-800 hover:bg-red-900 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                  Xóa vĩnh viễn
+                </button>
+              </div>
             )}
           </div>
         </motion.div>

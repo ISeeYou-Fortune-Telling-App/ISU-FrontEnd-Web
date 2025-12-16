@@ -14,7 +14,7 @@ const COLORS: Record<string, string> = {
   Khác: '#9ca3af',
 };
 
-const YEARS = [2025, 2026, 2024];
+const YEARS = [2026, 2025, 2024];
 const MONTHS = [
   { value: 0, label: 'Tất cả' },
   { value: 1, label: 'Tháng 1' },
