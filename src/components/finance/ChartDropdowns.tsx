@@ -10,6 +10,7 @@ interface YearMonthDropdownsProps {
   onYearChange: (year: number) => void;
   onMonthChange: (month: number) => void;
   showMonthDropdown?: boolean;
+  includeAllYear?: boolean;
 }
 
 export const YearMonthDropdowns: React.FC<YearMonthDropdownsProps> = ({
@@ -18,12 +19,18 @@ export const YearMonthDropdowns: React.FC<YearMonthDropdownsProps> = ({
   onYearChange,
   onMonthChange,
   showMonthDropdown = true,
+  includeAllYear = true,
 }) => {
   return (
     <div className="flex items-center space-x-2">
       {/* Month Dropdown - only show if enabled */}
       {showMonthDropdown && (
-        <MonthDropdown value={selectedMonth} onChange={onMonthChange} className="w-32" />
+        <MonthDropdown
+          value={selectedMonth}
+          onChange={onMonthChange}
+          className="w-32"
+          includeAllYear={includeAllYear}
+        />
       )}
 
       {/* Year Dropdown */}

@@ -2,7 +2,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, ChevronDown } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import { YearDropdown, MonthDropdown } from '@/components/finance/UnifiedDropdown';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { dashboardService } from '@/services/dashboard/dashboard.service';
 import { TopSeerChartData } from '@/types/dashboard/dashboard.type';
@@ -36,8 +37,6 @@ const TopSeerPerformanceChart: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState(2025);
   const [selectedMonth, setSelectedMonth] = useState(0);
-  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
-  const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
   const [isDataFetched, setIsDataFetched] = useState(false);
 
   useEffect(() => {
@@ -176,80 +175,15 @@ const TopSeerPerformanceChart: React.FC = () => {
 
         <div className="flex items-center space-x-2">
           {/* Month Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              <span>{MONTHS.find((m) => m.value === selectedMonth)?.label}</span>
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  isMonthDropdownOpen ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-
-            {isMonthDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsMonthDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden max-h-60 overflow-y-auto">
-                  {MONTHS.map((month) => (
-                    <button
-                      key={month.value}
-                      onClick={() => {
-                        setSelectedMonth(month.value);
-                        setIsMonthDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-sm text-left transition-colors ${
-                        selectedMonth === month.value
-                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium'
-                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {month.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <MonthDropdown
+            value={selectedMonth}
+            onChange={setSelectedMonth}
+            className="w-32"
+            includeAllYear={true}
+          />
 
           {/* Year Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <span>Năm {selectedYear}</span>
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {isYearDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsYearDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 overflow-hidden">
-                  {YEARS.map((year) => (
-                    <button
-                      key={year}
-                      onClick={() => {
-                        setSelectedYear(year);
-                        setIsYearDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-sm text-left transition-colors ${
-                        selectedYear === year
-                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium'
-                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Năm {year}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <YearDropdown value={selectedYear} onChange={setSelectedYear} className="w-32" />
         </div>
       </div>
 

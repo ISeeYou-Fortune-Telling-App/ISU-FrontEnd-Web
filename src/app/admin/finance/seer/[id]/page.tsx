@@ -286,9 +286,15 @@ const SeerDetailContent: React.FC = () => {
   const params = useParams();
   const seerId = params?.id as string;
 
-  // Load month/year from sessionStorage immediately (lazy initialization)
+  // Load month/year from URL params or sessionStorage
   const [month, setMonth] = useState<number>(() => {
     if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlMonth = urlParams.get('month');
+      if (urlMonth && parseInt(urlMonth) >= 1 && parseInt(urlMonth) <= 12) {
+        return parseInt(urlMonth);
+      }
+
       const stored = sessionStorage.getItem(`seer_${seerId}_period`);
       if (stored) {
         const { month: storedMonth } = JSON.parse(stored);
@@ -300,6 +306,12 @@ const SeerDetailContent: React.FC = () => {
 
   const [year, setYear] = useState<number>(() => {
     if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlYear = urlParams.get('year');
+      if (urlYear && parseInt(urlYear) >= 2020 && parseInt(urlYear) <= 2030) {
+        return parseInt(urlYear);
+      }
+
       const stored = sessionStorage.getItem(`seer_${seerId}_period`);
       if (stored) {
         const { year: storedYear } = JSON.parse(stored);
@@ -310,6 +322,7 @@ const SeerDetailContent: React.FC = () => {
   });
 
   const [seerData, setSeerData] = useState<any>(null);
+  const [seerBasicInfo, setSeerBasicInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showPayModal, setShowPayModal] = useState(false);
 
@@ -325,8 +338,32 @@ const SeerDetailContent: React.FC = () => {
       console.log('📅 Fetching seer detail with:', { seerId, month, year });
 
       try {
-        const seerResponse = await ReportService.getSeerPerformance(seerId, month, year);
+        const seerResponse = await ReportService.getSeerPerformance(seerId, month, year).catch(
+          () => ({ data: null }),
+        );
         setSeerData(seerResponse.data);
+
+        // If no data for this period, try to get basic info from current month
+        if (!seerResponse.data && !seerBasicInfo) {
+          try {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            const basicInfoResponse = await ReportService.getSeerPerformance(
+              seerId,
+              currentMonth,
+              currentYear,
+            );
+            if (basicInfoResponse.data) {
+              setSeerBasicInfo({
+                fullName: basicInfoResponse.data.fullName,
+                avatarUrl: basicInfoResponse.data.avatarUrl,
+                seerId: basicInfoResponse.data.seerId,
+              });
+            }
+          } catch (basicError) {
+            console.log('Could not fetch basic seer info:', basicError);
+          }
+        }
       } catch (error) {
         console.error('Error fetching seer detail:', error);
       } finally {
@@ -386,10 +423,36 @@ const SeerDetailContent: React.FC = () => {
     }
   };
 
+  // Get display info - prefer seerData, fallback to basicInfo
+  const displayInfo = seerData || seerBasicInfo;
+  const hasDataForPeriod = !!seerData;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <p className="text-gray-500 dark:text-gray-400">Đang tải...</p>
+      </div>
+    );
+  }
+
+  if (!displayInfo && !loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">
+            Không tìm thấy seer
+          </p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            Seer không tồn tại hoặc đã bị xóa.
+          </p>
+          <button
+            onClick={() => router.push('/admin/finance?tab=seer')}
+            className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mx-auto"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Quay lại</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -449,8 +512,8 @@ const SeerDetailContent: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <div className="flex items-start space-x-4">
             <img
-              src={seerData?.avatarUrl || `https://i.pravatar.cc/150?u=${seerId}`}
-              alt={seerData?.fullName || 'Seer Avatar'}
+              src={displayInfo?.avatarUrl || `https://i.pravatar.cc/150?u=${seerId}`}
+              alt={displayInfo?.fullName || 'Seer Avatar'}
               className="w-20 h-20 rounded-full object-cover"
               onError={(e) => {
                 e.currentTarget.src = '/default_avatar.jpg';
@@ -458,20 +521,27 @@ const SeerDetailContent: React.FC = () => {
             />
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {seerData?.fullName || 'N/A'}
+                {displayInfo?.fullName || 'Seer'}
               </h1>
               <div className="flex items-center space-x-3 mt-2">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Ranking: #{seerData?.ranking}
+                  Ranking: {hasDataForPeriod ? `#${seerData?.ranking}` : 'Không có dữ liệu'}
                 </span>
-                <span
-                  className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(
-                    seerData?.performanceTier,
-                  )}`}
-                >
-                  {seerData?.performanceTier}
-                </span>
+                {hasDataForPeriod && seerData?.performanceTier && (
+                  <span
+                    className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(
+                      seerData.performanceTier,
+                    )}`}
+                  >
+                    {seerData.performanceTier}
+                  </span>
+                )}
               </div>
+              {!hasDataForPeriod && (
+                <p className="text-sm text-orange-600 dark:text-orange-400 mt-2">
+                  Không có dữ liệu cho tháng {month}/{year}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -484,7 +554,7 @@ const SeerDetailContent: React.FC = () => {
               <Award className="w-5 h-5 text-indigo-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {seerData?.performancePoint ?? 0}
+              {hasDataForPeriod ? seerData?.performancePoint ?? 0 : 'Không có dữ liệu'}
             </p>
           </div>
 
@@ -494,7 +564,7 @@ const SeerDetailContent: React.FC = () => {
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {formatCurrency(seerData?.totalRevenue || 0)}
+              {hasDataForPeriod ? formatCurrency(seerData?.totalRevenue || 0) : 'Không có dữ liệu'}
             </p>
           </div>
 
@@ -504,7 +574,9 @@ const SeerDetailContent: React.FC = () => {
               <Star className="w-5 h-5 text-yellow-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {(seerData?.avgRating || 0).toFixed(1)}/5 ⭐
+              {hasDataForPeriod
+                ? `${(seerData?.avgRating || 0).toFixed(1)}/5 ⭐`
+                : 'Không có dữ liệu'}
             </p>
           </div>
         </div>
@@ -515,7 +587,7 @@ const SeerDetailContent: React.FC = () => {
             Thông tin chi tiết
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg transition-colors">
               <Package className="w-5 h-5 text-indigo-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng gói dịch vụ</p>
@@ -525,7 +597,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg transition-colors">
               <Calendar className="w-5 h-5 text-purple-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng Lịch hẹn</p>
@@ -535,7 +607,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg transition-colors">
               <TrendingUp className="w-5 h-5 text-green-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Hoàn thành</p>
@@ -545,7 +617,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg transition-colors">
               <Users className="w-5 h-5 text-blue-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tổng đánh giá</p>
@@ -555,7 +627,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg transition-colors">
               <X className="w-5 h-5 text-red-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Đã hủy</p>
@@ -565,7 +637,7 @@ const SeerDetailContent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors">
+            <div className="flex items-center space-x-3 p-3 dark:bg-gray-700/50 rounded-lg transition-colors">
               <DollarSign className="w-5 h-5 text-yellow-500" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tiền thưởng</p>

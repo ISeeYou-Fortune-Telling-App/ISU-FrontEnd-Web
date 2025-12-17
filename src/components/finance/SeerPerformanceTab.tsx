@@ -27,7 +27,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
   onClearFilters,
 }) => {
   const [selectedYear, setSelectedYear] = useState(2025);
-  const [selectedMonth, setSelectedMonth] = useState(0);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
   const [allSeers, setAllSeers] = useState<any[]>([]);
   const [seerPage, setSeerPage] = useState(1);
@@ -39,7 +39,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
 
   // Chart 2: Tier Distribution - separate state
   const [tierYear, setTierYear] = useState(2025);
-  const [tierMonth, setTierMonth] = useState(0);
+  const [tierMonth, setTierMonth] = useState(new Date().getMonth() + 1);
   const [tierDistribution, setTierDistribution] = useState<any>({});
   const [isFetchingTierData, setIsFetchingTierData] = useState(false);
 
@@ -54,7 +54,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
         let page = 1;
         let hasMore = true;
 
-        const monthParam = selectedMonth === 0 ? undefined : selectedMonth;
+        const monthParam = selectedMonth;
 
         while (hasMore) {
           const response = await ReportService.getAllSeerPerformance({
@@ -134,7 +134,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
           sortBy: 'performancePoint',
           sortType: 'desc',
           year: tierYear,
-          month: tierMonth > 0 ? tierMonth : undefined,
+          month: tierMonth,
         });
 
         const seerCounts: any = {};
@@ -186,6 +186,7 @@ export const SeerPerformanceTab: React.FC<SeerPerformanceTabProps> = ({
               selectedMonth={tierMonth}
               onYearChange={setTierYear}
               onMonthChange={setTierMonth}
+              includeAllYear={false}
             />
           </div>
           {isFetchingTierData ? (

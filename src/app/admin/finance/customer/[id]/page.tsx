@@ -27,12 +27,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {
-  YearDropdown,
-  MonthDropdown,
-  PaymentMethodDropdown,
-  PaymentStatusDropdown,
-} from '@/components/finance/UnifiedDropdown';
+import { YearDropdown, MonthDropdown } from '@/components/finance/UnifiedDropdown';
 
 const formatCurrency = (value: number | null | undefined) => {
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
@@ -196,9 +191,15 @@ const CustomerDetailContent: React.FC = () => {
   const params = useParams();
   const customerId = params?.id as string;
 
-  // Load month/year from sessionStorage immediately (lazy initialization)
+  // Load month/year from URL params or sessionStorage
   const [month, setMonth] = useState<number>(() => {
     if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlMonth = urlParams.get('month');
+      if (urlMonth && parseInt(urlMonth) >= 1 && parseInt(urlMonth) <= 12) {
+        return parseInt(urlMonth);
+      }
+
       const stored = sessionStorage.getItem(`customer_${customerId}_period`);
       if (stored) {
         const { month: storedMonth } = JSON.parse(stored);
@@ -210,6 +211,12 @@ const CustomerDetailContent: React.FC = () => {
 
   const [year, setYear] = useState<number>(() => {
     if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlYear = urlParams.get('year');
+      if (urlYear && parseInt(urlYear) >= 2020 && parseInt(urlYear) <= 2030) {
+        return parseInt(urlYear);
+      }
+
       const stored = sessionStorage.getItem(`customer_${customerId}_period`);
       if (stored) {
         const { year: storedYear } = JSON.parse(stored);
@@ -220,6 +227,7 @@ const CustomerDetailContent: React.FC = () => {
   });
 
   const [customerData, setCustomerData] = useState<CustomerPotential | null>(null);
+  const [customerBasicInfo, setCustomerBasicInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [avgSpendingData, setAvgSpendingData] = useState<any[]>([]);
 
@@ -238,11 +246,34 @@ const CustomerDetailContent: React.FC = () => {
 
       try {
         const [customerResponse, avgSpendingResponse] = await Promise.all([
-          ReportService.getCustomerPotential(customerId, month, year),
+          ReportService.getCustomerPotential(customerId, month, year).catch(() => ({ data: null })),
           ReportService.getChart('AVG_CUSTOMER_SPENDING', undefined, year),
         ]);
+
         setCustomerData(customerResponse.data);
         setAvgSpendingData(avgSpendingResponse.data || []);
+
+        // If no data for this period, try to get basic info from current month
+        if (!customerResponse.data && !customerBasicInfo) {
+          try {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            const basicInfoResponse = await ReportService.getCustomerPotential(
+              customerId,
+              currentMonth,
+              currentYear,
+            );
+            if (basicInfoResponse.data) {
+              setCustomerBasicInfo({
+                fullName: basicInfoResponse.data.fullName,
+                avatarUrl: basicInfoResponse.data.avatarUrl,
+                customerId: basicInfoResponse.data.customerId,
+              });
+            }
+          } catch (basicError) {
+            console.log('Could not fetch basic customer info:', basicError);
+          }
+        }
       } catch (error) {
         console.error('Error fetching customer detail:', error);
       } finally {
@@ -294,15 +325,19 @@ const CustomerDetailContent: React.FC = () => {
     );
   }
 
-  if (!customerData) {
+  // Get display info - prefer customerData, fallback to basicInfo
+  const displayInfo = customerData || customerBasicInfo;
+  const hasDataForPeriod = !!customerData;
+
+  if (!displayInfo && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
         <div className="text-center">
           <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">
-            Không tìm thấy dữ liệu
+            Không tìm thấy khách hàng
           </p>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            Đã có lỗi xảy ra hoặc khách hàng không tồn tại.
+            Khách hàng không tồn tại hoặc đã bị xóa.
           </p>
           <button
             onClick={() => router.push('/admin/finance?tab=customer')}
@@ -363,8 +398,8 @@ const CustomerDetailContent: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-400 dark:border-gray-700">
           <div className="flex items-start space-x-4">
             <img
-              src={customerData?.avatarUrl || `https://i.pravatar.cc/150?u=${customerId}`}
-              alt={customerData?.fullName || 'Customer Avatar'}
+              src={displayInfo?.avatarUrl || `https://i.pravatar.cc/150?u=${customerId}`}
+              alt={displayInfo?.fullName || 'Customer Avatar'}
               className="w-20 h-20 rounded-full object-cover"
               onError={(e) => {
                 e.currentTarget.src = '/default_avatar.jpg';
@@ -372,20 +407,27 @@ const CustomerDetailContent: React.FC = () => {
             />
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {customerData?.fullName || 'N/A'}
+                {displayInfo?.fullName || 'Khách hàng'}
               </h1>
               <div className="flex items-center space-x-3 mt-2">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Ranking: #{customerData?.ranking}
+                  Ranking: {hasDataForPeriod ? `#${customerData?.ranking}` : 'Không có dữ liệu'}
                 </span>
-                <span
-                  className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(
-                    customerData?.potentialTier,
-                  )}`}
-                >
-                  {customerData?.potentialTier}
-                </span>
+                {hasDataForPeriod && customerData?.potentialTier && (
+                  <span
+                    className={`text-xs px-3 py-1 rounded-full text-white ${getTierColor(
+                      customerData.potentialTier,
+                    )}`}
+                  >
+                    {customerData.potentialTier}
+                  </span>
+                )}
               </div>
+              {!hasDataForPeriod && (
+                <p className="text-sm text-orange-600 dark:text-orange-400 mt-2">
+                  Không có dữ liệu cho tháng {month}/{year}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -400,7 +442,7 @@ const CustomerDetailContent: React.FC = () => {
               <Award className="w-5 h-5 text-purple-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {customerData?.potentialPoint}
+              {hasDataForPeriod ? customerData?.potentialPoint || 0 : 'Không có dữ liệu'}
             </p>
           </div>
 
@@ -410,7 +452,9 @@ const CustomerDetailContent: React.FC = () => {
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {formatCurrency(customerData?.totalSpending)}
+              {hasDataForPeriod
+                ? formatCurrency(customerData?.totalSpending || 0)
+                : 'Không có dữ liệu'}
             </p>
           </div>
 
@@ -420,7 +464,7 @@ const CustomerDetailContent: React.FC = () => {
               <Calendar className="w-5 h-5 text-blue-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-              {customerData?.totalBookingRequests}
+              {hasDataForPeriod ? customerData?.totalBookingRequests || 0 : 'Không có dữ liệu'}
             </p>
           </div>
         </div>
@@ -516,29 +560,6 @@ const CustomerDetailContent: React.FC = () => {
             </span>
           </div>
 
-          {/* Payment Filters */}
-          <div className="flex items-center space-x-2 mb-4">
-            {/* Payment Method Filter */}
-            <PaymentMethodDropdown
-              value={paymentMethod}
-              onChange={(method) => {
-                setPaymentMethod(method as string);
-                setPaymentPage(1);
-              }}
-              className="w-48"
-            />
-
-            {/* Payment Status Filter */}
-            <PaymentStatusDropdown
-              value={paymentStatus}
-              onChange={(status) => {
-                setPaymentStatus(status as string);
-                setPaymentPage(1);
-              }}
-              className="w-40"
-            />
-          </div>
-
           {loadingPayments ? (
             <div className="text-center py-8">
               <p className="text-gray-500 dark:text-gray-400">Đang tải...</p>
@@ -602,13 +623,17 @@ const CustomerDetailContent: React.FC = () => {
             <div>
               <p className="text-gray-500 dark:text-gray-400">Ngày tạo</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {new Date(customerData?.createdAt).toLocaleDateString('vi-VN')}
+                {hasDataForPeriod && customerData?.createdAt
+                  ? new Date(customerData.createdAt).toLocaleDateString('vi-VN')
+                  : 'Không có dữ liệu'}
               </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Cập nhật</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {new Date(customerData?.updatedAt).toLocaleDateString('vi-VN')}
+                {hasDataForPeriod && customerData?.updatedAt
+                  ? new Date(customerData.updatedAt).toLocaleDateString('vi-VN')
+                  : 'Không có dữ liệu'}
               </p>
             </div>
           </div>

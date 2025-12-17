@@ -2,7 +2,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Maximize, ChevronDown } from 'lucide-react';
+import { Maximize } from 'lucide-react';
+import { YearDropdown } from '@/components/finance/UnifiedDropdown';
 import {
   BarChart,
   Bar,
@@ -38,7 +39,6 @@ const MonthlyUsersChart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState(2025);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,41 +96,7 @@ const MonthlyUsersChart: React.FC = () => {
           </p>
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-          >
-            <span>Năm {selectedYear}</span>
-            <ChevronDown
-              className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {isDropdownOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-              <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded-lg z-20 overflow-hidden">
-                {YEARS.map((year) => (
-                  <button
-                    key={year}
-                    onClick={() => {
-                      setSelectedYear(year);
-                      setIsDropdownOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-sm text-left transition-colors ${
-                      selectedYear === year
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    Năm {year}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <YearDropdown value={selectedYear} onChange={setSelectedYear} className="w-32" />
       </div>
 
       {loading ? (

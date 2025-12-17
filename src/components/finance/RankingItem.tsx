@@ -42,13 +42,13 @@ const RankingItem: React.FC<RankingItemProps> = ({ item, type }) => {
     const month = item.month || new Date().getMonth() + 1;
     const year = item.year || 2025;
 
-    // Save to sessionStorage for detail page to use
+    // Save to sessionStorage and pass via URL params
     if (type === 'seer') {
       sessionStorage.setItem(`seer_${item.seerId}_period`, JSON.stringify({ month, year }));
-      router.push(`/admin/finance/seer/${item.seerId}`);
+      router.push(`/admin/finance/seer/${item.seerId}?month=${month}&year=${year}`);
     } else {
       sessionStorage.setItem(`customer_${item.customerId}_period`, JSON.stringify({ month, year }));
-      router.push(`/admin/finance/customer/${item.customerId}`);
+      router.push(`/admin/finance/customer/${item.customerId}?month=${month}&year=${year}`);
     }
   };
 

@@ -421,25 +421,25 @@ export function ReportsTable() {
         >
           <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
             <tr>
-              <th className="w-[12%] text-start px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[180px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Người báo cáo
               </th>
-              <th className="w-[12%] text-start px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[180px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Người bị báo cáo
               </th>
-              <th className="w-[11%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[160px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Loại vi phạm
               </th>
-              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[120px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Đối tượng
               </th>
-              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[120px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Trạng thái
               </th>
-              <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[120px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thời gian
               </th>
-              <th className="w-[6%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">
                 Thao tác
               </th>
             </tr>
@@ -449,7 +449,7 @@ export function ReportsTable() {
             {reports.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={7}
                   className="text-center py-10 text-gray-500 dark:text-gray-400 italic"
                 >
                   Không có dữ liệu
@@ -462,52 +462,57 @@ export function ReportsTable() {
                   onClick={() => handleViewDetail(report)}
                   className="hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition"
                 >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 justify-start">
+                  <td className="px-6 py-3 w-[180px] whitespace-nowrap">
+                    <div className="flex items-center">
                       <img
                         src={report.reporter.avatarUrl || '/default_avatar.jpg'}
                         alt={report.reporter.username}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-400 dark:border-gray-700"
+                        onError={(e) => {
+                          e.currentTarget.src = '/default_avatar.jpg';
+                        }}
                       />
                       <button
                         onClick={(e) => handleUserClick(report.reporter, 'reporter', e)}
-                        className="text-sm text-gray-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                        className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[120px] hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                        title={report.reporter.username}
                       >
                         {report.reporter.username}
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 justify-start">
+                  <td className="px-6 py-3 w-[180px] whitespace-nowrap">
+                    <div className="flex items-center">
                       <img
                         src={report.reported.avatarUrl || '/default_avatar.jpg'}
                         alt={report.reported.username}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-400 dark:border-gray-700"
+                        onError={(e) => {
+                          e.currentTarget.src = '/default_avatar.jpg';
+                        }}
                       />
                       <button
                         onClick={(e) => handleUserClick(report.reported, 'reported', e)}
-                        className="text-sm text-gray-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                        className="ml-3 text-sm font-medium text-gray-900 dark:text-white truncate max-w-[120px] hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                        title={report.reported.username}
                       >
                         {report.reported.username}
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {getReportTypeLabel(report.reportType)}
-                    </span>
+                  <td className="px-6 py-3 text-sm text-gray-500 dark:text-gray-300 truncate text-center">
+                    {getReportTypeLabel(report.reportType)}
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                      {report.targetReportType}
-                    </span>
+                  <td className="px-3 py-3 text-center">
+                    <Badge
+                      type="AccountStatus"
+                      value={TARGET_TYPE_LABELS[report.targetReportType]}
+                    />
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center">
-                      <Badge type="AccountStatus" value={STATUS_LABELS[report.reportStatus]} />
-                    </div>
+                  <td className="px-3 py-3 text-center">
+                    <Badge type="AccountStatus" value={STATUS_LABELS[report.reportStatus]} />
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-6 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                     <div className="flex flex-col items-center">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {new Date(report.createdAt).toLocaleDateString('vi-VN')}
@@ -520,29 +525,37 @@ export function ReportsTable() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center space-x-2">
-                      {report.reportStatus !== 'RESOLVED' && report.reportStatus !== 'REJECTED' && (
+                  <td className="px-6 py-3 text-center text-sm font-medium">
+                    <div className="grid grid-cols-2 gap-1 items-center justify-items-center w-full max-w-[80px] mx-auto">
+                      {/* Cột 1: Mắt (View) */}
+                      <div className="flex justify-center">
+                        {report.reportStatus !== 'RESOLVED' &&
+                          report.reportStatus !== 'REJECTED' && (
+                            <button
+                              title="Xem chi tiết"
+                              onClick={() => handleViewDetail(report)}
+                              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                          )}
+                      </div>
+
+                      {/* Cột 2: X (Delete) */}
+                      <div className="flex justify-center">
                         <button
-                          onClick={() => handleViewDetail(report)}
-                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors"
-                          title="Xem chi tiết"
+                          title="Xóa báo cáo"
+                          onClick={(e) => handleDelete(report, e)}
+                          disabled={deletingId === report.id}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Eye className="w-5 h-5" />
+                          {deletingId === report.id ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <X className="w-5 h-5" />
+                          )}
                         </button>
-                      )}
-                      <button
-                        onClick={(e) => handleDelete(report, e)}
-                        disabled={deletingId === report.id}
-                        className="text-red-500 hover:text-red-700 p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Xóa báo cáo"
-                      >
-                        {deletingId === report.id ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <X className="w-5 h-5" />
-                        )}
-                      </button>
+                      </div>
                     </div>
                   </td>
                 </tr>

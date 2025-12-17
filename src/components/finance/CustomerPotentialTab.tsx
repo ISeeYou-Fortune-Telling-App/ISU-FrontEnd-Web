@@ -27,7 +27,7 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
   onClearFilters,
 }) => {
   const [selectedYear, setSelectedYear] = useState(2025);
-  const [selectedMonth, setSelectedMonth] = useState(0);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [customerPage, setCustomerPage] = useState(1);
@@ -39,7 +39,7 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
 
   // Chart 2: Tier Distribution - separate state
   const [tierYear, setTierYear] = useState(2025);
-  const [tierMonth, setTierMonth] = useState(0);
+  const [tierMonth, setTierMonth] = useState(new Date().getMonth() + 1);
   const [tierDistribution, setTierDistribution] = useState<any>({});
   const [isFetchingTierData, setIsFetchingTierData] = useState(false);
 
@@ -57,7 +57,7 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
         let page = 1;
         let hasMore = true;
 
-        const monthParam = selectedMonth === 0 ? undefined : selectedMonth;
+        const monthParam = selectedMonth;
 
         while (hasMore) {
           const response = await ReportService.getAllCustomerPotential({
@@ -136,7 +136,7 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
           sortBy: 'potentialPoint',
           sortType: 'desc',
           year: tierYear,
-          month: tierMonth > 0 ? tierMonth : undefined,
+          month: tierMonth,
         });
 
         const customerCounts: any = {};
@@ -189,6 +189,7 @@ export const CustomerPotentialTab: React.FC<CustomerPotentialTabProps> = ({
               selectedMonth={tierMonth}
               onYearChange={setTierYear}
               onMonthChange={setTierMonth}
+              includeAllYear={false}
             />
           </div>
           {isFetchingTierData ? (

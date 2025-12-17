@@ -439,6 +439,7 @@ const FinanceDashboardContent: React.FC = () => {
   const [customerFilters, setCustomerFilters] = useState<any>({});
 
   const [financeStats, setFinanceStats] = useState<any>(null);
+  const [totalRevenueAllTime, setTotalRevenueAllTime] = useState<number>(0);
 
   // Update tab from URL on mount and when URL changes
   useEffect(() => {
@@ -466,8 +467,16 @@ const FinanceDashboardContent: React.FC = () => {
   useEffect(() => {
     const fetchFinanceStats = async () => {
       try {
-        const response = await ReportService.getFinanceStatistic();
-        setFinanceStats(response.data);
+        const [statsResponse, totalRevenueResponse] = await Promise.all([
+          ReportService.getFinanceStatistic(),
+          ReportService.getChart('TOTAL_REVENUE', undefined, new Date().getFullYear()),
+        ]);
+
+        setFinanceStats(statsResponse.data);
+
+        // Calculate total revenue from all months
+        const totalRevenue = totalRevenueResponse.data.reduce((sum, item) => sum + item.value, 0);
+        setTotalRevenueAllTime(totalRevenue);
       } catch (error) {
         console.error('Error fetching finance stats:', error);
       }
@@ -489,9 +498,14 @@ const FinanceDashboardContent: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <StatCard
             title="Tổng doanh thu"
+            value={totalRevenueAllTime ? formatCurrency(totalRevenueAllTime) : '...'}
+            icon={DollarSign}
+          />
+          <StatCard
+            title="Doanh thu tháng này"
             value={financeStats ? formatCurrency(financeStats.totalRevenue) : '...'}
             icon={DollarSign}
             trend={

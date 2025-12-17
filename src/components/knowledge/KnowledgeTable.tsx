@@ -15,6 +15,23 @@ import { Badge } from '@/components/common/Badge';
 import { useScrollToTopOnPageChange } from '@/hooks/useScrollToTopOnPageChange';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
+// Helper function to format content preview
+const formatContentPreview = (content: string, maxLength: number = 100): string => {
+  if (!content) return '';
+
+  // Replace \\n with actual line breaks and remove markdown formatting
+  const formatted = content
+    .replace(/\\n/g, ' ')
+    .replace(/#{1,6}\s/g, '') // Remove markdown headers
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
+    .replace(/\*(.*?)\*/g, '$1') // Remove italic formatting
+    .replace(/`(.*?)`/g, '$1') // Remove code formatting
+    .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links, keep text
+    .trim();
+
+  return formatted.length > maxLength ? formatted.substring(0, maxLength) + '...' : formatted;
+};
+
 const ITEMS_PER_PAGE = 10;
 
 export const KnowledgeTable: React.FC = () => {
@@ -327,9 +344,9 @@ export const KnowledgeTable: React.FC = () => {
                         </div>
                         <div
                           className="text-xs font-light text-gray-600 dark:text-gray-400 truncate mt-0.5 max-w-[290px]"
-                          title={k.content}
+                          title={formatContentPreview(k.content, 200)}
                         >
-                          {k.content}
+                          {formatContentPreview(k.content, 80)}
                         </div>
                       </div>
                     </div>

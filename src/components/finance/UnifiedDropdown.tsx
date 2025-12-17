@@ -98,7 +98,7 @@ export const MonthDropdown: React.FC<{
   onChange: (month: number) => void;
   className?: string;
   includeAllYear?: boolean;
-}> = ({ value, onChange, className, includeAllYear = true }) => {
+}> = ({ value, onChange, className, includeAllYear = false }) => {
   const months = [
     ...(includeAllYear ? [{ value: 0, label: 'Cả năm' }] : []),
     { value: 1, label: 'Tháng 1' },
@@ -120,51 +120,6 @@ export const MonthDropdown: React.FC<{
       options={months}
       value={value}
       onChange={(val) => onChange(val as number)}
-      className={className}
-    />
-  );
-};
-
-export const PaymentMethodDropdown: React.FC<{
-  value: string;
-  onChange: (method: string) => void;
-  className?: string;
-}> = ({ value, onChange, className }) => {
-  const methods = [
-    { value: 'ALL', label: 'Tất cả phương thức' },
-    { value: 'MOMO', label: 'MOMO' },
-    { value: 'VNPAY', label: 'VNPAY' },
-    { value: 'PAYPAL', label: 'PAYPAL' },
-  ];
-
-  return (
-    <UnifiedDropdown
-      options={methods}
-      value={value}
-      onChange={(val) => onChange(val as string)}
-      className={className}
-    />
-  );
-};
-
-export const PaymentStatusDropdown: React.FC<{
-  value: string;
-  onChange: (status: string) => void;
-  className?: string;
-}> = ({ value, onChange, className }) => {
-  const statuses = [
-    { value: 'ALL', label: 'Tất cả trạng thái' },
-    { value: 'PENDING', label: 'Đang xử lý' },
-    { value: 'COMPLETED', label: 'Thành công' },
-    { value: 'FAILED', label: 'Thất bại' },
-    { value: 'REFUNDED', label: 'Hoàn tiền' },
-  ];
-
-  return (
-    <UnifiedDropdown
-      options={statuses}
-      value={value}
-      onChange={(val) => onChange(val as string)}
       className={className}
     />
   );
